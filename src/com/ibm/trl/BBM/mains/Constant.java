@@ -15,4 +15,9 @@ public class Constant {
 	static public int Agent1 = 11;
 	static public int Agent2 = 12;
 	static public int Agent3 = 13;
+
+	static public boolean isAgent(int type) {
+		if (type >= Agent0 && type <= Agent3) return true;
+		else return false;
+	}
 }
