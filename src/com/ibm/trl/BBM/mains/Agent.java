@@ -470,6 +470,8 @@ public class Agent {
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
 		if (true) {
+			Thread.sleep(1000);
+
 			System.out.println("==========================================");
 			System.out.println("==========================================");
 			System.out.println("==========================================");
@@ -478,7 +480,7 @@ public class Agent {
 			System.out.println("==========================================");
 			System.out.println("==========================================");
 			System.out.println("board picture");
-			BBMUtility.printBoard2(board, bomb_life);
+			BBMUtility.printBoard2(board, bomb_life, bomb_blast_strength);
 			System.out.println("board");
 			System.out.println(board);
 			System.out.println("bomb_blast_strength");
@@ -535,6 +537,8 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		MyMatrix flameCenter;
 		MyMatrix bombMoveDirection;
+		List<Node> nodePairPre;
+		List<Node> nodePairNow;
 		{
 			MyMatrix board_now = board;
 			MyMatrix board_pre = boardOld.get(0);
@@ -649,11 +653,13 @@ public class Agent {
 			System.out.println("#########################################");
 			System.out.println("#########################################");
 			NodeMatchBest best = new NodeMatchBest();
-			List<Node> nodePairPre = new ArrayList<Node>();
-			List<Node> nodePairNow = new ArrayList<Node>();
-			FindMatchingRecursive(board_now, nodesPre, nodesNow, nodePairPre, nodePairNow, best);
-			flameCenter = best.flameCenter;
+			List<Node> nodePairPre_local = new ArrayList<Node>();
+			List<Node> nodePairNow_local = new ArrayList<Node>();
+			FindMatchingRecursive(board_now, nodesPre, nodesNow, nodePairPre_local, nodePairNow_local, best);
 
+			flameCenter = best.flameCenter;
+			nodePairPre = best.nodePairPre;
+			nodePairNow = best.nodePairNow;
 			bombMoveDirection = best.bombMoveDirection;
 			for (Node nodeNowNew : nodesNowNew) {
 				bombMoveDirection.data[nodeNowNew.x][nodeNowNew.y] = 5;
@@ -663,6 +669,15 @@ public class Agent {
 				System.out.println("Ç®Ç©ÇµÇ¢??");
 			}
 		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// AgentÇ™îöíeÇíuÇ¢ÇΩÇ©Ç«Ç§Ç©Çí≤Ç◊ÇÈÅB
+		if (true) {
+
+		}
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//

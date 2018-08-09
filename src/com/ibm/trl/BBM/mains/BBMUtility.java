@@ -64,7 +64,9 @@ public class BBMUtility {
 		}
 	}
 
-	static public void printBoard2(MyMatrix board, MyMatrix life) {
+	static String[] zenkakuNumber = { "‚O", "‚P", "‚Q", "‚R", "‚S", "‚T", "‚U", "‚V", "‚W", "‚X" };
+
+	static public void printBoard2(MyMatrix board, MyMatrix life, MyMatrix power) {
 		int numt = board.numt;
 		int numd = board.numd;
 		for (int x = 0; x < numt; x++) {
@@ -74,6 +76,7 @@ public class BBMUtility {
 			for (int y = 0; y < numd; y++) {
 				int type = (int) board.data[x][y];
 				int lll = (int) life.data[x][y];
+				int ppp = (int) power.data[x][y];
 				String print1 = "";
 				String print2 = "";
 				String print3 = "";
@@ -90,9 +93,9 @@ public class BBMUtility {
 					print2 = "   ";
 					print3 = "   ";
 				} else if (type == Constant.Bomb) {
-					print1 = "@—@";
-					print2 = "———";
-					print3 = "@—@";
+					print1 = "^P_";
+					print2 = "" + zenkakuNumber[lll] + "";
+					print3 = "_" + zenkakuNumber[ppp] + "^";
 				} else if (type == Constant.Flames) {
 					print1 = "”””";
 					print2 = "”””";
@@ -102,9 +105,9 @@ public class BBMUtility {
 					print2 = "";
 					print3 = "";
 				} else if (type == Constant.ExtraBomb) {
-					print1 = "@@@";
-					print2 = "‚n‚m‚d";
-					print3 = "@@@";
+					print1 = "”š@’e";
+					print2 = "‚P@ŒÂ";
+					print3 = "‘@—Ê";
 				} else if (type == Constant.IncrRange) {
 					print1 = "@ª@";
 					print2 = "©—¨";
