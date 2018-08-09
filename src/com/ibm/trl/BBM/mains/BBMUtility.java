@@ -1,5 +1,7 @@
 package com.ibm.trl.BBM.mains;
 
+import com.ibm.trl.BBM.mains.Agent.Node;
+
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class BBMUtility {
@@ -162,6 +164,43 @@ public class BBMUtility {
 					}
 				}
 
+				line1 += print1;
+				line2 += print2;
+				line3 += print3;
+			}
+			System.out.println(line1);
+			System.out.println(line2);
+			System.out.println(line3);
+		}
+	}
+
+	static public void printBombMap(MyMatrix board, Node[][] bombMap) {
+		int numt = board.numt;
+		int numd = board.numd;
+		for (int x = 0; x < numt; x++) {
+			String line1 = "";
+			String line2 = "";
+			String line3 = "";
+			for (int y = 0; y < numd; y++) {
+				Node node = bombMap[x][y];
+				String print1 = "";
+				String print2 = "";
+				String print3 = "";
+				if (node == null) {
+					print1 = "      ";
+					print2 = "  --  ";
+					print3 = "      ";
+				} else if (node.type == Constant.Bomb) {
+					int id = node.owner - 10 + 1;
+					print1 = String.format("@%d pw%d", id, node.power);
+					print2 = String.format("life %d", node.lifeBomb);
+					print3 = String.format("mv   %d", node.moveDirection);
+				} else {
+					int id = node.owner - 10 + 1;
+					print1 = String.format("#%d pw%d", id, node.power);
+					print2 = String.format("life %d", node.lifeFlameCenter);
+					print3 = String.format("mv   %d", node.moveDirection);
+				}
 				line1 += print1;
 				line2 += print2;
 				line3 += print3;

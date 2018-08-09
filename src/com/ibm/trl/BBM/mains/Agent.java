@@ -22,14 +22,14 @@ public class Agent {
 	LinkedList<MyMatrix> boardOld = new LinkedList<MyMatrix>();
 	LinkedList<MyMatrix> powerOld = new LinkedList<MyMatrix>();
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
-	LinkedList<MyMatrix> flameCenterOld = new LinkedList<MyMatrix>();
-	LinkedList<MyMatrix> bombMoveDirectionOld = new LinkedList<MyMatrix>();
+	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
 
 	class Ability {
 		boolean isAlive = true;
 		int numMaxBomb = 1;
 		int strength = 2;
 		boolean kick = false;
+		int numBombHold = 1;
 	}
 
 	Ability[] abs = new Ability[4];
@@ -73,23 +73,41 @@ public class Agent {
 	}
 
 	class Node {
+		int owner;
 		int x;
 		int y;
 		int type;
-		int life;
+		int lifeBomb;
 		int power;
+		int moveDirection;
+		int lifeFlameCenter;
 		boolean selected = false;
 
-		public Node(int x, int y, int type, int life, int power) {
+		public Node(int owner, int x, int y, int type, int lifeB, int power, int moveDirection, int lifeFC) {
+			this.owner = owner;
 			this.x = x;
 			this.y = y;
 			this.type = type;
-			this.life = life;
+			this.lifeBomb = lifeB;
 			this.power = power;
+			this.moveDirection = moveDirection;
+			this.lifeFlameCenter = lifeFC;
+		}
+
+		public Node(Node n) {
+			this.owner = n.owner;
+			this.x = n.x;
+			this.y = n.y;
+			this.type = n.type;
+			this.lifeBomb = n.lifeBomb;
+			this.power = n.power;
+			this.moveDirection = n.moveDirection;
+			this.lifeFlameCenter = n.lifeFlameCenter;
+			this.selected = n.selected;
 		}
 
 		public String toString() {
-			return String.format("● (%2d,%2d), type=%2d, life=%2d, power=%2d, selected=%7b", x, y, type, life, power, selected);
+			return String.format("● (%2d,%2d), type=%2d, lifeB=%2d, power=%2d, moveDirection=%2d, lifeFC=%2d, selected=%7b", x, y, type, lifeBomb, power, moveDirection, lifeFlameCenter, selected);
 		}
 	}
 
@@ -99,15 +117,11 @@ public class Agent {
 		double numBombMatched;
 		double numFlameDiff;
 		double moveIncorrect;
-		MyMatrix flameCenter;
-		MyMatrix bombMoveDirection;
 
 		public NodeMatchBest() {
 			numBombMatched = -Double.MAX_VALUE;
 			numFlameDiff = Double.MAX_VALUE;
 			moveIncorrect = Double.MAX_VALUE;
-			flameCenter = new MyMatrix(numField, numField);
-			bombMoveDirection = new MyMatrix(numField, numField);
 		}
 	}
 
@@ -137,17 +151,26 @@ public class Agent {
 
 			// FlameCenterを爆発させて、Boardと食い違いがあるかどうか調べる。
 			MyMatrix myFlame = new MyMatrix(numField, numField);
-			MyMatrix flameCenter = new MyMatrix(numField, numField);
+			// MyMatrix flameCenter = new MyMatrix(numField, numField);
 			{
+				List<Node> flames = new ArrayList<Node>();
 				for (Node nodeNow : nodePairNow) {
 					if (nodeNow.type != Constant.Flames) continue;
-					flameCenter.data[nodeNow.x][nodeNow.y] = nodeNow.power;
+					flames.add(nodeNow);
 				}
 
-				MyMatrix[] FCs = new MyMatrix[3];
-				FCs[0] = flameCenter;
-				FCs[1] = flameCenterOld.get(0);
-				FCs[2] = flameCenterOld.get(1);
+				Node[][] bombMapPre = bombMapOld.get(0);
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						Node node = bombMapPre[x][y];
+						if (node == null) continue;
+						if (node.type != Constant.Flames) continue;
+						Node node2 = new Node(node);
+						node2.lifeFlameCenter--;
+						if (node2.lifeFlameCenter == 0) continue;
+						flames.add(node2);
+					}
+				}
 
 				MyMatrix[] BDs = new MyMatrix[4];
 				BDs[0] = board;
@@ -155,42 +178,39 @@ public class Agent {
 				BDs[2] = boardOld.get(1);
 				BDs[3] = boardOld.get(2);
 
-				for (int kkk = 0; kkk < 3; kkk++) {
-					MyMatrix FC = FCs[kkk];
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							if (FC.data[x][y] == 0) continue;
-							int power = (int) FC.data[x][y];
+				for (Node flame : flames) {
+					int x = flame.x;
+					int y = flame.y;
+					int power = flame.power;
+					int life = flame.lifeFlameCenter;
 
-							myFlame.data[x][y] = 1;
+					myFlame.data[x][y] = 1;
 
-							for (int dir = 0; dir < 4; dir++) {
-								for (int w = 1; w < power; w++) {
-									int xSeek = x;
-									int ySeek = y;
-									if (dir == 0) {
-										xSeek = x - w;
-									} else if (dir == 1) {
-										xSeek = x + w;
-									} else if (dir == 2) {
-										ySeek = y - w;
-									} else if (dir == 3) {
-										ySeek = y + w;
-									}
-									if (xSeek < 0 || xSeek >= numField) break;
-									if (ySeek < 0 || ySeek >= numField) break;
-
-									int typePre = (int) BDs[kkk + 1].data[xSeek][ySeek];
-
-									// 前ステップがRidgeだったら、この手前でFlameが止まるのでループ終了
-									if (typePre == Constant.Rigid) break;
-
-									myFlame.data[xSeek][ySeek] = 1;
-
-									// 前ステップがWoodだったら、このセルを終端としてFlameが止まるのでループ終了
-									if (typePre == Constant.Wood) break;
-								}
+					for (int dir = 0; dir < 4; dir++) {
+						for (int w = 1; w < power; w++) {
+							int xSeek = x;
+							int ySeek = y;
+							if (dir == 0) {
+								xSeek = x - w;
+							} else if (dir == 1) {
+								xSeek = x + w;
+							} else if (dir == 2) {
+								ySeek = y - w;
+							} else if (dir == 3) {
+								ySeek = y + w;
 							}
+							if (xSeek < 0 || xSeek >= numField) break;
+							if (ySeek < 0 || ySeek >= numField) break;
+
+							int typePre = (int) BDs[3 - life + 1].data[xSeek][ySeek];
+
+							// 前ステップがRidgeだったら、この手前でFlameが止まるのでループ終了
+							if (typePre == Constant.Rigid) break;
+
+							myFlame.data[xSeek][ySeek] = 1;
+
+							// 前ステップがWoodだったら、このセルを終端としてFlameが止まるのでループ終了
+							if (typePre == Constant.Wood) break;
 						}
 					}
 				}
@@ -217,7 +237,6 @@ public class Agent {
 			}
 
 			// Bomb→BomtとかBomb→Flameの移動状態が食い違ってないかを調べる。食い違いが最も少ないやつが選ばれるようにする。
-			MyMatrix bombMoveDirection = new MyMatrix(numField, numField);
 			double moveIncorrect = 0;
 			{
 				int numPair = nodePairNow.size();
@@ -236,13 +255,8 @@ public class Agent {
 					} else if (nodePre.y + 1 == nodeNow.y) {
 						dir = 4;
 					}
-					bombMoveDirection.data[nodeNow.x][nodeNow.y] = dir;
+					nodeNow.moveDirection = dir;
 				}
-
-				MyMatrix[] FCs = new MyMatrix[3];
-				FCs[0] = flameCenter;
-				FCs[1] = flameCenterOld.get(0);
-				FCs[2] = flameCenterOld.get(1);
 
 				MyMatrix[] BDs = new MyMatrix[4];
 				BDs[0] = board;
@@ -250,19 +264,15 @@ public class Agent {
 				BDs[2] = boardOld.get(1);
 				BDs[3] = boardOld.get(2);
 
-				MyMatrix[] BMDs = new MyMatrix[3];
-				BMDs[0] = bombMoveDirection;
-				BMDs[1] = bombMoveDirectionOld.get(0);
-				BMDs[2] = bombMoveDirectionOld.get(1);
-
 				for (int i = 0; i < numPair; i++) {
 					Node nodePre = nodePairPre.get(i);
 					Node nodeNow = nodePairNow.get(i);
 
-					int dirPre = (int) BMDs[1].data[nodePre.x][nodePre.y];
-					int dirNow = (int) BMDs[0].data[nodeNow.x][nodeNow.y];
+					int dirPre = nodePre.moveDirection;
+					int dirNow = nodeNow.moveDirection;
 
 					if (dirPre == 0 || dirNow == 0) throw new Exception("error");
+					if (dirPre == -1 || dirNow == -1) throw new Exception("error");
 
 					double cost = 0;
 
@@ -317,7 +327,7 @@ public class Agent {
 									int typeCheck2Pre = (int) BDs[1].data[xCheck2][yCheck2];
 									if (typeCheck2Pre == typeCheckNow) {
 										if (abs[typeCheckNow - 10].kick == true) {
-											BMDs[0].data[nodeNow.x][nodeNow.y] = dirNew;
+											nodeNow.moveDirection = dirNew;
 										}
 									}
 								}
@@ -407,8 +417,6 @@ public class Agent {
 				best.numBombMatched = numBombMatched;
 				best.numFlameDiff = numFlameDiff;
 				best.moveIncorrect = moveIncorrect;
-				best.flameCenter = flameCenter;
-				best.bombMoveDirection = bombMoveDirection;
 
 				if (false) {
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
@@ -418,9 +426,6 @@ public class Agent {
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 					System.out.println(myFlame.toString());
-					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-					System.out.println(bombMoveDirection.toString());
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
 				}
@@ -444,7 +449,7 @@ public class Agent {
 
 				// BombからBombの遷移の場合、ライフが1減ってるものじゃないとペア不成立。
 				if (nodeNow.type == Constant.Bomb) {
-					if (nodePre.life - 1 != nodeNow.life) {
+					if (nodePre.lifeBomb - 1 != nodeNow.lifeBomb) {
 						continue;
 					}
 				}
@@ -470,8 +475,6 @@ public class Agent {
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
 		if (true) {
-			Thread.sleep(1000);
-
 			System.out.println("==========================================");
 			System.out.println("==========================================");
 			System.out.println("==========================================");
@@ -494,8 +497,7 @@ public class Agent {
 				boardOld.add(board);
 				powerOld.add(bomb_blast_strength);
 				lifeOld.add(bomb_life);
-				flameCenterOld.add(new MyMatrix(numField, numField));
-				bombMoveDirectionOld.add(new MyMatrix(numField, numField));
+				bombMapOld.add(new Node[numField][numField]);
 			}
 		}
 
@@ -535,10 +537,9 @@ public class Agent {
 		// 爆弾の動きをトラッキングする。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix flameCenter;
-		MyMatrix bombMoveDirection;
 		List<Node> nodePairPre;
 		List<Node> nodePairNow;
+		Node[][] bombMap = new Node[numField][numField];
 		{
 			MyMatrix board_now = board;
 			MyMatrix board_pre = boardOld.get(0);
@@ -546,6 +547,7 @@ public class Agent {
 			MyMatrix life_pre = lifeOld.get(0);
 			MyMatrix power_now = bomb_blast_strength;
 			MyMatrix power_pre = powerOld.get(0);
+			Node[][] bombMap_pre = bombMapOld.get(0);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// 前ステップのマッチング候補を求める。マップ上の全てのBombがマッチング対象になる。
@@ -553,12 +555,15 @@ public class Agent {
 			List<Node> nodesPre = new ArrayList<Node>();
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
-					if (life_pre.data[x][y] != 0) {
-						int power = (int) power_pre.data[x][y];
-						int life = (int) life_pre.data[x][y];
-						Node node = new Node(x, y, Constant.Bomb, life, power);
-						nodesPre.add(node);
-					}
+					Node node = bombMap_pre[x][y];
+					if (node == null) continue;
+					if (node.type != Constant.Bomb) continue;
+					Node node2 = new Node(node);
+					int power = (int) power_pre.data[x][y];
+					int life = (int) life_pre.data[x][y];
+					if (node2.power != power) throw new Exception("error");
+					if (node2.lifeBomb != life) throw new Exception("error");
+					nodesPre.add(node2);
 				}
 			}
 
@@ -576,10 +581,12 @@ public class Agent {
 						int power = (int) power_now.data[x][y];
 						int life = (int) life_now.data[x][y];
 						if (life == 9) {
-							Node node = new Node(x, y, Constant.Bomb, life, power);
+							int typeNow = (int) board_now.data[x][y];
+							if (Constant.isAgent(typeNow) == false) throw new Exception("error");
+							Node node = new Node(typeNow, x, y, Constant.Bomb, life, power, 5, 3);
 							nodesNowNew.add(node);
 						} else {
-							Node node = new Node(x, y, Constant.Bomb, life, power);
+							Node node = new Node(-1, x, y, Constant.Bomb, life, power, -1, 3);
 							nodesNow.add(node);
 						}
 					}
@@ -639,7 +646,7 @@ public class Agent {
 								}
 								if (isAllFlame == false) continue;
 
-								Node node = new Node(xNow, yNow, Constant.Flames, life, power);
+								Node node = new Node(-1, xNow, yNow, Constant.Flames, life, power, -1, 3);
 								nodesNow.add(node);
 							}
 						}
@@ -657,27 +664,77 @@ public class Agent {
 			List<Node> nodePairNow_local = new ArrayList<Node>();
 			FindMatchingRecursive(board_now, nodesPre, nodesNow, nodePairPre_local, nodePairNow_local, best);
 
-			flameCenter = best.flameCenter;
 			nodePairPre = best.nodePairPre;
 			nodePairNow = best.nodePairNow;
-			bombMoveDirection = best.bombMoveDirection;
-			for (Node nodeNowNew : nodesNowNew) {
-				bombMoveDirection.data[nodeNowNew.x][nodeNowNew.y] = 5;
+
+			// 方向を設定する。
+			int numPair = nodePairPre.size();
+			for (int i = 0; i < numPair; i++) {
+				Node nodePre = nodePairPre.get(i);
+				Node nodeNow = nodePairNow.get(i);
+				int dir = 5;
+				if (nodePre.x == nodeNow.x && nodePre.y == nodeNow.y) {
+					dir = 5;
+				} else if (nodePre.x - 1 == nodeNow.x) {
+					dir = 1;
+				} else if (nodePre.x + 1 == nodeNow.x) {
+					dir = 2;
+				} else if (nodePre.y - 1 == nodeNow.y) {
+					dir = 3;
+				} else if (nodePre.y + 1 == nodeNow.y) {
+					dir = 4;
+				}
+				nodeNow.moveDirection = dir;
+				nodeNow.owner = nodePre.owner;
 			}
 
 			if (best.numFlameDiff > 0 || best.moveIncorrect > 0) {
 				System.out.println("おかしい??");
 			}
+
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// 爆弾オブジェクトをアップデートする。
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			Node[][] bombMapPre = bombMapOld.get(0);
+
+			// 新規Bombを追加する。今回のフレームで検出した新規Bombを追加する。
+			for (Node node : nodesNowNew) {
+				bombMap[node.x][node.y] = node;
+			}
+
+			// 既存Flameを追加する。前フレームをLifeを減らしながら、追加する。
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					Node node = bombMapPre[x][y];
+					if (node == null) continue;
+					if (node.type == Constant.Flames && node.lifeFlameCenter > 1) {
+						Node node2 = new Node(node);
+						node2.lifeFlameCenter--;
+						node2.moveDirection = 5;
+						bombMap[x][y] = node2;
+					}
+				}
+			}
+
+			// 既存Bombを追加する。
+			for (Node node : nodePairNow) {
+				bombMap[node.x][node.y] = node;
+				if (node.type == Constant.Flames) {
+					node.lifeFlameCenter = 3;
+					node.lifeBomb = 0;
+				}
+			}
+
+			BBMUtility.printBombMap(board, bombMap);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// Agentが爆弾を置いたかどうかを調べる。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (true) {
 
 		}
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -689,7 +746,11 @@ public class Agent {
 
 		}
 
-		// とりあえず、人の予測モデルを作ってみる。
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// とりあえず予測モデルを作ってみる。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (true) {
 			int center = numC / 2;
 			int step = 1;
@@ -854,14 +915,12 @@ public class Agent {
 			boardOld.addFirst(board);
 			powerOld.addFirst(bomb_blast_strength);
 			lifeOld.addFirst(bomb_life);
-			flameCenterOld.addFirst(flameCenter);
-			bombMoveDirectionOld.addFirst(bombMoveDirection);
+			bombMapOld.addFirst(bombMap);
 
 			boardOld.removeLast();
 			powerOld.removeLast();
 			lifeOld.removeLast();
-			flameCenterOld.removeLast();
-			bombMoveDirectionOld.removeLast();
+			bombMapOld.removeLast();
 		}
 
 		return 1;
