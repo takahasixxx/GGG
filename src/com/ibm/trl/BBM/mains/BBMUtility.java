@@ -83,9 +83,9 @@ public class BBMUtility {
 				String print2 = "";
 				String print3 = "";
 				if (type == Constant.Passage) {
-					print1 = "　　　";
-					print2 = "　・　";
-					print3 = "　　　";
+					print1 = "      ";
+					print2 = "  --  ";
+					print3 = "      ";
 				} else if (type == Constant.Rigid) {
 					print1 = "■■■";
 					print2 = "■■■";
@@ -107,60 +107,60 @@ public class BBMUtility {
 					print2 = "￥￥￥";
 					print3 = "￥￥￥";
 				} else if (type == Constant.ExtraBomb) {
-					print1 = "爆　弾";
-					print2 = "１　個";
-					print3 = "増　量";
+					print1 = "爆  弾";
+					print2 = "１  個";
+					print3 = "増  量";
 				} else if (type == Constant.IncrRange) {
-					print1 = "　↑　";
+					print1 = "  ↑  ";
 					print2 = "←＠→";
-					print3 = "　↓　";
+					print3 = "  ↓  ";
 				} else if (type == Constant.Kick) {
-					print1 = "　　　";
-					print2 = "　蹴　";
-					print3 = "　　　";
+					print1 = "      ";
+					print2 = "  蹴  ";
+					print3 = "      ";
 				} else if (type == Constant.AgentDummy) {
-					print1 = "　　　";
-					print2 = "　Ｄ　";
-					print3 = "　　　";
+					print1 = "      ";
+					print2 = "  Ｄ  ";
+					print3 = "      ";
 				} else if (type == Constant.Agent0) {
 					if (lll == 0) {
-						print1 = "　①　";
+						print1 = "  ①  ";
 						print2 = "／｜＼";
-						print3 = "　ハ　";
+						print3 = "  ハ  ";
 					} else {
-						print1 = "　①　";
+						print1 = "  ①  ";
 						print2 = "／｜＼";
-						print3 = "　ハ＠";
+						print3 = "  ハ＠";
 					}
 				} else if (type == Constant.Agent1) {
 					if (lll == 0) {
-						print1 = "　②　";
+						print1 = "  ②  ";
 						print2 = "／｜＼";
-						print3 = "　ハ　";
+						print3 = "  ハ  ";
 					} else {
-						print1 = "　②　";
+						print1 = "  ②  ";
 						print2 = "／｜＼";
-						print3 = "　ハ＠";
+						print3 = "  ハ＠";
 					}
 				} else if (type == Constant.Agent2) {
 					if (lll == 0) {
-						print1 = "　③　";
+						print1 = "  ③  ";
 						print2 = "／｜＼";
-						print3 = "　ハ　";
+						print3 = "  ハ  ";
 					} else {
-						print1 = "　③　";
+						print1 = "  ③  ";
 						print2 = "／｜＼";
-						print3 = "　ハ＠";
+						print3 = "  ハ＠";
 					}
 				} else if (type == Constant.Agent3) {
 					if (lll == 0) {
-						print1 = "　④　";
+						print1 = "  ④  ";
 						print2 = "／｜＼";
-						print3 = "　ハ　";
+						print3 = "  ハ  ";
 					} else {
-						print1 = "　④　";
+						print1 = "  ④  ";
 						print2 = "／｜＼";
-						print3 = "　ハ＠";
+						print3 = "  ハ＠";
 					}
 				}
 
@@ -193,13 +193,13 @@ public class BBMUtility {
 				} else if (node.type == Constant.Bomb) {
 					int id = node.owner - 10 + 1;
 					print1 = String.format("@%d pw%d", id, node.power);
-					print2 = String.format("life %d", node.lifeBomb);
-					print3 = String.format("mv   %d", node.moveDirection);
+					print2 = String.format("   lf%d", node.lifeBomb);
+					print3 = String.format("   mv%d", node.moveDirection);
 				} else {
 					int id = node.owner - 10 + 1;
 					print1 = String.format("#%d pw%d", id, node.power);
-					print2 = String.format("life %d", node.lifeFlameCenter);
-					print3 = String.format("mv   %d", node.moveDirection);
+					print2 = String.format("   lf%d", node.lifeFlameCenter);
+					print3 = String.format("   mv%d", node.moveDirection);
 				}
 				line1 += print1;
 				line2 += print2;
@@ -210,4 +210,39 @@ public class BBMUtility {
 			System.out.println(line3);
 		}
 	}
+
+	static public void PrintFlame(MyMatrix boardPre, MyMatrix myFlame, int x, int y, int power, int value) {
+		int numField = boardPre.numd;
+
+		myFlame.data[x][y] = value;
+
+		for (int dir = 0; dir < 4; dir++) {
+			for (int w = 1; w < power; w++) {
+				int xSeek = x;
+				int ySeek = y;
+				if (dir == 0) {
+					xSeek = x - w;
+				} else if (dir == 1) {
+					xSeek = x + w;
+				} else if (dir == 2) {
+					ySeek = y - w;
+				} else if (dir == 3) {
+					ySeek = y + w;
+				}
+				if (xSeek < 0 || xSeek >= numField) break;
+				if (ySeek < 0 || ySeek >= numField) break;
+
+				int typePre = (int) boardPre.data[xSeek][ySeek];
+
+				// 前ステップがRidgeだったら、この手前でFlameが止まるのでループ終了
+				if (typePre == Constant.Rigid) break;
+
+				myFlame.data[xSeek][ySeek] = value;
+
+				// 前ステップがWoodだったら、このセルを終端としてFlameが止まるのでループ終了
+				if (typePre == Constant.Wood) break;
+			}
+		}
+	}
+
 }

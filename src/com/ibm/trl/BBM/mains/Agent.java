@@ -24,12 +24,25 @@ public class Agent {
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
 	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
 
-	class Ability {
+	static class Ability {
 		boolean isAlive = true;
 		int numMaxBomb = 1;
 		int strength = 2;
 		boolean kick = false;
 		int numBombHold = 1;
+		boolean justBombed = false;
+
+		public Ability() {
+		}
+
+		public Ability(Ability a) {
+			this.isAlive = a.isAlive;
+			this.numMaxBomb = a.numMaxBomb;
+			this.strength = a.strength;
+			this.kick = a.kick;
+			this.numBombHold = a.numBombHold;
+			this.justBombed = a.justBombed;
+		}
 	}
 
 	Ability[] abs = new Ability[4];
@@ -183,36 +196,7 @@ public class Agent {
 					int y = flame.y;
 					int power = flame.power;
 					int life = flame.lifeFlameCenter;
-
-					myFlame.data[x][y] = 1;
-
-					for (int dir = 0; dir < 4; dir++) {
-						for (int w = 1; w < power; w++) {
-							int xSeek = x;
-							int ySeek = y;
-							if (dir == 0) {
-								xSeek = x - w;
-							} else if (dir == 1) {
-								xSeek = x + w;
-							} else if (dir == 2) {
-								ySeek = y - w;
-							} else if (dir == 3) {
-								ySeek = y + w;
-							}
-							if (xSeek < 0 || xSeek >= numField) break;
-							if (ySeek < 0 || ySeek >= numField) break;
-
-							int typePre = (int) BDs[3 - life + 1].data[xSeek][ySeek];
-
-							// 前ステップがRidgeだったら、この手前でFlameが止まるのでループ終了
-							if (typePre == Constant.Rigid) break;
-
-							myFlame.data[xSeek][ySeek] = 1;
-
-							// 前ステップがWoodだったら、このセルを終端としてFlameが止まるのでループ終了
-							if (typePre == Constant.Wood) break;
-						}
-					}
+					BBMUtility.PrintFlame(BDs[3 - life + 1], myFlame, x, y, power, 1);
 				}
 			}
 
@@ -475,6 +459,8 @@ public class Agent {
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
 		if (true) {
+//			Thread.sleep(1000);
+
 			System.out.println("==========================================");
 			System.out.println("==========================================");
 			System.out.println("==========================================");
@@ -484,12 +470,12 @@ public class Agent {
 			System.out.println("==========================================");
 			System.out.println("board picture");
 			BBMUtility.printBoard2(board, bomb_life, bomb_blast_strength);
-			System.out.println("board");
-			System.out.println(board);
-			System.out.println("bomb_blast_strength");
-			System.out.println(bomb_blast_strength);
-			System.out.println("bomb_life");
-			System.out.println(bomb_life);
+			// System.out.println("board");
+			// System.out.println(board);
+			// System.out.println("bomb_blast_strength");
+			// System.out.println(bomb_blast_strength);
+			// System.out.println("bomb_life");
+			// System.out.println(bomb_life);
 		}
 
 		if (boardOld.size() == 0) {
@@ -521,6 +507,7 @@ public class Agent {
 					if (board_pre.data[i][j] == 6 && board.data[i][j] >= 10 && board.data[i][j] <= 13) {
 						int id = (int) (board.data[i][j] - 10);
 						abs[id].numMaxBomb++;
+						abs[id].numBombHold++;
 					} else if (board_pre.data[i][j] == 7 && board.data[i][j] >= 10 && board.data[i][j] <= 13) {
 						int id = (int) (board.data[i][j] - 10);
 						abs[id].strength++;
@@ -702,7 +689,7 @@ public class Agent {
 				bombMap[node.x][node.y] = node;
 			}
 
-			// 既存Flameを追加する。前フレームをLifeを減らしながら、追加する。
+			// 既存Flameを追加する。前ステップのFlameを追加する。Lifeを減らして、moveDirectionを5（停止）にする。
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
 					Node node = bombMapPre[x][y];
@@ -725,16 +712,42 @@ public class Agent {
 				}
 			}
 
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// 爆弾の動きをみて、Agentの保有爆弾数を調整する。
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			{
+				for (Ability a : abs) {
+					a.justBombed = false;
+				}
+				for (Node node : nodesNowNew) {
+					int agent = node.owner - 10;
+					abs[agent].numBombHold--;
+					abs[agent].justBombed = true;
+				}
+
+				for (Node node : nodePairNow) {
+					if (node.type == Constant.Flames) {
+						int agent = node.owner - 10;
+						abs[agent].numBombHold++;
+					}
+				}
+			}
+
+			// TODO bombMapを出力してみる。
 			BBMUtility.printBombMap(board, bombMap);
+
+			// TODO 出力してみる。
+			for (int i = 0; i < 4; i++) {
+				Ability a = abs[i];
+				String line = String.format("%d, %d/%d", i + 1, a.numBombHold, a.numMaxBomb);
+				System.out.println(line);
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (true) {
-
-		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -743,7 +756,8 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// TODO
 		if (true) {
-
+			FutureTrack ft = new FutureTrack(numField);
+			ft.Compute(board, bombMap, abs);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -751,7 +765,9 @@ public class Agent {
 		// とりあえず予測モデルを作ってみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (true) {
+		if (true)
+
+		{
 			int center = numC / 2;
 			int step = 1;
 
