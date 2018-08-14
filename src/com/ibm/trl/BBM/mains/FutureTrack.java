@@ -17,244 +17,6 @@ public class FutureTrack {
 		this.numField = numField;
 	}
 
-	class StatusHolder {
-		private byte[][][] AG = new byte[4][numField][numField];
-		private byte[][][][] BB = new byte[10][6][numField][numField];
-		private byte[][][] FC = new byte[4][numField][numField];
-		private byte[][] WB = new byte[numField][numField];
-
-		public void setAgent(int agent, int x, int y) {
-			AG[agent - 10][x][y] = 1;
-		}
-
-		public boolean isAgentExist(int agent, int x, int y) {
-			if (AG[agent - 10][x][y] == 1) return true;
-			else return false;
-		}
-
-		public void setBomb(int life, int moveDirection, int x, int y, int power) {
-			BB[life][moveDirection][x][y] = (byte) Math.max(BB[life][moveDirection][x][y], power);
-		}
-
-		public boolean isBombExist(int life, int moveDirection, int x, int y) {
-			int power = getBombPower(life, moveDirection, x, y);
-			if (power == 0) return false;
-			else return true;
-		}
-
-		public int getBombPower(int life, int moveDirection, int x, int y) {
-			return BB[life][moveDirection][x][y];
-		}
-
-		public void setFlameCenter(int life, int x, int y, int power) {
-			FC[life][x][y] = (byte) Math.max(FC[life][x][y], power);
-		}
-
-		public boolean isFlameCenterExist(int life, int x, int y) {
-			int power = getFlameCenterPower(life, x, y);
-			if (power == 0) return false;
-			else return true;
-		}
-
-		public int getFlameCenterPower(int life, int x, int y) {
-			return FC[life][x][y];
-		}
-
-		public void setWoodBrake(int x, int y) {
-			WB[x][y] = 1;
-		}
-
-		public boolean isWoodBrake(int x, int y) {
-			if (WB[x][y] == 1) return true;
-			else return false;
-		}
-
-		@Override
-		public String toString() {
-			String output = "";
-
-			////////////////////////////////////////////////////////////////////////////////
-			//
-			// Agentの位置を出力する。
-			//
-			////////////////////////////////////////////////////////////////////////////////
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "Agent\n";
-			for (int x = 0; x < numField; x++) {
-				String line1 = "";
-				String line2 = "";
-				String line3 = "";
-				for (int y = 0; y < numField; y++) {
-					String print1 = "";
-					String print2 = "";
-					String print3 = "";
-
-					String[] as = new String[4];
-					for (int i = 0; i < 4; i++) {
-						if (this.isAgentExist(i + 10, x, y)) {
-							as[i] = "●";
-						} else {
-							as[i] = "○";
-						}
-					}
-
-					print1 = as[0] + "ー" + as[1];
-					print2 = "｜＋｜";
-					print3 = as[2] + "ー" + as[3];
-
-					line1 += print1;
-					line2 += print2;
-					line3 += print3;
-				}
-
-				output += line1 + "\n";
-				output += line2 + "\n";
-				output += line3 + "\n";
-			}
-
-			////////////////////////////////////////////////////////////////////////////////
-			//
-			// 爆弾の位置を出力する。
-			//
-			////////////////////////////////////////////////////////////////////////////////
-
-			for (int life = 9; life >= 1; life--) {
-				boolean exist = false;
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						for (int moveDirection = 1; moveDirection <= 5; moveDirection++) {
-							if (this.isBombExist(life, moveDirection, x, y)) {
-								exist = true;
-							}
-						}
-					}
-				}
-				if (exist == false) continue;
-
-				output += "========================================\n";
-				output += "========================================\n";
-				output += "========================================\n";
-				output += "Bomb life=" + life + "\n";
-
-				for (int x = 0; x < numField; x++) {
-					String line1 = "";
-					String line2 = "";
-					String line3 = "";
-					for (int y = 0; y < numField; y++) {
-						String print1 = "";
-						String print2 = "";
-						String print3 = "";
-
-						String[] as = new String[6];
-						for (int moveDirection = 1; moveDirection <= 5; moveDirection++) {
-							if (this.isBombExist(life, moveDirection, x, y)) {
-								int power = this.getBombPower(life, moveDirection, x, y);
-								as[moveDirection] = String.format("%d", power);
-							} else {
-								as[moveDirection] = " ";
-							}
-						}
-
-						print1 = "// " + as[1] + " \\";
-						print2 = "||" + as[3] + as[5] + as[4] + "|";
-						print3 = "\\\\_" + as[2] + "_/";
-
-						line1 += print1;
-						line2 += print2;
-						line3 += print3;
-					}
-
-					output += line1 + "\n";
-					output += line2 + "\n";
-					output += line3 + "\n";
-				}
-			}
-
-			////////////////////////////////////////////////////////////////////////////////
-			//
-			// FlameCenterの位置を出力する。
-			//
-			////////////////////////////////////////////////////////////////////////////////
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "FlameCenter\n";
-			for (int x = 0; x < numField; x++) {
-				String line1 = "";
-				String line2 = "";
-				String line3 = "";
-				for (int y = 0; y < numField; y++) {
-					String print1 = "";
-					String print2 = "";
-					String print3 = "";
-
-					String[] as = new String[4];
-					for (int life = 3; life >= 1; life--) {
-						if (this.isFlameCenterExist(life, x, y)) {
-							int power = this.getFlameCenterPower(life, x, y);
-							as[life] = String.format("%d", power);
-						} else {
-							as[life] = " ";
-						}
-					}
-
-					print1 = "/3:" + as[3] + " \\";
-					print2 = "|2:" + as[2] + " |";
-					print3 = "\\1:" + as[1] + " /";
-
-					line1 += print1;
-					line2 += print2;
-					line3 += print3;
-				}
-
-				output += line1 + "\n";
-				output += line2 + "\n";
-				output += line3 + "\n";
-			}
-
-			////////////////////////////////////////////////////////////////////////////////
-			//
-			// FlameCenterの位置を出力する。
-			//
-			////////////////////////////////////////////////////////////////////////////////
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "WoodBrake\n";
-			for (int x = 0; x < numField; x++) {
-				String line1 = "";
-				String line2 = "";
-				String line3 = "";
-				for (int y = 0; y < numField; y++) {
-					String print1 = "";
-					String print2 = "";
-					String print3 = "";
-
-					if (this.isWoodBrake(x, y)) {
-						print1 = "■■■";
-						print2 = "■■■";
-						print3 = "■■■";
-					} else {
-						print1 = "□□□";
-						print2 = "□□□";
-						print3 = "□□□";
-					}
-					line1 += print1;
-					line2 += print2;
-					line3 += print3;
-				}
-
-				output += line1 + "\n";
-				output += line2 + "\n";
-				output += line3 + "\n";
-			}
-
-			return output;
-		}
-	}
-
 	static long time1, time2, time3, time4, time5, time6;
 
 	private void RRR(int depth, MyMatrix board, Node[][] bombMap, int[][] actions, Ability absNow[], StatusHolder shNow, List<StatusHolder> sequence) throws Exception {
@@ -265,7 +27,7 @@ public class FutureTrack {
 
 		if (depth >= 5) return;
 
-		StatusHolder shNext = new StatusHolder();
+		StatusHolder shNext = new StatusHolder(numField);
 
 		Ability[] absNext = new Ability[4];
 		for (int i = 0; i < 4; i++) {
@@ -291,8 +53,6 @@ public class FutureTrack {
 				absNext[i].justBombed = false;
 			}
 		}
-
-		// 現在のステップから、次のステップに移動可能なところにフラグを立てていく。
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// エージェントを動かす。
@@ -501,6 +261,25 @@ public class FutureTrack {
 		/////////////////////////////////////////////////////////////////////////////////////////////////
 		// FCからFlamesを計算する。
 		/////////////////////////////////////////////////////////////////////////////////////////////////
+
+		List<int[]> temp = new ArrayList<int[]>();
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				for (int life = 1; life <= 9; life++) {
+					for (int moveDirection = 1; moveDirection <= 5; moveDirection++) {
+						if (shNext.isBombExist(life, moveDirection, x, y)) {
+							int[] temp2 = new int[4];
+							temp2[0] = x;
+							temp2[1] = y;
+							temp2[2] = life;
+							temp2[3] = moveDirection;
+							temp.add(temp2);
+						}
+					}
+				}
+			}
+		}
+
 		timeStart = System.currentTimeMillis();
 		MyMatrix myFlame = new MyMatrix(numField, numField);
 		for (int x = 0; x < numField; x++) {
@@ -514,7 +293,6 @@ public class FutureTrack {
 		}
 
 		while (true) {
-
 			if (false) {
 				System.out.println("=========================");
 				MatrixUtility.OutputMatrix(myFlame);
@@ -523,18 +301,16 @@ public class FutureTrack {
 
 			boolean isChanged = false;
 			// 炎に巻き込まれる爆弾で、FCに変化させた形跡が無いものは、FCに変化させる。
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					for (int life = 1; life <= 9; life++) {
-						for (int moveDirection = 1; moveDirection <= 5; moveDirection++) {
-							if (shNext.isFlameCenterExist(3, x, y) == false && myFlame.data[x][y] == 1 && shNext.isBombExist(life, moveDirection, x, y) == true) {
-								int power = shNext.getBombPower(life, moveDirection, x, y);
-								shNext.setFlameCenter(3, x, y, power);
-								BBMUtility.PrintFlame(myBoard, myFlame, x, y, power, 1);
-								isChanged = true;
-							}
-						}
-					}
+			for (int[] temp2 : temp) {
+				int x = temp2[0];
+				int y = temp2[1];
+				int life = temp2[2];
+				int moveDirection = temp2[3];
+				if (shNext.isFlameCenterExist(3, x, y) == false && myFlame.data[x][y] == 1) {
+					int power = shNext.getBombPower(life, moveDirection, x, y);
+					shNext.setFlameCenter(3, x, y, power);
+					BBMUtility.PrintFlame(myBoard, myFlame, x, y, power, 1);
+					isChanged = true;
 				}
 			}
 			if (isChanged == false) break;
@@ -632,7 +408,7 @@ public class FutureTrack {
 		counter_global = new double[4][100];
 		death_global = new double[4][100];
 
-		StatusHolder shNow = new StatusHolder();
+		StatusHolder shNow = new StatusHolder(numField);
 
 		// 時刻0の初期状態を求める。
 		for (int x = 0; x < numField; x++) {
