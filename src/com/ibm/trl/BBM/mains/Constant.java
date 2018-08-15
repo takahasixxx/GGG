@@ -20,4 +20,14 @@ public class Constant {
 		if (type >= Agent0 && type <= Agent3) return true;
 		else return false;
 	}
+
+	static public boolean isWall(int type) {
+		if (type == Rigid || type == Wood) return true;
+		else return false;
+	}
+
+	static public boolean isItem(int type) {
+		if (type == ExtraBomb || type == IncrRange || type == Kick) return true;
+		else return false;
+	}
 }

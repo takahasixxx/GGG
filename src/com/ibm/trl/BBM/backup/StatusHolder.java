@@ -1,4 +1,4 @@
-package com.ibm.trl.BBM.mains;
+package com.ibm.trl.BBM.backup;
 
 import java.util.Collection;
 import java.util.Map;
@@ -6,175 +6,136 @@ import java.util.TreeMap;
 
 public class StatusHolder {
 	int numField;
+	// private byte[][][] AG;
+	// private byte[][][][] BB;
+	// private byte[][][] FC;
+	// private byte[][] WB;
 
 	int numParam = 100;
 
-	static public class EEE {
+	static class EEE {
 		int x;
 		int y;
+		int param1;
+		int param2;
+		int value1;
+		int value2;
 
-		public EEE(int x, int y) {
+		public EEE(int x, int y, int param1, int param2, int value1, int value2) {
 			this.x = x;
 			this.y = y;
+			this.param1 = param1;
+			this.param2 = param2;
+			this.value1 = value1;
+			this.value2 = value2;
 		}
 
 		public EEE(EEE e) {
 			this.x = e.x;
 			this.y = e.y;
+			this.param1 = e.param1;
+			this.param2 = e.param2;
+			this.value1 = e.value1;
+			this.value2 = e.value2;
 		}
 
 		public boolean isSamePosition(EEE e) {
 			if (this.x == e.x && this.y == e.y) return true;
 			return false;
 		}
-	}
-
-	static public class AgentEEE extends EEE {
-		int x;
-		int y;
-		int agentID;
-
-		public AgentEEE(int x, int y, int agentID) {
-			super(x, y);
-			this.agentID = agentID;
-		}
-
-		public AgentEEE(AgentEEE a) {
-			super(a);
-			this.agentID = a.agentID;
-		}
 
 		@Override
 		public String toString() {
-			String line = String.format("AgentEEE : (%2d,%2d), agentID=%2d\n", x, y, agentID);
+			String line = String.format("(%2d,%2d), param1=%2d, param2=%2d, value1=%2d, value2=%s2\n", x, y, param1, param2, value1, value2);
 			return line;
 		}
 	}
 
-	static public class BombEEE extends EEE {
-		int x;
-		int y;
-		int owner;
-		int life;
-		int dir;
-		int power;
-
-		public BombEEE(int x, int y, int owner, int life, int dir, int power) {
-			super(x, y);
-			this.owner = owner;
-			this.life = life;
-			this.dir = dir;
-			this.power = power;
-		}
-
-		public BombEEE(BombEEE b) {
-			super(b);
-			this.owner = b.owner;
-			this.life = b.life;
-			this.dir = b.dir;
-			this.power = b.power;
-		}
-
-		@Override
-		public String toString() {
-			String line = String.format("BombEEE : (%2d,%2d), onwer=%2d, life=%2d, dir=%2d, power=%2d\n", x, y, owner, life, dir, power);
-			return line;
-		}
-	}
-
-	static public class FlameCenterEEE extends EEE {
-		int x;
-		int y;
-		int life;
-		int power;
-
-		public FlameCenterEEE(int x, int y, int life, int power) {
-			super(x, y);
-			this.life = life;
-			this.power = power;
-		}
-
-		public FlameCenterEEE(FlameCenterEEE f) {
-			super(f);
-			this.life = f.life;
-			this.power = f.power;
-		}
-
-		@Override
-		public String toString() {
-			String line = String.format("FlameCenterEEE : (%2d,%2d), life=%2d, power=%2d\n", x, y, life, power);
-			return line;
-		}
-	}
-
-	private Map<Integer, AgentEEE> agMap = new TreeMap<Integer, AgentEEE>();
-	private Map<Integer, BombEEE> bbMap = new TreeMap<Integer, BombEEE>();
-	private Map<Integer, FlameCenterEEE> fcMap = new TreeMap<Integer, FlameCenterEEE>();
+	private Map<Integer, EEE> agMap = new TreeMap<Integer, EEE>();
+	private Map<Integer, EEE> bbMap = new TreeMap<Integer, EEE>();
+	private Map<Integer, EEE> fcMap = new TreeMap<Integer, EEE>();
+	private Map<Integer, EEE> wbMap = new TreeMap<Integer, EEE>();
 
 	public StatusHolder(int numField) {
 		this.numField = numField;
 	}
 
-	public void setAgent(int x, int y, int agentID) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + agentID * numParam;
-		AgentEEE eee = new AgentEEE(x, y, agentID);
+	public void setAgent(int agent, int x, int y) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam + agent * numParam;
+		EEE eee = new EEE(x, y, agent, 0, 1, 0);
 		agMap.put(index, eee);
 	}
 
-	public boolean isAgentExist(int x, int y, int agent) {
+	public boolean isAgentExist(int agent, int x, int y) {
 		int index = x * numParam * numParam * numField + y * numParam * numParam + agent * numParam;
 		if (agMap.get(index) == null) return false;
 		return true;
 	}
 
-	public Collection<AgentEEE> getAgentEntry() {
+	public Collection<EEE> getAgentEntry() {
 		return agMap.values();
 	}
 
-	public void setBomb(int x, int y, int owner, int life, int dir, int power) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
-		BombEEE eee = new BombEEE(x, y, owner, life, dir, power);
+	public void setBomb(int life, int moveDirection, int x, int y, int power) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + moveDirection;
+		EEE eee = new EEE(x, y, life, moveDirection, power, 0);
 		bbMap.put(index, eee);
 	}
 
-	public boolean isBombExist(int x, int y, int life, int dir) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
+	public boolean isBombExist(int life, int moveDirection, int x, int y) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + moveDirection;
 		if (bbMap.get(index) == null) return false;
 		return true;
 	}
 
-	public int getBombPower(int x, int y, int life, int dir) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
-		BombEEE eee = bbMap.get(index);
+	public int getBombPower(int life, int moveDirection, int x, int y) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + moveDirection;
+		EEE eee = bbMap.get(index);
 		if (eee == null) return 0;
-		return eee.power;
+		return eee.value1;
 	}
 
-	public Collection<BombEEE> getBombEntry() {
+	public Collection<EEE> getBombEntry() {
 		return bbMap.values();
 	}
 
-	public void setFlameCenter(int x, int y, int life, int power) {
+	public void setFlameCenter(int life, int x, int y, int power) {
 		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
-		FlameCenterEEE eee = new FlameCenterEEE(x, y, life, power);
+		EEE eee = new EEE(x, y, life, 0, power, 0);
 		fcMap.put(index, eee);
 	}
 
-	public boolean isFlameCenterExist(int x, int y, int life) {
+	public boolean isFlameCenterExist(int life, int x, int y) {
 		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
 		if (fcMap.get(index) == null) return false;
 		return true;
 	}
 
-	public int getFlameCenterPower(int x, int y, int life) {
+	public int getFlameCenterPower(int life, int x, int y) {
 		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
-		FlameCenterEEE eee = fcMap.get(index);
+		EEE eee = fcMap.get(index);
 		if (eee == null) return 0;
-		return eee.power;
+		return eee.value1;
 	}
 
-	public Collection<FlameCenterEEE> getFlameCenterEntry() {
+	public Collection<EEE> getFlameCenterEntry() {
 		return fcMap.values();
+	}
+
+	public void setWoodBrake(int x, int y) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam;
+		EEE eee = new EEE(x, y, 0, 0, 1, 0);
+		wbMap.put(index, eee);
+	}
+
+	public boolean isWoodBrake(int x, int y) {
+		int index = x * numParam * numParam * numField + y * numParam * numParam;
+		if (wbMap.get(index) == null) return false;
+		return true;
+	}
+
+	public Collection<EEE> getWoodBrakeEntry() {
+		return wbMap.values();
 	}
 
 	@Override
@@ -314,6 +275,43 @@ public class StatusHolder {
 				print2 = "|2:" + as[2] + " |";
 				print3 = "\\1:" + as[1] + " /";
 
+				line1 += print1;
+				line2 += print2;
+				line3 += print3;
+			}
+
+			output += line1 + "\n";
+			output += line2 + "\n";
+			output += line3 + "\n";
+		}
+
+		////////////////////////////////////////////////////////////////////////////////
+		//
+		// FlameCenterÇÃà íuÇèoóÕÇ∑ÇÈÅB
+		//
+		////////////////////////////////////////////////////////////////////////////////
+		output += "========================================\n";
+		output += "========================================\n";
+		output += "========================================\n";
+		output += "WoodBrake\n";
+		for (int x = 0; x < numField; x++) {
+			String line1 = "";
+			String line2 = "";
+			String line3 = "";
+			for (int y = 0; y < numField; y++) {
+				String print1 = "";
+				String print2 = "";
+				String print3 = "";
+
+				if (this.isWoodBrake(x, y)) {
+					print1 = "Å°Å°Å°";
+					print2 = "Å°Å°Å°";
+					print3 = "Å°Å°Å°";
+				} else {
+					print1 = "Å†Å†Å†";
+					print2 = "Å†Å†Å†";
+					print3 = "Å†Å†Å†";
+				}
 				line1 += print1;
 				line2 += print2;
 				line3 += print3;

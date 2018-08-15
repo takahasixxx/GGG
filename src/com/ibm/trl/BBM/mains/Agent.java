@@ -24,13 +24,13 @@ public class Agent {
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
 	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
 
-	static class Ability {
-		boolean isAlive = true;
-		int numMaxBomb = 1;
-		int strength = 2;
-		boolean kick = false;
-		int numBombHold = 1;
-		boolean justBombed = false;
+	static public class Ability {
+		public boolean isAlive = true;
+		public int numMaxBomb = 1;
+		public int strength = 2;
+		public boolean kick = false;
+		public int numBombHold = 1;
+		public boolean justBombed = false;
 
 		public Ability() {
 		}
@@ -42,6 +42,12 @@ public class Agent {
 			this.kick = a.kick;
 			this.numBombHold = a.numBombHold;
 			this.justBombed = a.justBombed;
+		}
+
+		@Override
+		public String toString() {
+			String line = String.format("isAlive=%5b, hold/max=%2d/%2d, strength=%2d, kick=%5b, justBombd=%5b\n", isAlive, numBombHold, numMaxBomb, strength, kick, justBombed);
+			return line;
 		}
 	}
 
@@ -85,16 +91,16 @@ public class Agent {
 		System.out.println("episode_end, reward = " + reward);
 	}
 
-	class Node {
-		int owner;
-		int x;
-		int y;
-		int type;
-		int lifeBomb;
-		int power;
-		int moveDirection;
-		int lifeFlameCenter;
-		boolean selected = false;
+	static public class Node {
+		public int owner;
+		public int x;
+		public int y;
+		public int type;
+		public int lifeBomb;
+		public int power;
+		public int moveDirection;
+		public int lifeFlameCenter;
+		public boolean selected = false;
 
 		public Node(int owner, int x, int y, int type, int lifeB, int power, int moveDirection, int lifeFC) {
 			this.owner = owner;
@@ -459,7 +465,7 @@ public class Agent {
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
 		if (true) {
-//			Thread.sleep(1000);
+			// Thread.sleep(1000);
 
 			System.out.println("==========================================");
 			System.out.println("==========================================");
