@@ -1,8 +1,13 @@
 package com.ibm.trl.BBM.mains;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.Agent.Node;
@@ -13,24 +18,41 @@ import com.ibm.trl.BBM.mains.StatusHolder.FlameCenterEEE;
 
 import ibm.ANACONDA.Core.MyMatrix;
 
-public class FutureTrack {
+public class ForwardModel {
 
 	int numField;
 
-	public FutureTrack(int numField) {
+	public ForwardModel(int numField) {
 		this.numField = numField;
 	}
 
-	public void Step(MyMatrix board, Node[][] bombMap, int[] actions, Ability absNow[], StatusHolder shNow) throws Exception {
+	static public class Pack implements Serializable {
+		private static final long serialVersionUID = -8052436421835761684L;
+		MyMatrix board;
+		Ability[] abs;
+		StatusHolder sh;
 
-		// TODO 木を壊す。
+		public Pack(MyMatrix board, Ability[] abs, StatusHolder sh) {
+			this.board = board;
+			this.abs = abs;
+			this.sh = sh;
+		}
+	}
 
-		MyMatrix boardNext = new MyMatrix(board);
+	public Pack Step(MyMatrix boardNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
+
+		MyMatrix boardNext = new MyMatrix(boardNow);
 
 		Ability[] absNext = new Ability[4];
 		for (int i = 0; i < 4; i++) {
 			absNext[i] = new Ability(absNow[i]);
 		}
+
+		boolean[][] bombExistingMap = new boolean[numField][numField];
+		for (EEE bbb : shNow.getBombEntry()) {
+			bombExistingMap[bbb.x][bbb.y] = true;
+		}
+
 		/////////////////////////////////////////////////////////////////////////////////////
 		// FlameCenterの時刻を進める。
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -48,12 +70,12 @@ public class FutureTrack {
 			BBMUtility.PrintFlame(boardNext, myFlameNext, fffNext.x, fffNext.y, fffNext.power, 1);
 		}
 
+		// 古いFlameCenterをレンダリングすると、フレーム終端が木だったのかが分からない。BoardNowとMyFlameNextの共通部分が今残っているFlameになる。その処理をする。
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
 				if (myFlameNext.data[x][y] == 1) {
 					if (boardNext.data[x][y] != Constant.Flames) {
-						System.out.println("おかしい");
-						throw new Exception("error");
+						myFlameNext.data[x][y] = 0;
 					}
 				} else {
 					if (boardNext.data[x][y] == Constant.Flames) {
@@ -86,7 +108,7 @@ public class FutureTrack {
 			} else if (action == 4) {
 				y2 += 1;
 			} else if (action == 5) {
-				if (bombMap[x2][y2] == null) {
+				if (bombExistingMap[x2][y2] == false) {
 					if (absNext[agentIndex].numBombHold > 0) {
 						// 爆弾を追加。
 						added.add(new BombEEE(eee.x, eee.y, agentID, 10, 0, absNext[agentIndex].strength));
@@ -192,7 +214,7 @@ public class FutureTrack {
 			}
 
 			// Bomb同士でクロスする場合。
-			boolean[] backBomb = new boolean[4];
+			boolean[] backBomb = new boolean[numBomb];
 			for (int bi = 0; bi < numBomb; bi++) {
 				for (int bj = bi + 1; bj < numBomb; bj++) {
 					EEE eee1Now = bombsNow[bi];
@@ -431,7 +453,22 @@ public class FutureTrack {
 			}
 		}
 
-		// TODO agentsNextの位置でアイテムがあったら、能力に反映させる処理が必要。
+		/////////////////////////////////////////////////////////////////////////////////////
+		// agentsNextの位置でアイテムがあったら、能力に反映させる。
+		/////////////////////////////////////////////////////////////////////////////////////
+		for (int ai = 0; ai < 4; ai++) {
+			if (absNow[ai].isAlive == false) continue;
+			EEE eeeNext = agentsNext[ai];
+			int type = (int) boardNow.data[eeeNext.x][eeeNext.y];
+			if (type == Constant.ExtraBomb) {
+				absNext[ai].numBombHold++;
+				absNext[ai].numMaxBomb++;
+			} else if (type == Constant.Kick) {
+				absNext[ai].kick = true;
+			} else if (type == Constant.IncrRange) {
+				absNext[ai].strength++;
+			}
+		}
 
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Flameの処理
@@ -441,23 +478,23 @@ public class FutureTrack {
 		for (int bi = 0; bi < numBomb; bi++) {
 			BombEEE bbbNext = bombsNext[bi];
 			if (bbbNext.life == 0) {
-				absNext[bbbNext.owner].numBombHold++;
+				absNext[bbbNext.owner - 10].numBombHold++;
 				FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
 				flameCenterNext.add(fff);
 				bombsNext[bi] = null;
+				BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
 				hasNewExplosions = true;
 			}
 		}
 
 		if (hasNewExplosions) {
-			hasNewExplosions = false;
 			while (true) {
+				hasNewExplosions = false;
 				for (int bi = 0; bi < numBomb; bi++) {
 					BombEEE bbbNext = bombsNext[bi];
 					if (bbbNext == null) continue;
 					if (myFlameNext.data[bbbNext.x][bbbNext.y] == 1) {
-						// TODO エージェントの所有爆弾数を増やす
-						absNext[bbbNext.owner].numBombHold++;
+						absNext[bbbNext.owner - 10].numBombHold++;
 						FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
 						flameCenterNext.add(fff);
 						bombsNext[bi] = null;
@@ -465,7 +502,6 @@ public class FutureTrack {
 						hasNewExplosions = true;
 					}
 				}
-
 				if (hasNewExplosions == false) break;
 			}
 		}
@@ -499,36 +535,96 @@ public class FutureTrack {
 			shNext.setBomb(bbbNext.x, bbbNext.y, bbbNext.owner, bbbNext.life, bbbNext.dir, bbbNext.power);
 		}
 
-		for (FlameCenterEEE fff : flameCenterNext) {
-			shNext.setFlameCenter(fff.x, fff.y, fff.life, fff.power);
+		for (FlameCenterEEE fffNext : flameCenterNext) {
+			shNext.setFlameCenter(fffNext.x, fffNext.y, fffNext.life, fffNext.power);
 		}
 
-		System.out.println(shNow);
-		System.out.println(shNext);
-	}
-
-	public void Compute(MyMatrix board, Node[][] bombMap, Ability abs[]) throws Exception {
-
-		StatusHolder shNow = new StatusHolder(numField);
-
-		// 時刻0の初期状態を求める。
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
-				int type = (int) board.data[x][y];
-				if (Constant.isAgent(type)) {
-					shNow.setAgent(x, y, type);
+				int type = (int) boardNext.data[x][y];
+				if (Constant.isAgent(type) || type == Constant.Bomb || type == Constant.Flames) {
+					boardNext.data[x][y] = Constant.Passage;
 				}
+			}
+		}
+
+		for (int i = 0; i < numBomb; i++) {
+			BombEEE bbbNext = bombsNext[i];
+			if (bbbNext != null) {
+				boardNext.data[bbbNext.x][bbbNext.y] = Constant.Bomb;
+			}
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			if (absNext[ai].isAlive) {
+				AgentEEE aaa = agentsNext[ai];
+				boardNext.data[aaa.x][aaa.y] = ai + 10;
 			}
 		}
 
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
-				Node node = bombMap[x][y];
-				if (node == null) continue;
-				if (node.type == Constant.Bomb) {
-					shNow.setBomb(x, y, node.owner, node.lifeBomb, node.moveDirection, node.power);
-				} else if (node.type == Constant.Flames) {
-					shNow.setFlameCenter(x, y, node.lifeFlameCenter, node.power);
+				if (myFlameNext.data[x][y] == 1) {
+					boardNext.data[x][y] = Constant.Flames;
+				}
+			}
+		}
+
+		// System.out.println(shNow);
+		// System.out.println(shNext);
+
+		return new Pack(boardNext, absNext, shNext);
+	}
+
+	static double timeTotal = 0;
+	static double counter = 0;
+	static int TakeLearningSampleCounter = 0;
+
+	static List<LearningData> learningDataList = new ArrayList<LearningData>();
+
+	public static class LearningData implements Serializable {
+		private static final long serialVersionUID = 379292266174819897L;
+		Pack pack;
+		double[] aliveCount;
+		double[] tryCount;
+		int firstAction;
+
+		public LearningData(Pack pack, double[] aliveCount, double[] tryCount, int firstAction) {
+			this.pack = pack;
+			this.aliveCount = aliveCount;
+			this.tryCount = tryCount;
+			this.firstAction = firstAction;
+		}
+	}
+
+	public int Compute(MyMatrix board, Node[][] bombMap, Ability abs[]) throws Exception {
+
+		//////////////////////////////////////////////////////////////////
+		// 時刻0の初期状態を求める。
+		//////////////////////////////////////////////////////////////////
+
+		MyMatrix boardNow = new MyMatrix(board);
+
+		StatusHolder shNow = new StatusHolder(numField);
+		{
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = (int) board.data[x][y];
+					if (Constant.isAgent(type)) {
+						shNow.setAgent(x, y, type);
+					}
+				}
+			}
+
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					Node node = bombMap[x][y];
+					if (node == null) continue;
+					if (node.type == Constant.Bomb) {
+						shNow.setBomb(x, y, node.owner, node.lifeBomb, node.moveDirection, node.power);
+					} else if (node.type == Constant.Flames) {
+						shNow.setFlameCenter(x, y, node.lifeFlameCenter, node.power);
+					}
 				}
 			}
 		}
@@ -538,10 +634,101 @@ public class FutureTrack {
 			absNow[i] = new Ability(abs[i]);
 		}
 
-		if (true) {
-			int[] actions = { 1, 2, 3, 5 };
-			Step(board, bombMap, actions, absNow, shNow);
+		//////////////////////////////////////////////////////////////////
+		// 長めにエージェントを動かして、長期の生存確率を計算し、予測モデルのためのデータとしてファイルに保存する。
+		//////////////////////////////////////////////////////////////////
+
+		if (TakeLearningSampleCounter % 10 == 0) {
+			Random rand = new Random();
+			int maxDepth = 50;
+			int numEpoch = 3000;
+			double decayRate = 0.99;
+
+			for (int firstAction = 0; firstAction < 6; firstAction++) {
+				double[] aliveCount = new double[4];
+				double[] tryCount = new double[4];
+
+				long timeStart = System.currentTimeMillis();
+				for (int frame = 0; frame < numEpoch; frame++) {
+					double[] points = new double[4];
+					double totalPoint = 0;
+					Pack pack = new Pack(boardNow, absNow, shNow);
+					for (int depth = 0; depth < maxDepth; depth++) {
+						int[] actions = { rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6) };
+						if (depth == 0) {
+							actions[3] = firstAction;
+						}
+						pack = Step(pack.board, pack.abs, pack.sh, actions);
+
+						double point = Math.pow(decayRate, depth);
+						totalPoint += point;
+						for (int i = 0; i < 4; i++) {
+							if (abs[i].isAlive) {
+								if (pack.abs[i].isAlive) {
+									points[i] += point;
+								}
+							}
+						}
+
+						// 出力する。
+						if (false) {
+							MyMatrix life = new MyMatrix(numField, numField);
+							MyMatrix power = new MyMatrix(numField, numField);
+							for (BombEEE bbb : pack.sh.getBombEntry()) {
+								life.data[bbb.x][bbb.y] = bbb.life;
+								power.data[bbb.x][bbb.y] = bbb.power;
+							}
+							System.out.println("/////////////////////////////////////////////////////");
+							System.out.println("// " + depth);
+							System.out.println("/////////////////////////////////////////////////////");
+							BBMUtility.printBoard2(pack.board, life, power);
+						}
+					}
+					// エージェントが生きてるか死んでるか調べる。
+					for (int i = 0; i < 4; i++) {
+						if (abs[i].isAlive) {
+							tryCount[i] += 1;
+							aliveCount[i] += points[i] / totalPoint;
+						}
+					}
+				}
+				long timeEnd = System.currentTimeMillis();
+				double timeDel = (timeEnd - timeStart) * 0.001;
+				timeTotal += timeDel;
+				System.out.println("timeDel = " + timeDel);
+
+				for (int i = 0; i < 4; i++) {
+					double rateAlive = 1.0 * aliveCount[i] / tryCount[i];
+					System.out.println("firstAction=" + firstAction + ", i=" + i + ", rateAlive=" + rateAlive);
+				}
+
+				Pack pack = new Pack(boardNow, absNow, shNow);
+				LearningData ld = new LearningData(pack, aliveCount, tryCount, firstAction);
+				learningDataList.add(ld);
+			}
+
+			// ファイルに保存する。
+			{
+				if (learningDataList.size() > 1000) {
+					String filename;
+					for (int i = 0;; i++) {
+						String filename2 = String.format("data/ld_%05d.dat", i);
+						if (new File(filename2).exists() == false) {
+							filename = filename2;
+							break;
+						}
+					}
+					ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(filename)));
+					oos.writeObject(learningDataList);
+					oos.flush();
+					oos.close();
+					learningDataList.clear();
+				}
+			}
 		}
+		TakeLearningSampleCounter++;
+
+		return -1;
 	}
 
 }

@@ -1,15 +1,17 @@
 package com.ibm.trl.BBM.mains;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class StatusHolder {
+public class StatusHolder implements Serializable {
+	private static final long serialVersionUID = -1727998598195786413L;
 	int numField;
-
 	int numParam = 100;
 
-	static public class EEE {
+	static public class EEE implements Serializable {
+		private static final long serialVersionUID = -2353862178915635651L;
 		int x;
 		int y;
 
@@ -30,8 +32,7 @@ public class StatusHolder {
 	}
 
 	static public class AgentEEE extends EEE {
-		int x;
-		int y;
+		private static final long serialVersionUID = 4716124278872758663L;
 		int agentID;
 
 		public AgentEEE(int x, int y, int agentID) {
@@ -52,8 +53,7 @@ public class StatusHolder {
 	}
 
 	static public class BombEEE extends EEE {
-		int x;
-		int y;
+		private static final long serialVersionUID = -1626810300949537606L;
 		int owner;
 		int life;
 		int dir;
@@ -83,8 +83,7 @@ public class StatusHolder {
 	}
 
 	static public class FlameCenterEEE extends EEE {
-		int x;
-		int y;
+		private static final long serialVersionUID = 4556260520750917456L;
 		int life;
 		int power;
 
@@ -201,7 +200,7 @@ public class StatusHolder {
 
 				String[] as = new String[4];
 				for (int i = 0; i < 4; i++) {
-					if (this.isAgentExist(i + 10, x, y)) {
+					if (this.isAgentExist(x, y, i + 10)) {
 						as[i] = "œ";
 					} else {
 						as[i] = "›";
@@ -233,7 +232,7 @@ public class StatusHolder {
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
 					for (int moveDirection = 0; moveDirection <= 5; moveDirection++) {
-						if (this.isBombExist(life, moveDirection, x, y)) {
+						if (this.isBombExist(x, y, life, moveDirection)) {
 							exist = true;
 						}
 					}
@@ -257,8 +256,8 @@ public class StatusHolder {
 
 					String[] as = new String[6];
 					for (int moveDirection = 0; moveDirection <= 5; moveDirection++) {
-						if (this.isBombExist(life, moveDirection, x, y)) {
-							int power = this.getBombPower(life, moveDirection, x, y);
+						if (this.isBombExist(x, y, life, moveDirection)) {
+							int power = this.getBombPower(x, y, life, moveDirection);
 							as[moveDirection] = String.format("%d", power);
 							if (moveDirection == 0) as[5] = as[0];
 							if (moveDirection == 5) as[0] = as[5];
@@ -302,8 +301,8 @@ public class StatusHolder {
 
 				String[] as = new String[4];
 				for (int life = 3; life >= 1; life--) {
-					if (this.isFlameCenterExist(life, x, y)) {
-						int power = this.getFlameCenterPower(life, x, y);
+					if (this.isFlameCenterExist(x, y, life)) {
+						int power = this.getFlameCenterPower(x, y, life);
 						as[life] = String.format("%d", power);
 					} else {
 						as[life] = " ";

@@ -9,11 +9,11 @@ import java.util.TreeSet;
 import ibm.ANACONDA.Core.SortValue;
 import ibm.ANACONDA.Core.SortValueComparator;
 
-public class BT {
+public class BinaryTree {
 
 	int depth = 0;
 	int numd;
-	BT parent;
+	BinaryTree parent;
 
 	double[] ysumRight;
 	double[] numSampleRight;
@@ -29,9 +29,9 @@ public class BT {
 	List<Integer> dims = new ArrayList<Integer>();
 	double aveL, aveR;
 	boolean[] rightFlag;
-	BT[] child;
+	BinaryTree[] child;
 
-	public BT(int depth, int numd, BT parent) {
+	public BinaryTree(int depth, int numd, BinaryTree parent) {
 		this.depth = depth;
 		this.numd = numd;
 		this.parent = parent;
@@ -272,9 +272,9 @@ public class BT {
 					for (int d : dims) {
 						rightFlag[d] = true;
 					}
-					child = new BT[2];
-					child[0] = new BT(depth + 1, numd, this);
-					child[1] = new BT(depth + 1, numd, this);
+					child = new BinaryTree[2];
+					child[0] = new BinaryTree(depth + 1, numd, this);
+					child[1] = new BinaryTree(depth + 1, numd, this);
 				}
 			}
 		} else {

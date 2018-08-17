@@ -1,5 +1,6 @@
 package com.ibm.trl.BBM.mains;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +25,8 @@ public class Agent {
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
 	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
 
-	static public class Ability {
+	static public class Ability implements Serializable {
+		private static final long serialVersionUID = 372642396371084459L;
 		public boolean isAlive = true;
 		public int numMaxBomb = 1;
 		public int strength = 2;
@@ -54,7 +56,7 @@ public class Agent {
 	Ability[] abs = new Ability[4];
 
 	static int[] indexList = new int[numC * numC * 36 + 1];
-	static BT bt;
+	static BinaryTree bt;
 	static int frameCounter = 0;
 
 	static {
@@ -70,7 +72,7 @@ public class Agent {
 			sig.AddInput(sig2);
 			sig2.AddInput(bottom);
 
-			bt = new BT(0, numd, null);
+			bt = new BinaryTree(0, numd, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -762,8 +764,9 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// TODO
 		if (true) {
-			FutureTrack ft = new FutureTrack(numField);
-			ft.Compute(board, bombMap, abs);
+			ForwardModel ft = new ForwardModel(numField);
+			int action = ft.Compute(board, bombMap, abs);
+			if (action != -1) return action;
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -771,9 +774,7 @@ public class Agent {
 		// Ç∆ÇËÇ†Ç¶Ç∏ó\ë™ÉÇÉfÉãÇçÏÇ¡ÇƒÇ›ÇÈÅB
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (true)
-
-		{
+		if (true) {
 			int center = numC / 2;
 			int step = 1;
 
@@ -945,7 +946,7 @@ public class Agent {
 			bombMapOld.removeLast();
 		}
 
-		return 1;
+		return -1;
 	}
 
 	double Gtotal = 0;
