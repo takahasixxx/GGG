@@ -9,7 +9,7 @@ public class BBMUtility {
 	static public int numWoodBrakable(int numField, MyMatrix board, int x, int y, int strength) {
 		int num = 0;
 		for (int dir = 1; dir <= 4; dir++) {
-			for (int w = 1; w <= strength; w++) {
+			for (int w = 1; w < strength; w++) {
 				int x2 = x, y2 = y;
 				if (dir == 1) {
 					x2 = x - w;
@@ -41,7 +41,9 @@ public class BBMUtility {
 		return num;
 	}
 	
-	static public boolean isSurrounded(int numField, MyMatrix board, int x, int y) {
+	static public int numSurrounded(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+
 		int num = 0;
 		if (x > 0) {
 			int type = (int) board.data[x - 1][y];
@@ -71,10 +73,274 @@ public class BBMUtility {
 			num++;
 		}
 
-		if (num == 4) return true;
-		else return false;
+		return num;
+	}
+	
+	static public boolean isSurroundedAndDeath(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+
+		boolean[] open = new boolean[5];
+
+		for (int dir = 1; dir <= 4; dir++) {
+			for (int w = 0;; w++) {
+				int x2 = x;
+				int y2 = y;
+				if (dir == 1) {
+					x2 -= w;
+					if (x2 < 0) break;
+				} else if (dir == 2) {
+					x2 += w;
+					if (x2 >= numField) break;
+				} else if (dir == 3) {
+					y2 -= w;
+					if (y2 < 0) break;
+				} else if (dir == 4) {
+					y2 += w;
+					if (y2 >= numField) break;
+				}
+
+				if (w > 0) {
+					int type2 = (int) board.data[x2][y2];
+					if (type2 == Constant.Rigid || type2 == Constant.Wood || type2 == Constant.Bomb || type2 == Constant.Flames || Constant.isAgent(type2)) {
+						break;
+					}
+				}
+
+				if (dir == 1 || dir == 2) {
+					int x3 = x2;
+					int y3 = y2 - 1;
+					if (y3 < 0) {
+					} else {
+						int type3 = (int) board.data[x3][y3];
+						if (type3 == Constant.Rigid || type3 == Constant.Wood || type3 == Constant.Bomb || type3 == Constant.Flames || Constant.isAgent(type3)) {
+						} else {
+							open[dir] = true;
+							break;
+						}
+					}
+
+					int x4 = x2;
+					int y4 = y2 + 1;
+					if (y4 >= numField) {
+					} else {
+						int type4 = (int) board.data[x4][y4];
+						if (type4 == Constant.Rigid || type4 == Constant.Wood || type4 == Constant.Bomb || type4 == Constant.Flames || Constant.isAgent(type4)) {
+						} else {
+							open[dir] = true;
+							break;
+						}
+					}
+				} else {
+					int x3 = x2 - 1;
+					int y3 = y2;
+					if (x3 < 0) {
+					} else {
+						int type3 = (int) board.data[x3][y3];
+						if (type3 == Constant.Rigid || type3 == Constant.Wood || type3 == Constant.Bomb || type3 == Constant.Flames || Constant.isAgent(type3)) {
+						} else {
+							open[dir] = true;
+							break;
+						}
+					}
+
+					int x4 = x2 + 1;
+					int y4 = y2;
+					if (x4 >= numField) {
+					} else {
+						int type4 = (int) board.data[x4][y4];
+						if (type4 == Constant.Rigid || type4 == Constant.Wood || type4 == Constant.Bomb || type4 == Constant.Flames || Constant.isAgent(type4)) {
+						} else {
+							open[dir] = true;
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		if (open[1] == false && open[2] == false) return true;
+		if (open[3] == false && open[4] == false) return true;
+		return false;
 	}
 
+	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep) throws Exception {
+		int numField = board.numd;
+
+		boolean[][] blocked = new boolean[numField][numField];
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				int type = (int) board.data[x][y];
+				if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Flames || type == Constant.Bomb) {
+					blocked[x][y] = true;
+				}
+			}
+		}
+
+		int[][] currentPositions = new int[122][2];
+		int[][] nextPositions = new int[122][2];
+
+		double[][] dis = new double[numField][numField];
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				dis[x][y] = Double.MAX_VALUE;
+			}
+		}
+		dis[sx][sy] = 0;
+
+		currentPositions[0][0] = sx;
+		currentPositions[0][1] = sy;
+		currentPositions[1][0] = -1;
+
+		int step = 0;
+		while (true) {
+			if (step >= maxStep) break;
+
+			int counter = 0;
+			for (int[] targetPos : currentPositions) {
+				if (targetPos[0] == -1) break;
+				int x = targetPos[0];
+				int y = targetPos[1];
+				if (x > 0) {
+					int x2 = x - 1;
+					int y2 = y;
+					if (blocked[x2][y2] == false) {
+						double temp1 = dis[x][y] + 1;
+						double temp2 = dis[x2][y2];
+						if (temp1 < temp2) {
+							dis[x2][y2] = temp1;
+							nextPositions[counter][0] = x2;
+							nextPositions[counter][1] = y2;
+							counter++;
+						}
+					}
+				}
+				if (x < numField - 1) {
+					int x2 = x + 1;
+					int y2 = y;
+					if (blocked[x2][y2] == false) {
+						double temp1 = dis[x][y] + 1;
+						double temp2 = dis[x2][y2];
+						if (temp1 < temp2) {
+							dis[x2][y2] = temp1;
+							nextPositions[counter][0] = x2;
+							nextPositions[counter][1] = y2;
+							counter++;
+						}
+					}
+				}
+				if (y > 0) {
+					int x2 = x;
+					int y2 = y - 1;
+					if (blocked[x2][y2] == false) {
+						double temp1 = dis[x][y] + 1;
+						double temp2 = dis[x2][y2];
+						if (temp1 < temp2) {
+							dis[x2][y2] = temp1;
+							nextPositions[counter][0] = x2;
+							nextPositions[counter][1] = y2;
+							counter++;
+						}
+					}
+				}
+				if (y < numField - 1) {
+					int x2 = x;
+					int y2 = y + 1;
+					if (blocked[x2][y2] == false) {
+						double temp1 = dis[x][y] + 1;
+						double temp2 = dis[x2][y2];
+						if (temp1 < temp2) {
+							dis[x2][y2] = temp1;
+							nextPositions[counter][0] = x2;
+							nextPositions[counter][1] = y2;
+							counter++;
+						}
+					}
+				}
+			}
+
+			nextPositions[counter][0] = -1;
+			counter++;
+
+			if (counter == 1) break;
+
+			int[][] temp = currentPositions;
+			currentPositions = nextPositions;
+			nextPositions = temp;
+
+			step++;
+		}
+
+		return new MyMatrix(dis);
+	}
+	
+	static public int ComputeFirstDirection(MyMatrix dis, int xNow, int yNow) {
+		int numField = dis.numd;
+
+		int disNow = (int) dis.data[xNow][yNow];
+
+		int dir = 0;
+		while (true) {
+			if (disNow == 0) {
+				break;
+			}
+
+			if (xNow > 0) {
+				int xNew = xNow - 1;
+				int yNew = yNow;
+				int temp = (int) dis.data[xNew][yNew];
+				if (temp == disNow - 1) {
+					disNow = temp;
+					xNow = xNew;
+					yNow = yNew;
+					dir = 2;
+					continue;
+				}
+			}
+
+			if (xNow < numField - 1) {
+				int xNew = xNow + 1;
+				int yNew = yNow;
+				int temp = (int) dis.data[xNew][yNew];
+				if (temp == disNow - 1) {
+					disNow = temp;
+					xNow = xNew;
+					yNow = yNew;
+					dir = 1;
+					continue;
+				}
+			}
+
+			if (yNow > 0) {
+				int xNew = xNow;
+				int yNew = yNow - 1;
+				int temp = (int) dis.data[xNew][yNew];
+				if (temp == disNow - 1) {
+					disNow = temp;
+					xNow = xNew;
+					yNow = yNew;
+					dir = 4;
+					continue;
+				}
+			}
+
+			if (yNow < numField - 1) {
+				int xNew = xNow;
+				int yNew = yNow + 1;
+				int temp = (int) dis.data[xNew][yNew];
+				if (temp == disNow - 1) {
+					disNow = temp;
+					xNow = xNew;
+					yNow = yNew;
+					dir = 3;
+					continue;
+				}
+			}
+		}
+
+		return dir;
+	}
+
+	
 	
 	static public void printBoard(MyMatrix board, MyMatrix life) {
 		int numt = board.numt;

@@ -513,17 +513,17 @@ public class Agent {
 		// 相手がアイテムをとったかどうかを調べる。
 		{
 			MyMatrix board_pre = boardOld.get(0);
-			for (int i = 0; i < numField; i++) {
-				for (int j = 0; j < numField; j++) {
-					if (board_pre.data[i][j] == 6 && board.data[i][j] >= 10 && board.data[i][j] <= 13) {
-						int id = (int) (board.data[i][j] - 10);
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					if (board_pre.data[x][y] == 6 && board.data[x][y] >= 10 && board.data[x][y] <= 13) {
+						int id = (int) (board.data[x][y] - 10);
 						abs[id].numMaxBomb++;
 						abs[id].numBombHold++;
-					} else if (board_pre.data[i][j] == 7 && board.data[i][j] >= 10 && board.data[i][j] <= 13) {
-						int id = (int) (board.data[i][j] - 10);
+					} else if (board_pre.data[x][y] == 7 && board.data[x][y] >= 10 && board.data[x][y] <= 13) {
+						int id = (int) (board.data[x][y] - 10);
 						abs[id].strength++;
-					} else if (board_pre.data[i][j] == 8 && board.data[i][j] >= 10 && board.data[i][j] <= 13) {
-						int id = (int) (board.data[i][j] - 10);
+					} else if (board_pre.data[x][y] == 8 && board.data[x][y] >= 10 && board.data[x][y] <= 13) {
+						int id = (int) (board.data[x][y] - 10);
 						abs[id].kick = true;
 					}
 				}
@@ -775,6 +775,8 @@ public class Agent {
 			// actionEvaluator.Sample(board, bombMap, abs);
 
 			action = actionEvaluator.ComputeOptimalAction(me, board, bombMap, abs);
+			MyMatrix board_pre = boardOld.get(0);
+			actionEvaluator.RecordKPI(me, board, board_pre);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
