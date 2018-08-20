@@ -473,8 +473,6 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		// FlameÇÃèàóù
 		/////////////////////////////////////////////////////////////////////////////////////
-		boolean hasNewExplosions = false;
-
 		for (int bi = 0; bi < numBomb; bi++) {
 			BombEEE bbbNext = bombsNext[bi];
 			if (bbbNext.life == 0) {
@@ -483,27 +481,24 @@ public class ForwardModel {
 				flameCenterNext.add(fff);
 				bombsNext[bi] = null;
 				BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
-				hasNewExplosions = true;
 			}
 		}
 
-		if (hasNewExplosions) {
-			while (true) {
-				hasNewExplosions = false;
-				for (int bi = 0; bi < numBomb; bi++) {
-					BombEEE bbbNext = bombsNext[bi];
-					if (bbbNext == null) continue;
-					if (myFlameNext.data[bbbNext.x][bbbNext.y] == 1) {
-						absNext[bbbNext.owner - 10].numBombHold++;
-						FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
-						flameCenterNext.add(fff);
-						bombsNext[bi] = null;
-						BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
-						hasNewExplosions = true;
-					}
+		while (true) {
+			boolean hasNewExplosions = false;
+			for (int bi = 0; bi < numBomb; bi++) {
+				BombEEE bbbNext = bombsNext[bi];
+				if (bbbNext == null) continue;
+				if (myFlameNext.data[bbbNext.x][bbbNext.y] == 1) {
+					absNext[bbbNext.owner - 10].numBombHold++;
+					FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
+					flameCenterNext.add(fff);
+					bombsNext[bi] = null;
+					BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
+					hasNewExplosions = true;
 				}
-				if (hasNewExplosions == false) break;
 			}
+			if (hasNewExplosions == false) break;
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -600,7 +595,7 @@ public class ForwardModel {
 	public int Compute(MyMatrix board, Node[][] bombMap, Ability abs[]) throws Exception {
 
 		//////////////////////////////////////////////////////////////////
-		// éûçè0ÇÃèâä˙èÛë‘ÇãÅÇﬂÇÈÅB
+		// èâä˙èÛë‘ÇçÏÇÈÅB
 		//////////////////////////////////////////////////////////////////
 
 		MyMatrix boardNow = new MyMatrix(board);

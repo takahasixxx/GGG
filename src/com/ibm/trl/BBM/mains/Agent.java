@@ -59,6 +59,8 @@ public class Agent {
 	static BinaryTree bt;
 	static int frameCounter = 0;
 
+	static ActionEvaluator actionEvaluator = new ActionEvaluator(numField);
+
 	static {
 		// ÉZÉãÇÃó\ë™äÌÇÃèÄîı
 		try {
@@ -89,8 +91,9 @@ public class Agent {
 		System.out.println("init_agent");
 	}
 
-	public void episode_end(int reward) {
+	public void episode_end(int reward) throws Exception {
 		System.out.println("episode_end, reward = " + reward);
+		actionEvaluator.FinishOneEpoch(me, reward);
 	}
 
 	static public class Node {
@@ -763,10 +766,15 @@ public class Agent {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// TODO
+		int action = -1;
 		if (true) {
-			ForwardModel ft = new ForwardModel(numField);
-			int action = ft.Compute(board, bombMap, abs);
-			if (action != -1) return action;
+			// ForwardModel ft = new ForwardModel(numField);
+			// int action = ft.Compute(board, bombMap, abs);
+			// if (action != -1) return action;
+
+			// actionEvaluator.Sample(board, bombMap, abs);
+
+			action = actionEvaluator.ComputeOptimalAction(me, board, bombMap, abs);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -774,7 +782,7 @@ public class Agent {
 		// Ç∆ÇËÇ†Ç¶Ç∏ó\ë™ÉÇÉfÉãÇçÏÇ¡ÇƒÇ›ÇÈÅB
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (true) {
+		if (false) {
 			int center = numC / 2;
 			int step = 1;
 
@@ -946,7 +954,7 @@ public class Agent {
 			bombMapOld.removeLast();
 		}
 
-		return -1;
+		return action;
 	}
 
 	double Gtotal = 0;

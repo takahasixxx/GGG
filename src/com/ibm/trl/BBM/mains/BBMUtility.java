@@ -6,6 +6,76 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class BBMUtility {
 
+	static public int numWoodBrakable(int numField, MyMatrix board, int x, int y, int strength) {
+		int num = 0;
+		for (int dir = 1; dir <= 4; dir++) {
+			for (int w = 1; w <= strength; w++) {
+				int x2 = x, y2 = y;
+				if (dir == 1) {
+					x2 = x - w;
+					if (x2 < 0) break;
+					y2 = y;
+				} else if (dir == 2) {
+					x2 = x + w;
+					if (x2 >= numField) break;
+					y2 = y;
+				} else if (dir == 3) {
+					y2 = y - w;
+					if (y2 < 0) break;
+					x2 = x;
+				} else if (dir == 4) {
+					y2 = y + w;
+					if (y2 >= numField) break;
+					x2 = x;
+				}
+
+				int type = (int) board.data[x2][y2];
+				if (type == Constant.Rigid) break;
+
+				if (type == Constant.Wood) {
+					num++;
+					break;
+				}
+			}
+		}
+		return num;
+	}
+	
+	static public boolean isSurrounded(int numField, MyMatrix board, int x, int y) {
+		int num = 0;
+		if (x > 0) {
+			int type = (int) board.data[x - 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+		} else {
+			num++;
+		}
+
+		if (x < numField - 1) {
+			int type = (int) board.data[x + 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+		} else {
+			num++;
+		}
+
+		if (y > 0) {
+			int type = (int) board.data[x][y - 1];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+		} else {
+			num++;
+		}
+
+		if (y < numField - 1) {
+			int type = (int) board.data[x][y + 1];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+		} else {
+			num++;
+		}
+
+		if (num == 4) return true;
+		else return false;
+	}
+
+	
 	static public void printBoard(MyMatrix board, MyMatrix life) {
 		int numt = board.numt;
 		int numd = board.numd;
