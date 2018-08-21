@@ -477,7 +477,7 @@ public class BBMUtility {
 					print3 = "  «  ";
 				} else if (type == Constant.Kick) {
 					print1 = "      ";
-					print2 = "  R  ";
+					print2 = "--R--";
 					print3 = "      ";
 				} else if (type == Constant.AgentDummy) {
 					print1 = "      ";
@@ -485,41 +485,41 @@ public class BBMUtility {
 					print3 = "      ";
 				} else if (type == Constant.Agent0) {
 					if (lll == 0) {
-						print1 = "  ‡@  ";
+						print1 = "i‚Pj";
 						print2 = "^b_";
 						print3 = "  ƒn  ";
 					} else {
-						print1 = "  ‡@  ";
+						print1 = "i‚Pj";
 						print2 = "^b_";
 						print3 = "  ƒn—";
 					}
 				} else if (type == Constant.Agent1) {
 					if (lll == 0) {
-						print1 = "  ‡A  ";
+						print1 = "i‚Qj";
 						print2 = "^b_";
 						print3 = "  ƒn  ";
 					} else {
-						print1 = "  ‡A  ";
+						print1 = "i‚Qj";
 						print2 = "^b_";
 						print3 = "  ƒn—";
 					}
 				} else if (type == Constant.Agent2) {
 					if (lll == 0) {
-						print1 = "  ‡B  ";
+						print1 = "i‚Rj";
 						print2 = "^b_";
 						print3 = "  ƒn  ";
 					} else {
-						print1 = "  ‡B  ";
+						print1 = "i‚Rj";
 						print2 = "^b_";
 						print3 = "  ƒn—";
 					}
 				} else if (type == Constant.Agent3) {
 					if (lll == 0) {
-						print1 = "  ‡C  ";
+						print1 = "i‚Sj";
 						print2 = "^b_";
 						print3 = "  ƒn  ";
 					} else {
-						print1 = "  ‡C  ";
+						print1 = "i‚Sj";
 						print2 = "^b_";
 						print3 = "  ƒn—";
 					}

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project basedir="." default="create_package" name="Create Runnable Jar for Project ANACONDAToolsGUI with Jar-in-Jar Loader">
+
+
+
+	<!--
+	==================================================
+	==================================================
+	準備用に空のディレクトリを作り直す。
+	==================================================
+	==================================================
+	-->
+
+
+	<target name="prepare_dir">
+		<delete dir="${packageDirectory}" />
+		<mkdir dir="${packageDirectory}" />
+	</target>
+
+
+
+
+
+	<!--
+	==================================================
+	==================================================
+	JARを作り直す
+	==================================================
+	==================================================
+	-->
+
+
+
+	<target name="create_body_jar" depends="prepare_dir">
+		<javac destdir="${project.ANACONDA}/bin" srcdir="${project.ANACONDA}/src" includeantruntime="false" />
+		<javac destdir="${project.this}/bin" srcdir="${project.this}/src" includeantruntime="false" />
+
+		<jar destfile="${packageDirectory}/${jarFilename}">
+			<manifest>
+				<attribute name="Main-Class" value="com.ibm.trl.BBM.mains.Main" />
+				<attribute name="Class-Path" value="." />
+			</manifest>
+			<fileset dir="${project.this}/bin" />
+			<fileset dir="${project.ANACONDA}/bin" />
+			<zipgroupfileset dir="${project.this}/lib" includes="*.jar" />
+		</jar>
+	</target>
+
+
+
+
+
+
+
+
+	<!--
+	==================================================
+	==================================================
+	完成したパッケージをサーバー上にコピーして、実行する。
+	==================================================
+	==================================================
+	-->
+
+	<target name="create_package" depends="create_body_jar">
+		<scp todir="${serverUserName}@${serverIP}:${serverDirectory}" trust="true" keyfile="${serverKeyFile}" passphrase="${serverPassword}">
+			<fileset dir="${packageDirectory}">
+				<include name="${jarFilename}" />
+			</fileset>
+		</scp>
+
+		<sshexec command="cd ${serverDirectory}; ${serverDirectory}/${serverRunFile}" host="${serverIP}" username="${serverUserName}" keyfile="${serverKeyFile}" passphrase="${serverPassword}" trust="true" />
+	</target>
+
+
+
+</project>
+
