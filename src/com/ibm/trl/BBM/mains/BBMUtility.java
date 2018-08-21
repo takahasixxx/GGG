@@ -40,7 +40,34 @@ public class BBMUtility {
 		}
 		return num;
 	}
-	
+
+	static public int numAgent(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+
+		int num = 0;
+		if (x > 0) {
+			int type = (int) board.data[x - 1][y];
+			if (Constant.isAgent(type)) num++;
+		}
+
+		if (x < numField - 1) {
+			int type = (int) board.data[x + 1][y];
+			if (Constant.isAgent(type)) num++;
+		}
+
+		if (y > 0) {
+			int type = (int) board.data[x][y - 1];
+			if (Constant.isAgent(type)) num++;
+		}
+
+		if (y < numField - 1) {
+			int type = (int) board.data[x][y + 1];
+			if (Constant.isAgent(type)) num++;
+		}
+
+		return num;
+	}
+
 	static public int numSurrounded(MyMatrix board, int x, int y) {
 		int numField = board.numd;
 
@@ -75,7 +102,7 @@ public class BBMUtility {
 
 		return num;
 	}
-	
+
 	static public boolean isSurroundedAndDeath(MyMatrix board, int x, int y) {
 		int numField = board.numd;
 
@@ -170,7 +197,7 @@ public class BBMUtility {
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
 				int type = (int) board.data[x][y];
-				if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Flames || type == Constant.Bomb) {
+				if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Flames || type == Constant.Bomb || Constant.isAgent(type)) {
 					blocked[x][y] = true;
 				}
 			}
@@ -272,7 +299,7 @@ public class BBMUtility {
 
 		return new MyMatrix(dis);
 	}
-	
+
 	static public int ComputeFirstDirection(MyMatrix dis, int xNow, int yNow) {
 		int numField = dis.numd;
 
@@ -340,8 +367,6 @@ public class BBMUtility {
 		return dir;
 	}
 
-	
-	
 	static public void printBoard(MyMatrix board, MyMatrix life) {
 		int numt = board.numt;
 		int numd = board.numd;

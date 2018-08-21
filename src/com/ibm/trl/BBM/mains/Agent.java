@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.NN.BottomCell;
 import com.ibm.trl.NN.SigmoidCell;
 import com.ibm.trl.NN.TopCell;
@@ -14,16 +15,37 @@ import com.ibm.trl.NN.TopCell;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class Agent {
-	int me;
 	static int numField = 11;
-	static int numC = 21;
-
 	static int numPast = 20;
+	int me;
 
 	LinkedList<MyMatrix> boardOld = new LinkedList<MyMatrix>();
 	LinkedList<MyMatrix> powerOld = new LinkedList<MyMatrix>();
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
 	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
+	Ability[] abs = new Ability[4];
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	static int numC = 21;
+	static int[] indexList = new int[numC * numC * 36 + 1];
+	static BinaryTree bt;
+	static int frameCounter = 0;
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	static ActionEvaluator actionEvaluator = new ActionEvaluator(numField);
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	OptimalActionFinder oaf = new OptimalActionFinder();
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	static public class Ability implements Serializable {
 		private static final long serialVersionUID = 372642396371084459L;
@@ -53,14 +75,6 @@ public class Agent {
 		}
 	}
 
-	Ability[] abs = new Ability[4];
-
-	static int[] indexList = new int[numC * numC * 36 + 1];
-	static BinaryTree bt;
-	static int frameCounter = 0;
-
-	static ActionEvaluator actionEvaluator = new ActionEvaluator(numField);
-
 	static {
 		// セルの予測器の準備
 		try {
@@ -75,6 +89,7 @@ public class Agent {
 			sig2.AddInput(bottom);
 
 			bt = new BinaryTree(0, numd, null);
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -85,6 +100,7 @@ public class Agent {
 		for (int i = 0; i < 4; i++) {
 			abs[i] = new Ability();
 		}
+
 	}
 
 	public void init_agent() {
@@ -652,11 +668,13 @@ public class Agent {
 				}
 			}
 
-			System.out.println("#########################################");
-			System.out.println("nodePre : " + nodesPre);
-			System.out.println("nodeNow : " + nodesNow);
-			System.out.println("#########################################");
-			System.out.println("#########################################");
+			if (false) {
+				System.out.println("#########################################");
+				System.out.println("nodePre : " + nodesPre);
+				System.out.println("nodeNow : " + nodesNow);
+				System.out.println("#########################################");
+				System.out.println("#########################################");
+			}
 			NodeMatchBest best = new NodeMatchBest();
 			List<Node> nodePairPre_local = new ArrayList<Node>();
 			List<Node> nodePairNow_local = new ArrayList<Node>();
@@ -744,14 +762,16 @@ public class Agent {
 				}
 			}
 
-			// TODO bombMapを出力してみる。
-			BBMUtility.printBombMap(board, bombMap);
+			if (false) {
+				// TODO bombMapを出力してみる。
+				BBMUtility.printBombMap(board, bombMap);
 
-			// TODO 出力してみる。
-			for (int i = 0; i < 4; i++) {
-				Ability a = abs[i];
-				String line = String.format("%d, %d/%d", i + 1, a.numBombHold, a.numMaxBomb);
-				System.out.println(line);
+				// TODO 出力してみる。
+				for (int i = 0; i < 4; i++) {
+					Ability a = abs[i];
+					String line = String.format("%d, %d/%d", i + 1, a.numBombHold, a.numMaxBomb);
+					System.out.println(line);
+				}
 			}
 		}
 
@@ -767,7 +787,7 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// TODO
 		int action = -1;
-		if (true) {
+		if (false) {
 			// ForwardModel ft = new ForwardModel(numField);
 			// int action = ft.Compute(board, bombMap, abs);
 			// if (action != -1) return action;
@@ -777,6 +797,42 @@ public class Agent {
 			action = actionEvaluator.ComputeOptimalAction(me, board, bombMap, abs);
 			MyMatrix board_pre = boardOld.get(0);
 			actionEvaluator.RecordKPI(me, board, board_pre);
+		}
+
+		if (true) {
+			StatusHolder sh = new StatusHolder(numField);
+			{
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = (int) board.data[x][y];
+						if (Constant.isAgent(type)) {
+							sh.setAgent(x, y, type);
+						}
+					}
+				}
+
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						Node node = bombMap[x][y];
+						if (node == null) continue;
+						if (node.type == Constant.Bomb) {
+							sh.setBomb(x, y, node.owner, node.lifeBomb, node.moveDirection, node.power);
+						} else if (node.type == Constant.Flames) {
+							sh.setFlameCenter(x, y, node.lifeFlameCenter, node.power);
+						}
+					}
+				}
+			}
+
+			Pack pack = new Pack(board, abs, sh);
+
+			SafetyScoreEvaluator.set(pack, me);
+			Thread.sleep(95);
+			double[][] safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
+			int tryCounter = SafetyScoreEvaluator.getTryCounter();
+			action = oaf.findOptimalAction(pack, me, safetyScore);
+			SafetyScoreEvaluator.set(null, -1);
+			System.out.println("tryCounter = " + tryCounter);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
