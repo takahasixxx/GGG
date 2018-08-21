@@ -5,7 +5,7 @@ import java.util.Random;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
-import com.ibm.trl.BBM.mains.Agent.Node;
+import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 

@@ -1,6 +1,6 @@
 package com.ibm.trl.BBM.mains;
 
-import com.ibm.trl.BBM.mains.Agent.Node;
+import com.ibm.trl.BBM.mains.BombTracker.Node;
 
 import ibm.ANACONDA.Core.MyMatrix;
 

@@ -6,13 +6,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import ibm.ANACONDA.Core.MyMatrix;
 import ibm.ANACONDA.Core.SortValue;
 import ibm.ANACONDA.Core.SortValueComparator;
 
 public class BinaryTree {
+	static int numField = GlobalParameter.numField;
 
 	int depth = 0;
-	int numd;
 	BinaryTree parent;
 
 	double[] ysumRight;
@@ -31,9 +32,8 @@ public class BinaryTree {
 	boolean[] rightFlag;
 	BinaryTree[] child;
 
-	public BinaryTree(int depth, int numd, BinaryTree parent) {
+	public BinaryTree(int depth, BinaryTree parent) {
 		this.depth = depth;
-		this.numd = numd;
 		this.parent = parent;
 		ysumRight = new double[numd];
 		numSampleRight = new double[numd];
@@ -42,6 +42,166 @@ public class BinaryTree {
 			smcounter = new int[numd][numd];
 			fmcounter = new int[numd];
 		}
+	}
+
+	static int numC = 21;
+	static int numd = numC * numC * 36;
+	static int[] indexList = new int[numC * numC * 36 + 1];
+	static int frameCounter = 0;
+
+	public void computeFeature(int me, MyMatrix board, List<MyMatrix> boardOld, List<MyMatrix> lifeOld, List<MyMatrix> powerOld) throws Exception {
+		int center = numC / 2;
+		int step = 1;
+
+		long timeStart = System.currentTimeMillis();
+
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				int count = 0;
+
+				//////////////////////////////////////////////////////////////
+				// 説明変数を作る。
+				//////////////////////////////////////////////////////////////
+
+				// Boardを展開する。
+				// 14枚
+				MyMatrix boardThen = boardOld.get(step - 1);
+				for (int i = 0; i < numC; i++) {
+					for (int j = 0; j < numC; j++) {
+						int x2 = x + i - center;
+						int y2 = y + j - center;
+						int panel;
+						if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) {
+							panel = Constant.Rigid;
+						} else {
+							panel = (int) boardThen.data[x2][y2];
+						}
+
+						if (panel >= 10 && panel <= 13) {
+							if (panel == me) {
+								panel = Constant.Agent0;
+							} else {
+								panel = Constant.Agent1;
+							}
+						}
+
+						int index = panel * numC * numC + j * numC + i;
+						indexList[count] = index;
+						count++;
+						// X.data[index][0] = 1;
+					}
+				}
+
+				// BombのStrengthとLineを展開する。
+
+				// bomb_blast_strength
+				// 2-11の10枚
+				MyMatrix powerThen = powerOld.get(step - 1);
+				for (int i = 0; i < numC; i++) {
+					for (int j = 0; j < numC; j++) {
+						int x2 = x + i - center;
+						int y2 = y + j - center;
+						if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+						int value = (int) powerThen.data[x2][y2];
+						if (value == 0) continue;
+						if (value == 1) throw new Exception("error");
+						if (value > 11) value = 11;
+						for (int si = 2; si <= value; si++) {
+							int index = (si - 2 + 14) * numC * numC + j * numC + i;
+							indexList[count] = index;
+							count++;
+							// X.data[index][0] = 1;
+						}
+					}
+				}
+
+				// bomb_life
+				// 1-9の9枚
+				MyMatrix lifeThen = lifeOld.get(step - 1);
+				for (int i = 0; i < numC; i++) {
+					for (int j = 0; j < numC; j++) {
+						int x2 = x + i - center;
+						int y2 = y + j - center;
+						if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+						int value = (int) lifeThen.data[x2][y2];
+						if (value == 0) continue;
+						int index = (value - 1 + 24) * numC * numC + j * numC + i;
+						indexList[count] = index;
+						count++;
+						// X.data[index][0] = 1;
+					}
+				}
+
+				// Bompの過去1ステップ分を展開する。
+				// 1枚
+				MyMatrix boardThenPre = boardOld.get(step - 1 + 1);
+				for (int i = 0; i < numC; i++) {
+					for (int j = 0; j < numC; j++) {
+						int x2 = x + i - center;
+						int y2 = y + j - center;
+						if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+						int value = (int) boardThenPre.data[x2][y2];
+						if (value != Constant.Bomb) continue;
+						int index = (33) * numC * numC + j * numC + i;
+						indexList[count] = index;
+						count++;
+						// X.data[index][0] = 1;
+					}
+				}
+
+				// Flameの過去2ステップ分を展開する。
+				// 2枚
+				for (int k = 0; k < 2; k++) {
+					MyMatrix flameThenPre = boardOld.get(step - 1 + k + 1);
+					for (int i = 0; i < numC; i++) {
+						for (int j = 0; j < numC; j++) {
+							int x2 = x + i - center;
+							int y2 = y + j - center;
+							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+							int value = (int) flameThenPre.data[x2][y2];
+							if (value != Constant.Flames) continue;
+							int index = (k + 34) * numC * numC + j * numC + i;
+							indexList[count] = index;
+							count++;
+							// X.data[index][0] = 1;
+						}
+					}
+				}
+
+				indexList[count] = -1;
+				count++;
+
+				//////////////////////////////////////////////////////////////
+				// 目的変数を作る。
+				//////////////////////////////////////////////////////////////
+				// とりあえず、敵の位置を予測してみる。
+				// if (boardThen.data[x][y] != Constant.Wood) {
+				// continue;
+				// }
+
+				int Y = 0;
+				if (board.data[x][y] == Constant.Bomb) {
+					// if (board.data[x][y] == Constant.Agent3) {
+					Y = 1;
+				}
+
+				//////////////////////////////////////////////////////////////
+				// 学習する。
+				//////////////////////////////////////////////////////////////
+				put(indexList, Y);
+			}
+		}
+
+		long timeEnd = System.currentTimeMillis();
+		double timeSpan = (timeEnd - timeStart) * 0.001;
+		// System.out.println("time, " + timeSpan);
+
+		if (frameCounter % 100 == 0) {
+			Set<Integer> selected = new TreeSet<Integer>();
+			dig(selected);
+			System.out.println(print());
+		}
+		frameCounter++;
 	}
 
 	public void put(int[] indexList, double y) throws Exception {
@@ -273,8 +433,8 @@ public class BinaryTree {
 						rightFlag[d] = true;
 					}
 					child = new BinaryTree[2];
-					child[0] = new BinaryTree(depth + 1, numd, this);
-					child[1] = new BinaryTree(depth + 1, numd, this);
+					child[0] = new BinaryTree(depth + 1, this);
+					child[1] = new BinaryTree(depth + 1, this);
 				}
 			}
 		} else {

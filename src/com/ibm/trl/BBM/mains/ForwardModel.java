@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Random;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
-import com.ibm.trl.BBM.mains.Agent.Node;
+import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.EEE;
