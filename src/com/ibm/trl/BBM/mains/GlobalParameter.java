@@ -18,7 +18,7 @@ public class GlobalParameter {
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
-	static final public boolean verbose = false;
+	static final public boolean verbose = true;
 
 	static public OAFParameter oafparameterBest;
 	static public OAFParameter[] oafparameters = new OAFParameter[4];
@@ -86,6 +86,7 @@ public class GlobalParameter {
 			// KPI‚ªItemŽæ“¾—¦‚Ìê‡
 			double score = param.numItemGet / param.numFrame;
 			double scoreBest = GlobalParameter.oafparameterBest.numItemGet / GlobalParameter.oafparameterBest.numFrame;
+			System.out.println(score + " vs " + scoreBest + "(best)");
 			if (GlobalParameter.oafparameterBest.numFrame == 0 || score > scoreBest) {
 				oafparameterBest = param;
 				File file = new File("data/oafparameter.dat");
@@ -98,7 +99,6 @@ public class GlobalParameter {
 					System.out.println("found better parameter!!");
 					System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, param.numEpisode, param.numFrame, param.numItemGet, param.numWin));
 					System.out.println(param.Keisu);
-
 				}
 			}
 

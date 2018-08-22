@@ -102,9 +102,12 @@ public class SafetyScoreEvaluator {
 		for (int targetFirstAction = 0; targetFirstAction < 6; targetFirstAction++) {
 			for (int tryIndex = 0; tryIndex < numTry; tryIndex++) {
 				Pack packNext = packNow;
+				double[] waribiki = new double[] { 1, 1, 1, 1 };
 				for (int t = 0; t < numt; t++) {
 					int[] actions = { rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6) };
-					if (t == 0) actions[aiMe] = targetFirstAction;
+					if (t == 0) {
+						actions[aiMe] = targetFirstAction;
+					}
 
 					packNext = fm.Step(packNext.board, packNext.abs, packNext.sh, actions);
 
@@ -118,23 +121,18 @@ public class SafetyScoreEvaluator {
 					for (int ai = 0; ai < 4; ai++) {
 						if (packNow.abs[ai].isAlive == false) continue;
 
-						double good = weight;
 						if (packNext.abs[ai].isAlive == false) {
-							good = 0;
+							waribiki[ai] *= 0.0;
 						} else {
 							AgentEEE aaa = agentsNext[ai];
 							int numSrrounded = BBMUtility.numSurrounded(packNext.board, aaa.x, aaa.y);
 							if (numSrrounded == 4) {
-								good = 0;
-							} else if (numSrrounded == 3) {
-								good = weight * 0.7;
-							} else if (numSrrounded == 2) {
-								good = weight * 1.0;
+								waribiki[ai] *= 0.1;
 							}
 						}
 
 						pointsTotal[ai][targetFirstAction] += weight;
-						points[ai][targetFirstAction] += good;
+						points[ai][targetFirstAction] += weight * waribiki[ai];
 					}
 				}
 			}
