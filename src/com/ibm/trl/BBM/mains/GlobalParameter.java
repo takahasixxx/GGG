@@ -14,11 +14,10 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class GlobalParameter {
 	static Random rand = new Random();
-
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
-	static final public boolean verbose = true;
+	static final public boolean verbose = false;
 
 	static public OAFParameter oafparameterBest;
 	static public OAFParameter[] oafparameters = new OAFParameter[4];
@@ -48,16 +47,17 @@ public class GlobalParameter {
 				File file = new File("data/oafparameter.dat");
 				if (file.exists()) {
 					ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
-					oafparameterBest = (OAFParameter) ois.readObject();
+					OAFParameter param = (OAFParameter) ois.readObject();
 					ois.close();
+					oafparameterBest = new OAFParameter(param.Keisu);
 				} else {
 					oafparameterBest = new OAFParameter();
-					oafparameterBest.numEpisode = 1;
-					oafparameterBest.numFrame = 1;
 				}
+				oafparameterBest.numEpisode = 1;
+				oafparameterBest.numFrame = 1;
 
 				for (int ai = 0; ai < 4; ai++) {
-					oafparameters[ai] = oafparameterBest;
+					oafparameters[ai] = new OAFParameter(oafparameterBest.Keisu);
 				}
 			}
 		} catch (Exception e) {
@@ -79,31 +79,34 @@ public class GlobalParameter {
 		param.numItemGet += numItemGet;
 		if (reward == 1) param.numWin++;
 
-		if (param.numEpisode >= 100) {
-			double stepSize = 0.01;
+		if (param.numEpisode >= 50) {
+			double stepSize = 0.05;
 
 			///////////////////////////////////////////////////////////
 			// KPIがItem取得率の場合
-			double score = param.numItemGet / param.numFrame;
-			double scoreBest = GlobalParameter.oafparameterBest.numItemGet / GlobalParameter.oafparameterBest.numFrame;
+			double score = param.numWin / param.numFrame;
+			double scoreBest = GlobalParameter.oafparameterBest.numWin / GlobalParameter.oafparameterBest.numFrame;
+
+			System.out.println("今のベストのOAFParameter");
+			System.out.println(GlobalParameter.oafparameterBest.Keisu);
+			System.out.println("試したOAFParameter");
+			System.out.println(param.Keisu);
+			System.out.println("結果は、");
 			System.out.println(score + " vs " + scoreBest + "(best)");
-			if (GlobalParameter.oafparameterBest.numFrame == 0 || score > scoreBest) {
+			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, param.numEpisode, param.numFrame, param.numItemGet, param.numWin));
+
+			if (score > scoreBest) {
 				oafparameterBest = param;
 				File file = new File("data/oafparameter.dat");
 				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
 				oos.writeObject(oafparameterBest);
 				oos.flush();
 				oos.close();
-
-				if (verbose) {
-					System.out.println("found better parameter!!");
-					System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, param.numEpisode, param.numFrame, param.numItemGet, param.numWin));
-					System.out.println(param.Keisu);
-				}
+				System.out.println("ベストパラメータが見つかった！！");
 			}
 
 			// パラメータを散らす。
-			int[] targetIndexSet = { 0, 1, 2, 3, 5 };
+			int[] targetIndexSet = { 0, 1, 2, 3, 4, 5, 6, 7 };
 			int index = -1;
 			int dim = -1;
 			boolean increment;
@@ -131,6 +134,10 @@ public class GlobalParameter {
 				if (Keisu.data[index][dim] < 0) Keisu.data[index][dim] = 0;
 			}
 
+			System.out.println("今のベストのOAFParameter");
+			System.out.println(GlobalParameter.oafparameterBest.Keisu);
+			System.out.println("次に試すOAFParameter");
+			System.out.println(param.Keisu);
 			oafparameters[me - 10] = new OAFParameter(Keisu);
 		}
 	}

@@ -204,12 +204,12 @@ public class Agent {
 			Pack pack = new Pack(board, abs, sh);
 
 			SafetyScoreEvaluator.set(pack, me);
-			Thread.sleep(200);
+			Thread.sleep(10);
 			double[][] safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
-			int tryCounter = SafetyScoreEvaluator.getTryCounter();
-			action = oaf.findOptimalAction(pack, me, safetyScore);
 			SafetyScoreEvaluator.set(null, -1);
+			action = oaf.findOptimalAction(pack, me, safetyScore);
 			if (verbose) {
+				int tryCounter = SafetyScoreEvaluator.getTryCounter();
 				System.out.println("tryCounter = " + tryCounter);
 			}
 		}

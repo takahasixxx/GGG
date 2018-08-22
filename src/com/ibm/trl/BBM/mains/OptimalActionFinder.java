@@ -50,17 +50,17 @@ public class OptimalActionFinder {
 		}
 
 		public OAFParameter(MyMatrix Keisu) {
-			super();
 			this.Keisu = new MyMatrix(Keisu);
-		}
 
-		public OAFParameter(OAFParameter p) {
-			super();
-			this.Keisu = new MyMatrix(p.Keisu);
-			this.numEpisode = p.numEpisode;
-			this.numFrame = p.numFrame;
-			this.numItemGet = p.numItemGet;
-			this.numWin = p.numWin;
+			KeisuUsed = new boolean[8][];
+			KeisuUsed[0] = new boolean[] { true, true, false };
+			KeisuUsed[1] = new boolean[] { true, true, false };
+			KeisuUsed[2] = new boolean[] { true, true, false };
+			KeisuUsed[3] = new boolean[] { true, true, true };
+			KeisuUsed[4] = new boolean[] { true, true, false };
+			KeisuUsed[5] = new boolean[] { true, false, true };
+			KeisuUsed[6] = new boolean[] { true, false, false };
+			KeisuUsed[7] = new boolean[] { true, false, false };
 		}
 
 		public double getThresholdMoveToItem(int item, int dis) {
