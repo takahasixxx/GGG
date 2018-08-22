@@ -9,6 +9,7 @@ import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class Agent {
+	static boolean verbose = GlobalParameter.verbose;
 	static int numField = GlobalParameter.numField;
 	static int numPast = 20;
 	int me;
@@ -18,6 +19,9 @@ public class Agent {
 	LinkedList<MyMatrix> lifeOld = new LinkedList<MyMatrix>();
 	LinkedList<Node[][]> bombMapOld = new LinkedList<Node[][]>();
 	Ability[] abs = new Ability[4];
+
+	int numFrame = 0;
+	int numItemGet = 0;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -32,7 +36,7 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	OptimalActionFinder oaf = new OptimalActionFinder();
+	OptimalActionFinder oaf;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,21 +75,23 @@ public class Agent {
 		for (int i = 0; i < 4; i++) {
 			abs[i] = new Ability();
 		}
-
-	}
-
-	public void init_agent() {
-		System.out.println("init_agent");
+		oaf = new OptimalActionFinder(GlobalParameter.oafparameters[me - 10]);
 	}
 
 	public void episode_end(int reward) throws Exception {
 		System.out.println("episode_end, reward = " + reward);
-		actionEvaluator.FinishOneEpoch(me, reward);
+		if (false) {
+			actionEvaluator.FinishOneEpisode(me, reward);
+		}
+		if (true) {
+			GlobalParameter.FinishOneEpisode(me, numFrame, reward, numItemGet);
+		}
 	}
 
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
-		if (true) {
+		// 盤面をログに出力してみる。
+		if (verbose) {
 			// Thread.sleep(1000);
 			System.out.println("==========================================");
 			System.out.println("==========================================");
@@ -97,6 +103,8 @@ public class Agent {
 			System.out.println("board picture");
 			BBMUtility.printBoard2(board, bomb_life, bomb_blast_strength);
 		}
+
+		numFrame++;
 
 		if (boardOld.size() == 0) {
 			for (int i = 0; i < numPast; i++) {
@@ -128,12 +136,15 @@ public class Agent {
 						int id = (int) (board.data[x][y] - 10);
 						abs[id].numMaxBomb++;
 						abs[id].numBombHold++;
+						if (id + 10 == me) numItemGet++;
 					} else if (board_pre.data[x][y] == 7 && board.data[x][y] >= 10 && board.data[x][y] <= 13) {
 						int id = (int) (board.data[x][y] - 10);
 						abs[id].strength++;
+						if (id + 10 == me) numItemGet++;
 					} else if (board_pre.data[x][y] == 8 && board.data[x][y] >= 10 && board.data[x][y] <= 13) {
 						int id = (int) (board.data[x][y] - 10);
 						abs[id].kick = true;
+						if (id + 10 == me) numItemGet++;
 					}
 				}
 			}
@@ -148,7 +159,7 @@ public class Agent {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// うまく分岐させながら、BombやAgentが存在しうる状態を列挙して、行動選択に活用する。
+		// SafetyScore + OptimalActionFinderで行動決定する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// TODO
@@ -198,7 +209,9 @@ public class Agent {
 			int tryCounter = SafetyScoreEvaluator.getTryCounter();
 			action = oaf.findOptimalAction(pack, me, safetyScore);
 			SafetyScoreEvaluator.set(null, -1);
-			System.out.println("tryCounter = " + tryCounter);
+			if (verbose) {
+				System.out.println("tryCounter = " + tryCounter);
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

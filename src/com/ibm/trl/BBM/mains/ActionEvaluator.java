@@ -102,7 +102,7 @@ public class ActionEvaluator {
 		double[] safetyDefScore = new double[6];
 		double[][] safetyScoreAll = new double[4][6];
 		{
-			ForwardModel fm = new ForwardModel(numField);
+			ForwardModel fm = new ForwardModel();
 			double decayRate = 0.99;
 			int numt = 12;
 			int numTry = 500;
@@ -111,9 +111,6 @@ public class ActionEvaluator {
 			for (int t = 0; t < numt; t++) {
 				weights[t] = Math.pow(decayRate, t);
 			}
-
-			long timeDelta = 0;
-			int timeCounter = 0;
 
 			for (int targetAction = 0; targetAction < 6; targetAction++) {
 				double[] points = new double[4];
@@ -189,12 +186,11 @@ public class ActionEvaluator {
 				}
 			}
 
-			for (int i = 0; i < 6; i++) {
-				System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
+			if (verbose) {
+				for (int i = 0; i < 6; i++) {
+					System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
+				}
 			}
-
-			double time = timeDelta * 0.001 / timeCounter;
-			System.out.println(time);
 		}
 
 		// 各アクションの優先度を計算して、ベストを選ぶ。
@@ -385,10 +381,10 @@ public class ActionEvaluator {
 	MyMatrix thresholdBombToWoodBrakeBest = new MyMatrix(3, 1, 0.70);
 	MyMatrix thresholdAttackBest = new MyMatrix(new double[][] { { 0.6 }, { 0.1 } });
 
-	public void FinishOneEpoch(int me, double reword) throws Exception {
-		System.out.println(reword);
+	public void FinishOneEpisode(int me, double reward) throws Exception {
+		System.out.println(reward);
 		numEpoch++;
-		if (reword == 1) numWin++;
+		if (reward == 1) numWin++;
 		System.out.println(String.format("numEpoch=%d, numWin=%d", numEpoch, numWin));
 		if (numEpoch >= 200) {
 			double numItem = numExtraBomb + numIncrRange + numKick;

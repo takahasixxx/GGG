@@ -1,16 +1,11 @@
 package com.ibm.trl.BBM.mains;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
-import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.EEE;
@@ -20,11 +15,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class ForwardModel {
 
-	int numField;
-
-	public ForwardModel(int numField) {
-		this.numField = numField;
-	}
+	static final int numField = GlobalParameter.numField;
 
 	static public class Pack implements Serializable {
 		private static final long serialVersionUID = -8052436421835761684L;
@@ -565,165 +556,6 @@ public class ForwardModel {
 			}
 		}
 
-		// System.out.println(shNow);
-		// System.out.println(shNext);
-
 		return new Pack(boardNext, absNext, shNext);
 	}
-
-	static double timeTotal = 0;
-	static double counter = 0;
-	static int TakeLearningSampleCounter = 0;
-
-	static List<LearningData> learningDataList = new ArrayList<LearningData>();
-
-	public static class LearningData implements Serializable {
-		private static final long serialVersionUID = 379292266174819897L;
-		Pack pack;
-		double[] aliveCount;
-		double[] tryCount;
-		int firstAction;
-
-		public LearningData(Pack pack, double[] aliveCount, double[] tryCount, int firstAction) {
-			this.pack = pack;
-			this.aliveCount = aliveCount;
-			this.tryCount = tryCount;
-			this.firstAction = firstAction;
-		}
-	}
-
-	public int Compute(MyMatrix board, Node[][] bombMap, Ability abs[]) throws Exception {
-
-		//////////////////////////////////////////////////////////////////
-		// 初期状態を作る。
-		//////////////////////////////////////////////////////////////////
-
-		MyMatrix boardNow = new MyMatrix(board);
-
-		StatusHolder shNow = new StatusHolder(numField);
-		{
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					int type = (int) board.data[x][y];
-					if (Constant.isAgent(type)) {
-						shNow.setAgent(x, y, type);
-					}
-				}
-			}
-
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					Node node = bombMap[x][y];
-					if (node == null) continue;
-					if (node.type == Constant.Bomb) {
-						shNow.setBomb(x, y, node.owner, node.lifeBomb, node.moveDirection, node.power);
-					} else if (node.type == Constant.Flames) {
-						shNow.setFlameCenter(x, y, node.lifeFlameCenter, node.power);
-					}
-				}
-			}
-		}
-
-		Ability[] absNow = new Ability[4];
-		for (int i = 0; i < 4; i++) {
-			absNow[i] = new Ability(abs[i]);
-		}
-
-		//////////////////////////////////////////////////////////////////
-		// 長めにエージェントを動かして、長期の生存確率を計算し、予測モデルのためのデータとしてファイルに保存する。
-		//////////////////////////////////////////////////////////////////
-
-		if (TakeLearningSampleCounter % 10 == 0) {
-			Random rand = new Random();
-			int maxDepth = 50;
-			int numEpoch = 3000;
-			double decayRate = 0.99;
-
-			for (int firstAction = 0; firstAction < 6; firstAction++) {
-				double[] aliveCount = new double[4];
-				double[] tryCount = new double[4];
-
-				long timeStart = System.currentTimeMillis();
-				for (int frame = 0; frame < numEpoch; frame++) {
-					double[] points = new double[4];
-					double totalPoint = 0;
-					Pack pack = new Pack(boardNow, absNow, shNow);
-					for (int depth = 0; depth < maxDepth; depth++) {
-						int[] actions = { rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6) };
-						if (depth == 0) {
-							actions[3] = firstAction;
-						}
-						pack = Step(pack.board, pack.abs, pack.sh, actions);
-
-						double point = Math.pow(decayRate, depth);
-						totalPoint += point;
-						for (int i = 0; i < 4; i++) {
-							if (abs[i].isAlive) {
-								if (pack.abs[i].isAlive) {
-									points[i] += point;
-								}
-							}
-						}
-
-						// 出力する。
-						if (false) {
-							MyMatrix life = new MyMatrix(numField, numField);
-							MyMatrix power = new MyMatrix(numField, numField);
-							for (BombEEE bbb : pack.sh.getBombEntry()) {
-								life.data[bbb.x][bbb.y] = bbb.life;
-								power.data[bbb.x][bbb.y] = bbb.power;
-							}
-							System.out.println("/////////////////////////////////////////////////////");
-							System.out.println("// " + depth);
-							System.out.println("/////////////////////////////////////////////////////");
-							BBMUtility.printBoard2(pack.board, life, power);
-						}
-					}
-					// エージェントが生きてるか死んでるか調べる。
-					for (int i = 0; i < 4; i++) {
-						if (abs[i].isAlive) {
-							tryCount[i] += 1;
-							aliveCount[i] += points[i] / totalPoint;
-						}
-					}
-				}
-				long timeEnd = System.currentTimeMillis();
-				double timeDel = (timeEnd - timeStart) * 0.001;
-				timeTotal += timeDel;
-				System.out.println("timeDel = " + timeDel);
-
-				for (int i = 0; i < 4; i++) {
-					double rateAlive = 1.0 * aliveCount[i] / tryCount[i];
-					System.out.println("firstAction=" + firstAction + ", i=" + i + ", rateAlive=" + rateAlive);
-				}
-
-				Pack pack = new Pack(boardNow, absNow, shNow);
-				LearningData ld = new LearningData(pack, aliveCount, tryCount, firstAction);
-				learningDataList.add(ld);
-			}
-
-			// ファイルに保存する。
-			{
-				if (learningDataList.size() > 1000) {
-					String filename;
-					for (int i = 0;; i++) {
-						String filename2 = String.format("data/ld_%05d.dat", i);
-						if (new File(filename2).exists() == false) {
-							filename = filename2;
-							break;
-						}
-					}
-					ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(filename)));
-					oos.writeObject(learningDataList);
-					oos.flush();
-					oos.close();
-					learningDataList.clear();
-				}
-			}
-		}
-		TakeLearningSampleCounter++;
-
-		return -1;
-	}
-
 }

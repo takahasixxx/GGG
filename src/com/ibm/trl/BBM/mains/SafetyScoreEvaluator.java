@@ -13,7 +13,7 @@ public class SafetyScoreEvaluator {
 	static final int numThread = GlobalParameter.numThread;
 	static final int numField = GlobalParameter.numField;
 
-	static final ForwardModel fm = new ForwardModel(numField);
+	static final ForwardModel fm = new ForwardModel();
 	static final double decayRate = 0.99;
 	static final int numt = 12;
 	static final int numTry = 5;
@@ -99,14 +99,12 @@ public class SafetyScoreEvaluator {
 		//////////////////////////////////////////////////////////////////
 		double[][] points = new double[4][6];
 		double[][] pointsTotal = new double[4][6];
-		for (int targetAction = 0; targetAction < 6; targetAction++) {
+		for (int targetFirstAction = 0; targetFirstAction < 6; targetFirstAction++) {
 			for (int tryIndex = 0; tryIndex < numTry; tryIndex++) {
 				Pack packNext = packNow;
 				for (int t = 0; t < numt; t++) {
 					int[] actions = { rand.nextInt(6), rand.nextInt(6), rand.nextInt(6), rand.nextInt(6) };
-					if (t == 0) {
-						actions[aiMe] = targetAction;
-					}
+					if (t == 0) actions[aiMe] = targetFirstAction;
 
 					packNext = fm.Step(packNext.board, packNext.abs, packNext.sh, actions);
 
@@ -135,8 +133,8 @@ public class SafetyScoreEvaluator {
 							}
 						}
 
-						pointsTotal[ai][targetAction] += weight;
-						points[ai][targetAction] += good;
+						pointsTotal[ai][targetFirstAction] += weight;
+						points[ai][targetFirstAction] += good;
 					}
 				}
 			}

@@ -1,5 +1,7 @@
 package com.ibm.trl.BBM.mains;
 
+import java.io.Serializable;
+
 import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
@@ -8,75 +10,99 @@ import com.ibm.trl.BBM.mains.StatusHolder.EEE;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class OptimalActionFinder {
+	static final boolean verbose = GlobalParameter.verbose;
 	static final int numField = GlobalParameter.numField;
-	Parameter param = new Parameter();
+	OAFParameter param = new OAFParameter();
 
-	public static class Parameter {
-		MyMatrix thresholdMoveToItem;
-		MyMatrix thresholdMoveToWoodBrake;
-		MyMatrix thresholdMoveToKill;
-		MyMatrix thresholdBombToWoodBrake;
-		MyMatrix thresholdAttack;
+	public static class OAFParameter implements Serializable {
+		private static final long serialVersionUID = 2378492149979768600L;
 
-		public Parameter() {
-			thresholdMoveToItem = new MyMatrix(3, 10, 0.5);
-			thresholdMoveToWoodBrake = new MyMatrix(4, 10, 0.7);
-			thresholdMoveToKill = new MyMatrix(1, 10, 0.8);
-			thresholdBombToWoodBrake = new MyMatrix(4, 1, 0.6 - 0.1);
-			thresholdAttack = new MyMatrix(new double[][] { { 0.6 - 0.1 }, { 0.1 } });
+		MyMatrix Keisu;
+		boolean[][] KeisuUsed;
 
-			for (int i = 0; i < 10; i++) {
-				for (int d = 0; d < 3; d++) {
-					thresholdMoveToItem.data[d][i] += i * 0.03;
-				}
-				for (int d = 0; d < 4; d++) {
-					thresholdMoveToWoodBrake.data[d][i] += i * 0.03;
-				}
-			}
-			for (int i = 0; i < 3; i++) {
-				thresholdMoveToKill.data[0][i] = 1;
-			}
+		double numEpisode = 0;
+		double numFrame = 0;
+		double numItemGet = 0;
+		double numWin = 0;
+
+		public OAFParameter() {
+			// Ø•ÐA‹——£‘‰Á•ªAŒÂ”‘‰Á•ª‚Ì‡”Ô‚ÉŒW”‚ðŠi”[‚·‚éB
+			double[][] temp = new double[8][];
+			temp[0] = new double[] { 0.50, 0.03, 0.00 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.50, 0.03, 0.00 };// Move to IncrRange
+			temp[2] = new double[] { 0.50, 0.03, 0.00 };// Move to Kick
+			temp[3] = new double[] { 0.70, 0.03, 0.03 };// Move to WoodBrake
+			temp[4] = new double[] { 0.80, 0.00, 0.00 };// Move to Kill
+			temp[5] = new double[] { 0.50, 0.00, 0.03 };// Bomb to WoodBrake
+			temp[6] = new double[] { 0.50, 0.00, 0.00 };// Attack
+			temp[7] = new double[] { 0.10, 0.00, 0.00 };// Attack Efficiency
+			Keisu = new MyMatrix(temp);
+
+			KeisuUsed = new boolean[8][];
+			KeisuUsed[0] = new boolean[] { true, true, false };
+			KeisuUsed[1] = new boolean[] { true, true, false };
+			KeisuUsed[2] = new boolean[] { true, true, false };
+			KeisuUsed[3] = new boolean[] { true, true, true };
+			KeisuUsed[4] = new boolean[] { true, true, false };
+			KeisuUsed[5] = new boolean[] { true, false, true };
+			KeisuUsed[6] = new boolean[] { true, false, false };
+			KeisuUsed[7] = new boolean[] { true, false, false };
+		}
+
+		public OAFParameter(MyMatrix Keisu) {
+			super();
+			this.Keisu = new MyMatrix(Keisu);
+		}
+
+		public OAFParameter(OAFParameter p) {
+			super();
+			this.Keisu = new MyMatrix(p.Keisu);
+			this.numEpisode = p.numEpisode;
+			this.numFrame = p.numFrame;
+			this.numItemGet = p.numItemGet;
+			this.numWin = p.numWin;
 		}
 
 		public double getThresholdMoveToItem(int item, int dis) {
-			int temp1 = -1;
+			int index = -1;
 			if (item == Constant.ExtraBomb) {
-				temp1 = 0;
+				index = 0;
 			} else if (item == Constant.IncrRange) {
-				temp1 = 1;
+				index = 1;
 			} else if (item == Constant.Kick) {
-				temp1 = 2;
+				index = 2;
 			}
-			int temp2 = dis - 1;
-			if (temp2 > 9) temp2 = 9;
-			return thresholdMoveToItem.data[temp1][temp2];
-
+			double threshold = Keisu.data[index][0] + Keisu.data[index][1] * dis - Keisu.data[index][2] * 0;
+			return threshold;
 		}
 
 		public double getThresholdMoveToWoodBrake(int num, int dis) {
-			int temp2 = dis - 1;
-			if (temp2 > 9) temp2 = 9;
-			return thresholdMoveToWoodBrake.data[num - 1][temp2];
-
+			double threshold = Keisu.data[3][0] + Keisu.data[3][1] * dis - Keisu.data[3][2] * num;
+			return threshold;
 		}
 
 		public double getThresholdMoveToKill(int dis) {
-			int temp2 = dis - 1;
-			if (temp2 > 9) temp2 = 9;
-			return thresholdMoveToKill.data[0][temp2];
+			if (dis <= 3) return 1;
+			double threshold = Keisu.data[4][0] + Keisu.data[4][1] * dis - Keisu.data[4][2] * 0;
+			return threshold;
 		}
 
 		public double getThresholdBombToWoodBrake(int num) {
-			return thresholdBombToWoodBrake.data[num - 1][0];
+			double threshold = Keisu.data[5][0] + Keisu.data[5][1] * 0 - Keisu.data[5][2] * num;
+			return threshold;
 		}
 
 		public double getThresholdAttack() {
-			return thresholdAttack.data[0][0];
+			return Keisu.data[6][0];
 		}
 
 		public double getThresholdAttackEffect() {
-			return thresholdAttack.data[1][0];
+			return Keisu.data[7][0];
 		}
+	}
+
+	public OptimalActionFinder(OAFParameter param) {
+		this.param = param;
 	}
 
 	public int findOptimalAction(Pack packNow, int me, double[][] safetyScoreAll) throws Exception {
@@ -101,8 +127,10 @@ public class OptimalActionFinder {
 			if (num <= 1) return 0;
 		}
 
-		for (int i = 0; i < 6; i++) {
-			System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
+		if (verbose) {
+			for (int i = 0; i < 6; i++) {
+				System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
+			}
 		}
 
 		MyMatrix boardNow = packNow.board;
@@ -244,7 +272,7 @@ public class OptimalActionFinder {
 		}
 
 		// TODO o—Í
-		if (true) {
+		if (verbose) {
 			String actionStr = "";
 			if (actionBest == 0) {
 				actionStr = "E";
@@ -264,4 +292,5 @@ public class OptimalActionFinder {
 
 		return actionBest;
 	}
+
 }
