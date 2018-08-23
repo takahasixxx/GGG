@@ -14,15 +14,14 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class GlobalParameter {
 	static Random rand = new Random();
-	static final public boolean verbose = false;
+	static final public boolean verbose = true;
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
 
-	static public OAFParameter[] oafparameters = new OAFParameter[4];
+	static public OAFParameter[] oafparameters;
 	static public OAFParameter oafparamCenter;
-	static MyMatrix KeisuGlobal = null;
-	static int numKeisuGlobal = 0;
+	static public MyMatrix KeisuGlobal;
 
 	static {
 		try {
@@ -49,22 +48,19 @@ public class GlobalParameter {
 				if (file.exists()) {
 					ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
 					KeisuGlobal = (MyMatrix) ois.readObject();
-					numKeisuGlobal = (int) ois.readObject();
 					ois.close();
-				}
-
-				if (numKeisuGlobal > 0) {
-					oafparamCenter = new OAFParameter(KeisuGlobal.times(1.0 / numKeisuGlobal));
+					oafparamCenter = new OAFParameter(KeisuGlobal);
 				} else {
 					oafparamCenter = new OAFParameter();
+					KeisuGlobal = new MyMatrix(oafparamCenter.Keisu);
 				}
 				oafparamCenter.numEpisode = 1;
 				oafparamCenter.numFrame = 1;
 
+				oafparameters = new OAFParameter[4];
 				for (int ai = 0; ai < 4; ai++) {
-					oafparameters[ai] = new OAFParameter(oafparamCenter.Keisu);
+					oafparameters[ai] = new OAFParameter(KeisuGlobal);
 				}
-
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -92,39 +88,36 @@ public class GlobalParameter {
 			///////////////////////////////////////////////////////////
 			// KPIがItem取得率の場合
 			double score = oafparam.numWin + oafparam.numItemGet * 0.1;
-			double scoreBest = oafparamCenter.numWin + oafparamCenter.numItemGet * 0.1;
+			double scoreCenter = oafparamCenter.numWin + oafparamCenter.numItemGet * 0.1;
 			score = score * score;
-			scoreBest = scoreBest * scoreBest;
+			scoreCenter = scoreCenter * scoreCenter;
 
 			System.out.println("今の起点OAFParameter");
 			System.out.println(oafparamCenter.Keisu);
 			System.out.println("試したOAFParameter");
 			System.out.println(oafparam.Keisu);
+			System.out.println("差分");
 			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
 			System.out.println("結果は、");
-			System.out.println(score + " vs " + scoreBest + "(best)");
+			System.out.println(score + " vs " + scoreCenter + "（現在）");
 			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, oafparam.numEpisode, oafparam.numFrame, oafparam.numItemGet, oafparam.numWin));
 
-			if (rand.nextDouble() * scoreBest < score) {
+			if (rand.nextDouble() * scoreCenter < score) {
 				oafparamCenter = oafparam;
-				System.out.println("パラメータをアップデートした。");
+				System.out.println("新しいOAFParameterを受理した。");
+			} else {
+				System.out.println("新しいOAFParameterを棄却した。");
 			}
 
-			if (numKeisuGlobal == 0) {
-				KeisuGlobal = new MyMatrix(oafparamCenter.Keisu);
-				numKeisuGlobal++;
-			} else {
-				double rate = 0.99;
-				KeisuGlobal = KeisuGlobal.times(rate).plus(oafparamCenter.Keisu.times(1 - rate));
-				numKeisuGlobal = 1;
-			}
+			// グローバルの係数をちょっと動かす。
+			double rate = 0.99;
+			KeisuGlobal = KeisuGlobal.times(rate).plus(oafparamCenter.Keisu.times(1 - rate));
 
 			// 保存する。
 			{
 				File file = new File("data/oafparameter_average.dat");
 				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
 				oos.writeObject(KeisuGlobal);
-				oos.writeObject(numKeisuGlobal);
 				oos.flush();
 				oos.close();
 			}
@@ -141,7 +134,7 @@ public class GlobalParameter {
 					index = targetIndexSet[i];
 					dim = rand.nextInt(3);
 					increment = rand.nextBoolean();
-					if (oafparam.KeisuUsed[index][dim]) {
+					if (OAFParameter.KeisuUsed[index][dim]) {
 						if (increment) {
 							break;
 						} else {
@@ -166,9 +159,10 @@ public class GlobalParameter {
 			System.out.println(oafparamCenter.Keisu);
 			System.out.println("次に試すOAFParameter");
 			System.out.println(oafparam.Keisu);
+			System.out.println("差分");
 			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
 			System.out.println("平均のOAFParameter");
-			System.out.println(KeisuGlobal.times(1.0 / numKeisuGlobal));
+			System.out.println(KeisuGlobal);
 
 			oafparameters[me - 10] = oafparam;
 		}

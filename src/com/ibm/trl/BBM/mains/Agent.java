@@ -204,7 +204,7 @@ public class Agent {
 			Pack pack = new Pack(board, abs, sh);
 
 			SafetyScoreEvaluator.set(pack, me);
-			Thread.sleep(10);
+			Thread.sleep(100);
 			double[][] safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
 			SafetyScoreEvaluator.set(null, -1);
 			action = oaf.findOptimalAction(pack, me, safetyScore);

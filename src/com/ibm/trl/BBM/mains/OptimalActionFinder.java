@@ -16,28 +16,9 @@ public class OptimalActionFinder {
 
 	public static class OAFParameter implements Serializable {
 		private static final long serialVersionUID = 2378492149979768600L;
+		static public boolean[][] KeisuUsed;
 
-		MyMatrix Keisu;
-		boolean[][] KeisuUsed;
-
-		double numEpisode = 0;
-		double numFrame = 0;
-		double numItemGet = 0;
-		double numWin = 0;
-
-		public OAFParameter() {
-			// Ø•ĞA‹——£‘‰Á•ªAŒÂ”‘‰Á•ª‚Ì‡”Ô‚ÉŒW”‚ğŠi”[‚·‚éB
-			double[][] temp = new double[8][];
-			temp[0] = new double[] { 0.50, 0.03, 0.00 };// Move to ExtraBomb
-			temp[1] = new double[] { 0.50, 0.03, 0.00 };// Move to IncrRange
-			temp[2] = new double[] { 0.50, 0.03, 0.00 };// Move to Kick
-			temp[3] = new double[] { 0.70, 0.03, 0.03 };// Move to WoodBrake
-			temp[4] = new double[] { 0.80, 0.00, 0.00 };// Move to Kill
-			temp[5] = new double[] { 0.50, 0.00, 0.03 };// Bomb to WoodBrake
-			temp[6] = new double[] { 0.50, 0.00, 0.00 };// Attack
-			temp[7] = new double[] { 0.10, 0.00, 0.00 };// Attack Efficiency
-			Keisu = new MyMatrix(temp);
-
+		static {
 			KeisuUsed = new boolean[8][];
 			KeisuUsed[0] = new boolean[] { true, true, false };
 			KeisuUsed[1] = new boolean[] { true, true, false };
@@ -49,18 +30,28 @@ public class OptimalActionFinder {
 			KeisuUsed[7] = new boolean[] { true, false, false };
 		}
 
+		MyMatrix Keisu;
+		double numEpisode = 0;
+		double numFrame = 0;
+		double numItemGet = 0;
+		double numWin = 0;
+
+		public OAFParameter() {
+			// Ø•ĞA‹——£‘‰Á•ªAŒÂ”‘‰Á•ª‚Ì‡”Ô‚ÉŒW”‚ğŠi”[‚·‚éB
+			double[][] temp = new double[8][];
+			temp[0] = new double[] { 0.635, 0.186, 0.000 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.525, 0.157, 0.000 };// Move to IncrRange
+			temp[2] = new double[] { 0.567, 0.112, 0.000 };// Move to Kick
+			temp[3] = new double[] { 0.683, 0.129, 0.047 };// Move to WoodBrake
+			temp[4] = new double[] { 0.703, 0.026, 0.000 };// Move to Kill
+			temp[5] = new double[] { 0.512, 0.000, 0.047 };// Bomb to WoodBrake
+			temp[6] = new double[] { 0.480, 0.000, 0.000 };// Attack
+			temp[7] = new double[] { 0.075, 0.000, 0.000 };// Attack Efficiency
+			Keisu = new MyMatrix(temp);
+		}
+
 		public OAFParameter(MyMatrix Keisu) {
 			this.Keisu = new MyMatrix(Keisu);
-
-			KeisuUsed = new boolean[8][];
-			KeisuUsed[0] = new boolean[] { true, true, false };
-			KeisuUsed[1] = new boolean[] { true, true, false };
-			KeisuUsed[2] = new boolean[] { true, true, false };
-			KeisuUsed[3] = new boolean[] { true, true, true };
-			KeisuUsed[4] = new boolean[] { true, true, false };
-			KeisuUsed[5] = new boolean[] { true, false, true };
-			KeisuUsed[6] = new boolean[] { true, false, false };
-			KeisuUsed[7] = new boolean[] { true, false, false };
 		}
 
 		public double getThresholdMoveToItem(int item, int dis) {
