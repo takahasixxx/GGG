@@ -14,13 +14,15 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class GlobalParameter {
 	static Random rand = new Random();
+	static final public boolean verbose = false;
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
-	static final public boolean verbose = false;
 
-	static public OAFParameter oafparameterBest;
 	static public OAFParameter[] oafparameters = new OAFParameter[4];
+	static public OAFParameter oafparamCenter;
+	static MyMatrix KeisuGlobal = null;
+	static int numKeisuGlobal = 0;
 
 	static {
 		try {
@@ -42,23 +44,27 @@ public class GlobalParameter {
 				System.out.println("numThread = " + numThread);
 			}
 
-			// OAFParameterが保存されていたら、読み込んでおく。
 			{
-				File file = new File("data/oafparameter.dat");
+				File file = new File("data/oafparameter_average.dat");
 				if (file.exists()) {
 					ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
-					OAFParameter param = (OAFParameter) ois.readObject();
+					KeisuGlobal = (MyMatrix) ois.readObject();
+					numKeisuGlobal = (int) ois.readObject();
 					ois.close();
-					oafparameterBest = new OAFParameter(param.Keisu);
-				} else {
-					oafparameterBest = new OAFParameter();
 				}
-				oafparameterBest.numEpisode = 1;
-				oafparameterBest.numFrame = 1;
+
+				if (numKeisuGlobal > 0) {
+					oafparamCenter = new OAFParameter(KeisuGlobal.times(1.0 / numKeisuGlobal));
+				} else {
+					oafparamCenter = new OAFParameter();
+				}
+				oafparamCenter.numEpisode = 1;
+				oafparamCenter.numFrame = 1;
 
 				for (int ai = 0; ai < 4; ai++) {
-					oafparameters[ai] = new OAFParameter(oafparameterBest.Keisu);
+					oafparameters[ai] = new OAFParameter(oafparamCenter.Keisu);
 				}
+
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -72,73 +78,99 @@ public class GlobalParameter {
 	 * １．GlobalParameterのOAPParameterのKPIと比較して、良ければGlobalParamterに登録する。ついでにファイルにも保存する。
 	 * ２．GlobalParameterのOAFParameterの設定をランダムに動かして、新規トライOAFParameterを設定する。
 	 */
-	static public void FinishOneEpisode(int me, double numFrame, double reward, double numItemGet) throws Exception {
-		OAFParameter param = oafparameters[me - 10];
-		param.numEpisode++;
-		param.numFrame += numFrame;
-		param.numItemGet += numItemGet;
-		if (reward == 1) param.numWin++;
 
-		if (param.numEpisode >= 50) {
-			double stepSize = 0.05;
+	static public void FinishOneEpisode(int me, double numFrame, double reward, double numItemGet) throws Exception {
+		OAFParameter oafparam = oafparameters[me - 10];
+		oafparam.numEpisode++;
+		oafparam.numFrame += numFrame;
+		oafparam.numItemGet += numItemGet;
+		if (reward == 1) oafparam.numWin++;
+
+		if (oafparam.numEpisode >= 10) {
+			double stepSize = 0.01;
 
 			///////////////////////////////////////////////////////////
 			// KPIがItem取得率の場合
-			double score = param.numWin / param.numFrame;
-			double scoreBest = GlobalParameter.oafparameterBest.numWin / GlobalParameter.oafparameterBest.numFrame;
+			double score = oafparam.numWin + oafparam.numItemGet * 0.1;
+			double scoreBest = oafparamCenter.numWin + oafparamCenter.numItemGet * 0.1;
+			score = score * score;
+			scoreBest = scoreBest * scoreBest;
 
-			System.out.println("今のベストのOAFParameter");
-			System.out.println(GlobalParameter.oafparameterBest.Keisu);
+			System.out.println("今の起点OAFParameter");
+			System.out.println(oafparamCenter.Keisu);
 			System.out.println("試したOAFParameter");
-			System.out.println(param.Keisu);
+			System.out.println(oafparam.Keisu);
+			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
 			System.out.println("結果は、");
 			System.out.println(score + " vs " + scoreBest + "(best)");
-			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, param.numEpisode, param.numFrame, param.numItemGet, param.numWin));
+			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, oafparam.numEpisode, oafparam.numFrame, oafparam.numItemGet, oafparam.numWin));
 
-			if (score > scoreBest) {
-				oafparameterBest = param;
-				File file = new File("data/oafparameter.dat");
+			if (rand.nextDouble() * scoreBest < score) {
+				oafparamCenter = oafparam;
+				System.out.println("パラメータをアップデートした。");
+			}
+
+			if (numKeisuGlobal == 0) {
+				KeisuGlobal = new MyMatrix(oafparamCenter.Keisu);
+				numKeisuGlobal++;
+			} else {
+				double rate = 0.99;
+				KeisuGlobal = KeisuGlobal.times(rate).plus(oafparamCenter.Keisu.times(1 - rate));
+				numKeisuGlobal = 1;
+			}
+
+			// 保存する。
+			{
+				File file = new File("data/oafparameter_average.dat");
 				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
-				oos.writeObject(oafparameterBest);
+				oos.writeObject(KeisuGlobal);
+				oos.writeObject(numKeisuGlobal);
 				oos.flush();
 				oos.close();
-				System.out.println("ベストパラメータが見つかった！！");
 			}
 
 			// パラメータを散らす。
-			int[] targetIndexSet = { 0, 1, 2, 3, 4, 5, 6, 7 };
-			int index = -1;
-			int dim = -1;
-			boolean increment;
-			while (true) {
-				int i = rand.nextInt(targetIndexSet.length);
-				dim = rand.nextInt(3);
-				increment = rand.nextBoolean();
-				index = targetIndexSet[i];
-				if (param.KeisuUsed[index][dim]) {
-					if (increment) {
-						break;
-					} else {
-						if (param.Keisu.data[index][dim] != 0) {
+			MyMatrix Keisu = new MyMatrix(oafparamCenter.Keisu);
+			for (int ii = 0; ii < 5; ii++) {
+				int[] targetIndexSet = { 0, 1, 2, 3, 4, 5, 6, 7 };
+				int index = -1;
+				int dim = -1;
+				boolean increment;
+				while (true) {
+					int i = rand.nextInt(targetIndexSet.length);
+					index = targetIndexSet[i];
+					dim = rand.nextInt(3);
+					increment = rand.nextBoolean();
+					if (oafparam.KeisuUsed[index][dim]) {
+						if (increment) {
 							break;
+						} else {
+							if (Keisu.data[index][dim] != 0) {
+								break;
+							}
 						}
 					}
 				}
+
+				if (increment) {
+					Keisu.data[index][dim] += stepSize;
+				} else {
+					Keisu.data[index][dim] -= stepSize;
+					if (Keisu.data[index][dim] < 0) Keisu.data[index][dim] = 0;
+				}
 			}
 
-			MyMatrix Keisu = new MyMatrix(GlobalParameter.oafparameterBest.Keisu);
-			if (increment) {
-				Keisu.data[index][dim] += stepSize;
-			} else {
-				Keisu.data[index][dim] -= stepSize;
-				if (Keisu.data[index][dim] < 0) Keisu.data[index][dim] = 0;
-			}
+			oafparam = new OAFParameter(Keisu);
 
-			System.out.println("今のベストのOAFParameter");
-			System.out.println(GlobalParameter.oafparameterBest.Keisu);
+			System.out.println("今の起点OAFParameter");
+			System.out.println(oafparamCenter.Keisu);
 			System.out.println("次に試すOAFParameter");
-			System.out.println(param.Keisu);
-			oafparameters[me - 10] = new OAFParameter(Keisu);
+			System.out.println(oafparam.Keisu);
+			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
+			System.out.println("平均のOAFParameter");
+			System.out.println(KeisuGlobal.times(1.0 / numKeisuGlobal));
+
+			oafparameters[me - 10] = oafparam;
 		}
 	}
 }
