@@ -13,8 +13,10 @@
 
 
 	<target name="prepare_dir">
+		<!--
 		<delete dir="${packageDirectory}" />
 		<mkdir dir="${packageDirectory}" />
+		-->
 	</target>
 
 
@@ -62,13 +64,35 @@
 	-->
 
 	<target name="create_package" depends="create_body_jar">
+		<!--
 		<scp todir="${serverUserName}@${serverIP}:${serverDirectory}" trust="true" keyfile="${serverKeyFile}" passphrase="${serverPassword}">
 			<fileset dir="${packageDirectory}">
 				<include name="${jarFilename}" />
 			</fileset>
 		</scp>
+		-->
 
-		<sshexec command="cd ${serverDirectory}; ${serverDirectory}/${serverRunFile}" host="${serverIP}" username="${serverUserName}" keyfile="${serverKeyFile}" passphrase="${serverPassword}" trust="true" />
+
+
+		<exec dir="." executable="rsync">
+			<arg value="-arv" />
+
+			<!-- exclude all hidden files and directories -->
+			<arg line="--exclude='.*'" />
+
+
+			<!-- variable that holds the filepath to the ssh key -->
+			<arg line="-e &quot;ssh -i ${serverKeyFile}&quot;" />
+
+			<!-- local directory that is the source for the rsync -->
+			<arg value="${packageDirectory}/" />
+
+			<!-- remote host and directory destination for rsync -->
+			<arg value="${serverUserName}@${serverIP}:${serverDirectory}" />
+		</exec>
+
+
+		<sshexec command="cd ${serverDirectory}; chmod +x ${serverDirectory}/${serverRunFile}; ${serverDirectory}/${serverRunFile}" host="${serverIP}" username="${serverUserName}" keyfile="${serverKeyFile}" passphrase="${serverPassword}" trust="true" />
 	</target>
 
 
