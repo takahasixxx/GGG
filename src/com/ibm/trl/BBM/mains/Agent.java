@@ -9,9 +9,10 @@ import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class Agent {
-	static boolean verbose = GlobalParameter.verbose;
-	static int numField = GlobalParameter.numField;
-	static int numPast = 20;
+	static final boolean verbose = GlobalParameter.verbose;
+	static final int timeSampling = GlobalParameter.timeStampling;
+	static final int numField = GlobalParameter.numField;
+	static final int numPast = 20;
 	int me;
 
 	LinkedList<MyMatrix> boardOld = new LinkedList<MyMatrix>();
@@ -204,7 +205,7 @@ public class Agent {
 			Pack pack = new Pack(board, abs, sh);
 
 			SafetyScoreEvaluator.set(pack, me);
-			Thread.sleep(10);
+			Thread.sleep(timeSampling);
 			double[][] safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
 			SafetyScoreEvaluator.set(null, -1);
 			action = oaf.findOptimalAction(pack, me, safetyScore);

@@ -9,6 +9,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class BombTracker {
 
+	static boolean verbose = GlobalParameter.verbose;
 	static int numField = GlobalParameter.numField;
 
 	static public class Node {
@@ -216,8 +217,10 @@ public class BombTracker {
 			nodeNow.owner = nodePre.owner;
 		}
 
-		if (best.numFlameDiff > 0 || best.moveIncorrect > 0) {
-			System.out.println("‚¨‚©‚µ‚¢??");
+		if (verbose) {
+			if (best.numFlameDiff > 0 || best.moveIncorrect > 0) {
+				System.out.println("‚¨‚©‚µ‚¢??");
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

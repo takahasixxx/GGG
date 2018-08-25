@@ -8,13 +8,19 @@ import java.io.ObjectOutputStream;
 import java.util.Properties;
 import java.util.Random;
 
+import org.apache.commons.math3.distribution.NormalDistribution;
+
 import com.ibm.trl.BBM.mains.OptimalActionFinder.OAFParameter;
 
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class GlobalParameter {
 	static Random rand = new Random();
+	static NormalDistribution nd = new NormalDistribution();
 	static final public boolean verbose = false;
+	static final int timeStampling = 20;
+	static final boolean isOptimizeParameter = true;
+
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
@@ -82,7 +88,7 @@ public class GlobalParameter {
 		oafparam.numItemGet += numItemGet;
 		if (reward == 1) oafparam.numWin++;
 
-		if (oafparam.numEpisode >= 10) {
+		if (isOptimizeParameter && oafparam.numEpisode >= 10) {
 			double stepSize = 0.01;
 
 			///////////////////////////////////////////////////////////
@@ -131,7 +137,7 @@ public class GlobalParameter {
 
 			// パラメータを散らす。
 			MyMatrix Keisu = new MyMatrix(oafparamCenter.Keisu);
-			for (int ii = 0; ii < 1; ii++) {
+			for (int ii = 0; ii < 3; ii++) {
 				int numt = Keisu.numt;
 				int numd = Keisu.numd;
 				int index = -1;
@@ -153,9 +159,9 @@ public class GlobalParameter {
 				}
 
 				if (increment) {
-					Keisu.data[index][dim] += stepSize;
+					Keisu.data[index][dim] += stepSize * Math.abs(nd.sample());
 				} else {
-					Keisu.data[index][dim] -= stepSize;
+					Keisu.data[index][dim] -= stepSize * Math.abs(nd.sample());
 					if (Keisu.data[index][dim] < 0) Keisu.data[index][dim] = 0;
 				}
 			}

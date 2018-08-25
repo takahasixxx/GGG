@@ -1,20 +1,12 @@
 import pommerman
 from pommerman import agents
 
-from collections import defaultdict
-import queue
-import random
 import sys
-import heapq
 import argparse
 
 import numpy as np
-from pommerman.agents import SimpleAgent
-from pommerman import constants
-from pommerman import utility
 from tt_agent import MyAgent
-
-from py4j.java_gateway import JavaGateway
+from agents_osogami_comp2 import TimeExpandedAgent
 
 verbose = False
 
@@ -24,10 +16,11 @@ def main(render=False, interactive=False):
     agent_list = [
         agents.SimpleAgent(),
         agents.SimpleAgent(),
-        agents.SimpleAgent(),
-        #MyAgent(),
-        #MyAgent(),
+        #agents.SimpleAgent(),
+        TimeExpandedAgent(),
         MyAgent(),
+        #MyAgent(),
+        #MyAgent(),
         #SimpleAgentDebugged(),
         #agents.DockerAgent("pommerman/ibm-agent", port=12345),
     ]
