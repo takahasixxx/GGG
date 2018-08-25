@@ -14,7 +14,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class GlobalParameter {
 	static Random rand = new Random();
-	static final public boolean verbose = true;
+	static final public boolean verbose = false;
 	static public String PID;
 	static public int numThread = 1;
 	static final public int numField = 11;
@@ -89,8 +89,11 @@ public class GlobalParameter {
 			// KPIがItem取得率の場合
 			double score = oafparam.numWin + oafparam.numItemGet * 0.1;
 			double scoreCenter = oafparamCenter.numWin + oafparamCenter.numItemGet * 0.1;
-			score = score * score;
-			scoreCenter = scoreCenter * scoreCenter;
+			double max = Math.max(score, scoreCenter);
+			score = score / max;
+			scoreCenter = scoreCenter / max;
+			score = Math.pow(score, 10);
+			scoreCenter = Math.pow(scoreCenter, 10);
 
 			System.out.println("今の起点OAFParameter");
 			System.out.println(oafparamCenter.Keisu);
@@ -99,18 +102,22 @@ public class GlobalParameter {
 			System.out.println("差分");
 			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
 			System.out.println("結果は、");
-			System.out.println(score + " vs " + scoreCenter + "（現在）");
-			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f", score, oafparam.numEpisode, oafparam.numFrame, oafparam.numItemGet, oafparam.numWin));
+			System.out.println(score + " vs " + scoreCenter + "（起点）");
 
+			boolean accept;
 			if (rand.nextDouble() * scoreCenter < score) {
 				oafparamCenter = oafparam;
+				accept = true;
 				System.out.println("新しいOAFParameterを受理した。");
 			} else {
+				accept = false;
 				System.out.println("新しいOAFParameterを棄却した。");
 			}
+			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f, accept=%b", score, oafparam.numEpisode, oafparam.numFrame, oafparam.numItemGet,
+					oafparam.numWin, accept));
 
 			// グローバルの係数をちょっと動かす。
-			double rate = 0.99;
+			double rate = 0.95;
 			KeisuGlobal = KeisuGlobal.times(rate).plus(oafparamCenter.Keisu.times(1 - rate));
 
 			// 保存する。
@@ -124,15 +131,15 @@ public class GlobalParameter {
 
 			// パラメータを散らす。
 			MyMatrix Keisu = new MyMatrix(oafparamCenter.Keisu);
-			for (int ii = 0; ii < 5; ii++) {
-				int[] targetIndexSet = { 0, 1, 2, 3, 4, 5, 6, 7 };
+			for (int ii = 0; ii < 1; ii++) {
+				int numt = Keisu.numt;
+				int numd = Keisu.numd;
 				int index = -1;
 				int dim = -1;
 				boolean increment;
 				while (true) {
-					int i = rand.nextInt(targetIndexSet.length);
-					index = targetIndexSet[i];
-					dim = rand.nextInt(3);
+					index = rand.nextInt(numt);
+					dim = rand.nextInt(numd);
 					increment = rand.nextBoolean();
 					if (OAFParameter.KeisuUsed[index][dim]) {
 						if (increment) {

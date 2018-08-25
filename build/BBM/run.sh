@@ -9,6 +9,7 @@ pip --version
 # kill all BBM processes.
 ps aux | grep BBM.jar | grep -v grep | awk '{print $2}' | while read LINE; do echo $LINE; kill -9 $LINE; done
 ps aux | grep takahasi_test.py | grep -v grep | awk '{print $2}' | while read LINE; do echo $LINE; kill -9 $LINE; done
+sleep 1
 
 
 #start java server

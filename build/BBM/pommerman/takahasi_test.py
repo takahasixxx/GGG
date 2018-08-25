@@ -81,5 +81,5 @@ if __name__ == '__main__':
                         help="Whether to pause after each step.")
     args = parser.parse_args()
 
-    random.seed(0)
+    #random.seed(0)
     main(render=args.render, interactive=args.interactive)

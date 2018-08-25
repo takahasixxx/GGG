@@ -19,7 +19,7 @@ public class OptimalActionFinder {
 		static public boolean[][] KeisuUsed;
 
 		static {
-			KeisuUsed = new boolean[8][];
+			KeisuUsed = new boolean[9][];
 			KeisuUsed[0] = new boolean[] { true, true, false };
 			KeisuUsed[1] = new boolean[] { true, true, false };
 			KeisuUsed[2] = new boolean[] { true, true, false };
@@ -28,6 +28,7 @@ public class OptimalActionFinder {
 			KeisuUsed[5] = new boolean[] { true, false, true };
 			KeisuUsed[6] = new boolean[] { true, false, false };
 			KeisuUsed[7] = new boolean[] { true, false, false };
+			KeisuUsed[8] = new boolean[] { true, false, false };
 		}
 
 		MyMatrix Keisu;
@@ -38,15 +39,16 @@ public class OptimalActionFinder {
 
 		public OAFParameter() {
 			// 切片、距離増加分、個数増加分の順番に係数を格納する。
-			double[][] temp = new double[8][];
-			temp[0] = new double[] { 0.635, 0.186, 0.000 };// Move to ExtraBomb
-			temp[1] = new double[] { 0.525, 0.157, 0.000 };// Move to IncrRange
-			temp[2] = new double[] { 0.567, 0.112, 0.000 };// Move to Kick
+			double[][] temp = new double[9][];
+			temp[0] = new double[] { 0.635, 0.016, 0.000 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.525, 0.017, 0.000 };// Move to IncrRange
+			temp[2] = new double[] { 0.567, 0.012, 0.000 };// Move to Kick
 			temp[3] = new double[] { 0.683, 0.129, 0.047 };// Move to WoodBrake
 			temp[4] = new double[] { 0.703, 0.026, 0.000 };// Move to Kill
 			temp[5] = new double[] { 0.512, 0.000, 0.047 };// Bomb to WoodBrake
 			temp[6] = new double[] { 0.480, 0.000, 0.000 };// Attack
 			temp[7] = new double[] { 0.075, 0.000, 0.000 };// Attack Efficiency
+			temp[8] = new double[] { 0.300, 0.000, 0.000 };// Unfocus Penalty
 			Keisu = new MyMatrix(temp);
 		}
 
@@ -90,7 +92,36 @@ public class OptimalActionFinder {
 		public double getThresholdAttackEffect() {
 			return Keisu.data[7][0];
 		}
+		
+		public double getUnfocusPenalty() {
+			return Keisu.data[8][0];
+		}
 	}
+
+	public class Attention {
+
+		static public final int type_None = -1;
+		static public final int type_MoveToExtraBomb = 0;
+		static public final int type_MoveToIncrRange = 1;
+		static public final int type_MoveToKick = 2;
+		static public final int type_MoveToWoodBreak = 3;
+		static public final int type_BombToWoodBreak = 5;
+
+		int type = type_None;
+		int x = -1;
+		int y = -1;
+
+		public Attention() {
+		}
+
+		public Attention(int type, int x, int y) {
+			this.type = type;
+			this.x = x;
+			this.y = y;
+		}
+	}
+
+	Attention attentionCurrent = new Attention(Attention.type_None, 0, 0);
 
 	public OptimalActionFinder(OAFParameter param) {
 		this.param = param;
@@ -118,12 +149,15 @@ public class OptimalActionFinder {
 			if (num <= 1) return 0;
 		}
 
+		// SafetyScoreを出力する。
 		if (verbose) {
 			for (int i = 0; i < 6; i++) {
 				System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
 			}
 		}
-
+		////////////////////////////////////////////////////////////////////////////////////
+		// 基本変数の定義
+		////////////////////////////////////////////////////////////////////////////////////
 		MyMatrix boardNow = packNow.board;
 		Ability[] absNow = packNow.abs;
 		StatusHolder shNow = packNow.sh;
@@ -133,18 +167,64 @@ public class OptimalActionFinder {
 			agentsNow[aaa.agentID - 10] = aaa;
 		}
 
+		Ability ab = absNow[aiMe];
+		AgentEEE agentMe = agentsNow[aiMe];
+
 		boolean[][] bombExist = new boolean[numField][numField];
 		for (EEE bbb : shNow.getBombEntry()) {
 			bombExist[bbb.x][bbb.y] = true;
 		}
-
-		// 各アクションの優先度を計算して、ベストを選ぶ。
-		AgentEEE agentMe = agentsNow[aiMe];
+		////////////////////////////////////////////////////////////////////////////////////
+		// 現在地から各地点への移動距離を計算する。
+		////////////////////////////////////////////////////////////////////////////////////
 		MyMatrix dis = BBMUtility.ComputeOptimalDistance(packNow.board, agentMe.x, agentMe.y, Integer.MAX_VALUE);
-		Ability ab = absNow[aiMe];
+
+		////////////////////////////////////////////////////////////////////////////////////
+		// 各アクションの優先度を計算して、ベストを選ぶ。
+		////////////////////////////////////////////////////////////////////////////////////
+
+		// 今のアテンションが継続実行可能かどうか調べる。継続不能だったら、Noneを設定しておく。
+		if (attentionCurrent.type == Attention.type_MoveToExtraBomb) {
+			int type = (int) packNow.board.data[attentionCurrent.x][attentionCurrent.y];
+			int d = (int) dis.data[attentionCurrent.x][attentionCurrent.y];
+			if (type == Constant.ExtraBomb && d < 1000 && d > 0) {
+				attentionCurrent.type = Attention.type_MoveToExtraBomb;
+			} else {
+				attentionCurrent.type = Attention.type_None;
+			}
+		} else if (attentionCurrent.type == Attention.type_MoveToIncrRange) {
+			int type = (int) packNow.board.data[attentionCurrent.x][attentionCurrent.y];
+			int d = (int) dis.data[attentionCurrent.x][attentionCurrent.y];
+			if (type == Constant.IncrRange && d < 1000 && d > 0) {
+				attentionCurrent.type = Attention.type_MoveToIncrRange;
+			} else {
+				attentionCurrent.type = Attention.type_None;
+			}
+		} else if (attentionCurrent.type == Attention.type_MoveToKick) {
+			int type = (int) packNow.board.data[attentionCurrent.x][attentionCurrent.y];
+			int d = (int) dis.data[attentionCurrent.x][attentionCurrent.y];
+			if (type == Constant.Kick && d < 1000 && d > 0) {
+				attentionCurrent.type = Attention.type_MoveToKick;
+			} else {
+				attentionCurrent.type = Attention.type_None;
+			}
+		} else if (attentionCurrent.type == Attention.type_MoveToWoodBreak) {
+			int numWoodBrakable = BBMUtility.numWoodBrakable(numField, boardNow, attentionCurrent.x, attentionCurrent.y, ab.strength);
+			int d = (int) dis.data[attentionCurrent.x][attentionCurrent.y];
+			if (d == 0 && ab.numBombHold > 0 && bombExist[attentionCurrent.x][attentionCurrent.y] == false) {
+				attentionCurrent.type = Attention.type_BombToWoodBreak;
+			} else if (numWoodBrakable > 0 && d < 1000 && d > 0) {
+				attentionCurrent.type = Attention.type_MoveToWoodBreak;
+			} else {
+				attentionCurrent.type = Attention.type_None;
+			}
+		} else if (attentionCurrent.type == Attention.type_BombToWoodBreak) {
+			attentionCurrent.type = Attention.type_None;
+		}
 
 		double scoreBest = 0;
 		int actionBest = -1;
+		Attention attentionBest = new Attention();
 		String reasonBest = "";
 
 		// 移動系でいいやつ探す。
@@ -158,43 +238,59 @@ public class OptimalActionFinder {
 				double score = -Double.MAX_VALUE;
 				int dir = -1;
 				String reason = "";
+				Attention attentionLocal = new Attention(Attention.type_None, x, y);
 
 				if (type == Constant.ExtraBomb) {
 					double threshold = param.getThresholdMoveToItem(type, d);
 					dir = BBMUtility.ComputeFirstDirection(dis, x, y);
 					score = safetyScore[dir] - threshold;
+					attentionLocal.type = Attention.type_MoveToExtraBomb;
 					reason = "Move to ExtraBomb";
 				} else if (type == Constant.IncrRange) {
 					double threshold = param.getThresholdMoveToItem(type, d);
 					dir = BBMUtility.ComputeFirstDirection(dis, x, y);
 					score = safetyScore[dir] - threshold;
+					attentionLocal.type = Attention.type_MoveToIncrRange;
 					reason = "move to IncrRange";
 				} else if (type == Constant.Kick) {
 					double threshold = param.getThresholdMoveToItem(type, d);
 					dir = BBMUtility.ComputeFirstDirection(dis, x, y);
 					score = safetyScore[dir] - threshold;
+					attentionLocal.type = Attention.type_MoveToKick;
 					reason = "Move to Kick";
 				} else {
-					int numAgent = BBMUtility.numAgent(boardNow, x, y);
-					if (numAgent > 0) {
-						double threshold = param.getThresholdMoveToKill(d);
+					int numWoodBrakable = BBMUtility.numWoodBrakable(numField, boardNow, x, y, ab.strength);
+					if (numWoodBrakable > 0) {
+						double threshold = param.getThresholdMoveToWoodBrake(numWoodBrakable, d);
 						dir = BBMUtility.ComputeFirstDirection(dis, x, y);
 						score = safetyScore[dir] - threshold;
-						reason = "Move to Kill";
+						attentionLocal.type = Attention.type_MoveToWoodBreak;
+						reason = "Move to Wood Brake";
 					} else {
-						int numWoodBrakable = BBMUtility.numWoodBrakable(numField, boardNow, x, y, ab.strength);
-						if (numWoodBrakable > 0) {
-							double threshold = param.getThresholdMoveToWoodBrake(numWoodBrakable, d);
+						int numAgent = BBMUtility.numAgent(boardNow, x, y);
+						if (numAgent > 0) {
+							double threshold = param.getThresholdMoveToKill(d);
 							dir = BBMUtility.ComputeFirstDirection(dis, x, y);
 							score = safetyScore[dir] - threshold;
-							reason = "Move to Wood Brake";
+							attentionLocal.type = Attention.type_None;
+							reason = "Move to Kill";
 						}
 					}
 				}
 
+				double unfocusPenalty = 0;
+				if (attentionCurrent.type == Attention.type_None) {
+					unfocusPenalty = 0;
+				} else if (attentionLocal.type == attentionCurrent.type && attentionLocal.x == attentionCurrent.x && attentionLocal.y == attentionCurrent.y) {
+					unfocusPenalty = 0;
+				} else {
+					unfocusPenalty = param.getUnfocusPenalty();
+				}
+				score = score - unfocusPenalty;
 				if (score > scoreBest) {
 					scoreBest = score;
 					actionBest = dir;
+					attentionBest = attentionLocal;
 					reasonBest = reason;
 				}
 			}
@@ -206,10 +302,24 @@ public class OptimalActionFinder {
 			if (num > 0) {
 				double threshold = param.getThresholdBombToWoodBrake(num);
 				double score = safetyScore[5] - threshold;
+				double unfocusPenalty = 0;
+				if (attentionCurrent.type == Attention.type_None) {
+					unfocusPenalty = 0;
+				} else {
+					if (attentionCurrent.type == Attention.type_BombToWoodBreak) {
+						unfocusPenalty = 0;
+					} else {
+						unfocusPenalty = param.getUnfocusPenalty();
+					}
+				}
+				score = score - unfocusPenalty;
 				int action = 5;
 				if (score > scoreBest) {
 					scoreBest = score;
 					actionBest = action;
+					attentionBest.type = Attention.type_BombToWoodBreak;
+					attentionBest.x = agentMe.x;
+					attentionBest.y = agentMe.y;
 					reasonBest = "Bomb for Wood Brake";
 				}
 			}
@@ -238,14 +348,19 @@ public class OptimalActionFinder {
 				}
 				if (best - bad < thresholdEnemy) continue;
 
-				// 敵が閾値を下回るアクションで、自分が安全なヤツを探す。
-				{
-					double score = safetyScore[actBad] - thresholdMe;
-					if (score > scoreBest) {
-						scoreBest = score;
-						actionBest = actBad;
-						reasonBest = "Atack";
-					}
+				double score = safetyScore[actBad] - thresholdMe;
+				double unfocusPenalty = 0;
+				if (attentionCurrent.type == Attention.type_None) {
+					unfocusPenalty = 0;
+				} else {
+					unfocusPenalty = param.getUnfocusPenalty();
+				}
+				score = score - unfocusPenalty;
+				if (score > scoreBest) {
+					scoreBest = score;
+					actionBest = actBad;
+					attentionBest.type = Attention.type_None;
+					reasonBest = "Atack";
 				}
 			}
 		}
@@ -257,7 +372,8 @@ public class OptimalActionFinder {
 				if (score > scoreBest) {
 					scoreBest = score;
 					actionBest = act;
-					reasonBest = "Most safety";
+					attentionBest.type = Attention.type_None;
+					reasonBest = "Most Safety";
 				}
 			}
 		}
@@ -281,6 +397,7 @@ public class OptimalActionFinder {
 			System.out.println(reasonBest + ", " + actionBest + ", " + actionStr);
 		}
 
+		attentionCurrent = attentionBest;
 		return actionBest;
 	}
 
