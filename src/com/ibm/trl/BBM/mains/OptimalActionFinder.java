@@ -40,15 +40,15 @@ public class OptimalActionFinder {
 		public OAFParameter() {
 			// Ø•ĞA‹——£‘‰Á•ªAŒÂ”‘‰Á•ª‚Ì‡”Ô‚ÉŒW”‚ğŠi”[‚·‚éB
 			double[][] temp = new double[9][];
-			temp[0] = new double[] { 0.469, 0.000, 0.000 };// Move to ExtraBomb
-			temp[1] = new double[] { 0.296, 0.000, 0.000 };// Move to IncrRange
-			temp[2] = new double[] { 0.455, 0.000, 0.000 };// Move to Kick
-			temp[3] = new double[] { 0.606, 0.000, 0.035 };// Move to WoodBrake
+			temp[0] = new double[] { 0.355, 0.050, 0.000 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.355, 0.050, 0.000 };// Move to IncrRange
+			temp[2] = new double[] { 0.355, 0.050, 0.000 };// Move to Kick
+			temp[3] = new double[] { 0.606, 0.050, 0.035 };// Move to WoodBrake
 			temp[4] = new double[] { 0.604, 0.000, 0.000 };// Move to Kill
 			temp[5] = new double[] { 0.388, 0.000, 0.054 };// Bomb to WoodBrake
 			temp[6] = new double[] { 0.459, 0.000, 0.000 };// Attack
-			temp[7] = new double[] { 0.050, 0.000, 0.000 };// Attack Efficiency
-			temp[8] = new double[] { 0.352, 0.000, 0.000 };// Unfocus Penalty
+			temp[7] = new double[] { 0.100, 0.000, 0.000 };// Attack Efficiency
+			temp[8] = new double[] { 0.000, 0.000, 0.000 };// Unfocus Penalty
 			Keisu = new MyMatrix(temp);
 		}
 
@@ -75,7 +75,7 @@ public class OptimalActionFinder {
 		}
 
 		public double getThresholdMoveToKill(int dis) {
-			if (dis <= 5) return 1;
+			if (dis <= 3) return 1;
 			double threshold = Keisu.data[4][0] + Keisu.data[4][1] * dis - Keisu.data[4][2] * 0;
 			return threshold;
 		}

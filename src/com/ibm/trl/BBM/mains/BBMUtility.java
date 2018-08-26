@@ -68,6 +68,162 @@ public class BBMUtility {
 		return num;
 	}
 
+	
+	static public class SurroundedInformation {
+		int numWall = 0;
+		int numAgent = 0;
+		int numBombKickable = 0;
+		int numBombFixedByAgent = 0;
+		int numBombFixed = 0;
+	}
+	
+
+	static public SurroundedInformation numSurrounded_Rich(MyMatrix board, boolean[][] bombExist, int x, int y) {
+		int numField = board.numd;
+
+		SurroundedInformation si = new SurroundedInformation();
+
+		if (x - 1 >= 0) {
+			int type = (int) board.data[x - 1][y];
+			boolean bomb = bombExist[x - 1][y];
+
+			if (Constant.isWall(type)) {
+				si.numWall++;
+			} else if (bomb) {
+				boolean bombFixed = false;
+				boolean bombFixedByAgent = false;
+				if (x - 2 >= 0) {
+					int type2 = (int) board.data[x - 2][y];
+					boolean bomb2 = bombExist[x - 2][y];
+					if (Constant.isWall(type2) || bomb2) {
+						bombFixed = true;
+					} else if (Constant.isAgent(type2)) {
+						bombFixedByAgent = true;
+					}
+				} else {
+					bombFixed = true;
+				}
+				if (bombFixed) {
+					si.numBombFixed++;
+				} else if (bombFixedByAgent) {
+					si.numBombFixedByAgent++;
+				} else {
+					si.numBombKickable++;
+				}
+			} else if (Constant.isAgent(type)) {
+				si.numAgent++;
+			}
+		} else {
+			si.numWall++;
+		}
+
+		if (x + 1 < numField) {
+			int type = (int) board.data[x + 1][y];
+			boolean bomb = bombExist[x + 1][y];
+
+			if (Constant.isWall(type)) {
+				si.numWall++;
+			} else if (bomb) {
+				boolean bombFixed = false;
+				boolean bombFixedByAgent = false;
+				if (x + 2 < numField) {
+					int type2 = (int) board.data[x + 2][y];
+					boolean bomb2 = bombExist[x + 2][y];
+					if (Constant.isWall(type2) || bomb2) {
+						bombFixed = true;
+					} else if (Constant.isAgent(type2)) {
+						bombFixedByAgent = true;
+					}
+				} else {
+					bombFixed = true;
+				}
+				if (bombFixed) {
+					si.numBombFixed++;
+				} else if (bombFixedByAgent) {
+					si.numBombFixedByAgent++;
+				} else {
+					si.numBombKickable++;
+				}
+			} else if (Constant.isAgent(type)) {
+				si.numAgent++;
+			}
+		} else {
+			si.numWall++;
+		}
+
+		if (y - 1 >= 0) {
+			int type = (int) board.data[x][y - 1];
+			boolean bomb = bombExist[x][y - 1];
+
+			if (Constant.isWall(type)) {
+				si.numWall++;
+			} else if (bomb) {
+				boolean bombFixed = false;
+				boolean bombFixedByAgent = false;
+				if (y - 2 >= 0) {
+					int type2 = (int) board.data[x][y - 2];
+					boolean bomb2 = bombExist[x][y - 2];
+					if (Constant.isWall(type2) || bomb2) {
+						bombFixed = true;
+					} else if (Constant.isAgent(type2)) {
+						bombFixedByAgent = true;
+					}
+				} else {
+					bombFixed = true;
+				}
+				if (bombFixed) {
+					si.numBombFixed++;
+				} else if (bombFixedByAgent) {
+					si.numBombFixedByAgent++;
+				} else {
+					si.numBombKickable++;
+				}
+			} else if (Constant.isAgent(type)) {
+				si.numAgent++;
+			}
+		} else {
+			si.numWall++;
+		}
+
+		if (y + 1 < numField) {
+			int type = (int) board.data[x][y + 1];
+			boolean bomb = bombExist[x][y + 1];
+
+			if (Constant.isWall(type)) {
+				si.numWall++;
+			} else if (bomb) {
+				boolean bombFixed = false;
+				boolean bombFixedByAgent = false;
+				if (y + 2 < numField) {
+					int type2 = (int) board.data[x][y + 2];
+					boolean bomb2 = bombExist[x][y + 2];
+					if (Constant.isWall(type2) || bomb2) {
+						bombFixed = true;
+					} else if (Constant.isAgent(type2)) {
+						bombFixedByAgent = true;
+					}
+				} else {
+					bombFixed = true;
+				}
+				if (bombFixed) {
+					si.numBombFixed++;
+				} else if (bombFixedByAgent) {
+					si.numBombFixedByAgent++;
+				} else {
+					si.numBombKickable++;
+				}
+			} else if (Constant.isAgent(type)) {
+				si.numAgent++;
+			}
+		} else {
+			si.numWall++;
+		}
+
+		return si;
+	}
+
+	
+	
 	static public int numSurrounded(MyMatrix board, int x, int y) {
 		int numField = board.numd;
 
@@ -165,6 +321,41 @@ public class BBMUtility {
 		}
 
 		return num + numMove;
+	}
+	
+	static public int numWall(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+
+		int num = 0;
+		if (x > 0) {
+			int type = (int) board.data[x - 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood) num++;
+		} else {
+			num++;
+		}
+
+		if (x < numField - 1) {
+			int type = (int) board.data[x + 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood) num++;
+		} else {
+			num++;
+		}
+
+		if (y > 0) {
+			int type = (int) board.data[x][y - 1];
+			if (type == Constant.Rigid || type == Constant.Wood) num++;
+		} else {
+			num++;
+		}
+
+		if (y < numField - 1) {
+			int type = (int) board.data[x][y + 1];
+			if (type == Constant.Rigid || type == Constant.Wood) num++;
+		} else {
+			num++;
+		}
+
+		return num;
 	}
 
 	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep) throws Exception {
