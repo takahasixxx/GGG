@@ -41,28 +41,28 @@ public class BBMUtility {
 		return num;
 	}
 
-	static public int numAgent(MyMatrix board, int x, int y) {
+	static public int numAgent(MyMatrix board, int x, int y, int exceptAgent) {
 		int numField = board.numd;
 
 		int num = 0;
 		if (x > 0) {
 			int type = (int) board.data[x - 1][y];
-			if (Constant.isAgent(type)) num++;
+			if (type != exceptAgent && Constant.isAgent(type)) num++;
 		}
 
 		if (x < numField - 1) {
 			int type = (int) board.data[x + 1][y];
-			if (Constant.isAgent(type)) num++;
+			if (type != exceptAgent && Constant.isAgent(type)) num++;
 		}
 
 		if (y > 0) {
 			int type = (int) board.data[x][y - 1];
-			if (Constant.isAgent(type)) num++;
+			if (type != exceptAgent && Constant.isAgent(type)) num++;
 		}
 
 		if (y < numField - 1) {
 			int type = (int) board.data[x][y + 1];
-			if (Constant.isAgent(type)) num++;
+			if (type != exceptAgent && Constant.isAgent(type)) num++;
 		}
 
 		return num;
@@ -74,28 +74,28 @@ public class BBMUtility {
 		int num = 0;
 		if (x > 0) {
 			int type = (int) board.data[x - 1][y];
-			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) num++;
 		} else {
 			num++;
 		}
 
 		if (x < numField - 1) {
 			int type = (int) board.data[x + 1][y];
-			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) num++;
 		} else {
 			num++;
 		}
 
 		if (y > 0) {
 			int type = (int) board.data[x][y - 1];
-			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) num++;
 		} else {
 			num++;
 		}
 
 		if (y < numField - 1) {
 			int type = (int) board.data[x][y + 1];
-			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || type == Constant.Flames || Constant.isAgent(type)) num++;
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) num++;
 		} else {
 			num++;
 		}
@@ -103,91 +103,68 @@ public class BBMUtility {
 		return num;
 	}
 
-	static public boolean isSurroundedAndDeath(MyMatrix board, int x, int y) {
+	static public int numSurrounded2(MyMatrix board, int x, int y, int exceptAgent) {
 		int numField = board.numd;
 
-		boolean[] open = new boolean[5];
-
-		for (int dir = 1; dir <= 4; dir++) {
-			for (int w = 0;; w++) {
-				int x2 = x;
-				int y2 = y;
-				if (dir == 1) {
-					x2 -= w;
-					if (x2 < 0) break;
-				} else if (dir == 2) {
-					x2 += w;
-					if (x2 >= numField) break;
-				} else if (dir == 3) {
-					y2 -= w;
-					if (y2 < 0) break;
-				} else if (dir == 4) {
-					y2 += w;
-					if (y2 >= numField) break;
-				}
-
-				if (w > 0) {
-					int type2 = (int) board.data[x2][y2];
-					if (type2 == Constant.Rigid || type2 == Constant.Wood || type2 == Constant.Bomb || type2 == Constant.Flames || Constant.isAgent(type2)) {
-						break;
-					}
-				}
-
-				if (dir == 1 || dir == 2) {
-					int x3 = x2;
-					int y3 = y2 - 1;
-					if (y3 < 0) {
-					} else {
-						int type3 = (int) board.data[x3][y3];
-						if (type3 == Constant.Rigid || type3 == Constant.Wood || type3 == Constant.Bomb || type3 == Constant.Flames || Constant.isAgent(type3)) {
-						} else {
-							open[dir] = true;
-							break;
-						}
-					}
-
-					int x4 = x2;
-					int y4 = y2 + 1;
-					if (y4 >= numField) {
-					} else {
-						int type4 = (int) board.data[x4][y4];
-						if (type4 == Constant.Rigid || type4 == Constant.Wood || type4 == Constant.Bomb || type4 == Constant.Flames || Constant.isAgent(type4)) {
-						} else {
-							open[dir] = true;
-							break;
-						}
-					}
-				} else {
-					int x3 = x2 - 1;
-					int y3 = y2;
-					if (x3 < 0) {
-					} else {
-						int type3 = (int) board.data[x3][y3];
-						if (type3 == Constant.Rigid || type3 == Constant.Wood || type3 == Constant.Bomb || type3 == Constant.Flames || Constant.isAgent(type3)) {
-						} else {
-							open[dir] = true;
-							break;
-						}
-					}
-
-					int x4 = x2 + 1;
-					int y4 = y2;
-					if (x4 >= numField) {
-					} else {
-						int type4 = (int) board.data[x4][y4];
-						if (type4 == Constant.Rigid || type4 == Constant.Wood || type4 == Constant.Bomb || type4 == Constant.Flames || Constant.isAgent(type4)) {
-						} else {
-							open[dir] = true;
-							break;
-						}
-					}
+		int num = 0;
+		int numMove = 0;
+		if (x > 0) {
+			int type = (int) board.data[x - 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) {
+				num++;
+			} else {
+				int numAgent = numAgent(board, x - 1, y, exceptAgent);
+				if (numAgent >= 1) {
+					numMove++;
 				}
 			}
+		} else {
+			num++;
 		}
 
-		if (open[1] == false && open[2] == false) return true;
-		if (open[3] == false && open[4] == false) return true;
-		return false;
+		if (x < numField - 1) {
+			int type = (int) board.data[x + 1][y];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) {
+				num++;
+			} else {
+				int numAgent = numAgent(board, x + 1, y, exceptAgent);
+				if (numAgent >= 1) {
+					numMove++;
+				}
+			}
+		} else {
+			num++;
+		}
+
+		if (y > 0) {
+			int type = (int) board.data[x][y - 1];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) {
+				num++;
+			} else {
+				int numAgent = numAgent(board, x, y - 1, exceptAgent);
+				if (numAgent >= 1) {
+					numMove++;
+				}
+			}
+		} else {
+			num++;
+		}
+
+		if (y < numField - 1) {
+			int type = (int) board.data[x][y + 1];
+			if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) {
+				num++;
+			} else {
+				int numAgent = numAgent(board, x, y + 1, exceptAgent);
+				if (numAgent >= 1) {
+					numMove++;
+				}
+			}
+		} else {
+			num++;
+		}
+
+		return num + numMove;
 	}
 
 	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep) throws Exception {

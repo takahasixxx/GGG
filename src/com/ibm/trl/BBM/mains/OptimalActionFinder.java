@@ -40,15 +40,15 @@ public class OptimalActionFinder {
 		public OAFParameter() {
 			// 切片、距離増加分、個数増加分の順番に係数を格納する。
 			double[][] temp = new double[9][];
-			temp[0] = new double[] { 0.635, 0.016, 0.000 };// Move to ExtraBomb
-			temp[1] = new double[] { 0.525, 0.017, 0.000 };// Move to IncrRange
-			temp[2] = new double[] { 0.567, 0.012, 0.000 };// Move to Kick
-			temp[3] = new double[] { 0.683, 0.129, 0.047 };// Move to WoodBrake
-			temp[4] = new double[] { 0.703, 0.026, 0.000 };// Move to Kill
-			temp[5] = new double[] { 0.512, 0.000, 0.047 };// Bomb to WoodBrake
-			temp[6] = new double[] { 0.480, 0.000, 0.000 };// Attack
-			temp[7] = new double[] { 0.075, 0.000, 0.000 };// Attack Efficiency
-			temp[8] = new double[] { 0.300, 0.000, 0.000 };// Unfocus Penalty
+			temp[0] = new double[] { 0.469, 0.000, 0.000 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.296, 0.000, 0.000 };// Move to IncrRange
+			temp[2] = new double[] { 0.455, 0.000, 0.000 };// Move to Kick
+			temp[3] = new double[] { 0.606, 0.000, 0.035 };// Move to WoodBrake
+			temp[4] = new double[] { 0.604, 0.000, 0.000 };// Move to Kill
+			temp[5] = new double[] { 0.388, 0.000, 0.054 };// Bomb to WoodBrake
+			temp[6] = new double[] { 0.459, 0.000, 0.000 };// Attack
+			temp[7] = new double[] { 0.050, 0.000, 0.000 };// Attack Efficiency
+			temp[8] = new double[] { 0.352, 0.000, 0.000 };// Unfocus Penalty
 			Keisu = new MyMatrix(temp);
 		}
 
@@ -75,7 +75,7 @@ public class OptimalActionFinder {
 		}
 
 		public double getThresholdMoveToKill(int dis) {
-			if (dis <= 3) return 1;
+			if (dis <= 5) return 1;
 			double threshold = Keisu.data[4][0] + Keisu.data[4][1] * dis - Keisu.data[4][2] * 0;
 			return threshold;
 		}
@@ -92,7 +92,7 @@ public class OptimalActionFinder {
 		public double getThresholdAttackEffect() {
 			return Keisu.data[7][0];
 		}
-		
+
 		public double getUnfocusPenalty() {
 			return Keisu.data[8][0];
 		}
@@ -151,10 +151,25 @@ public class OptimalActionFinder {
 
 		// SafetyScoreを出力する。
 		if (verbose) {
-			for (int i = 0; i < 6; i++) {
-				System.out.println("action=" + i + ", safetyScore=" + safetyScore[i]);
+			// for (int ai = 0; ai < 4; ai++) {
+			{
+				int ai = 3;
+				for (int act = 0; act < 6; act++) {
+					System.out.println("ai=" + ai + ", action=" + act + ", safetyScore=" + safetyScoreAll[ai][act]);
+				}
 			}
 		}
+
+		// TODO やばいエージェントがいるときは止める。
+		{
+			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+				int num = BBMUtility.numSurrounded2(packNow.board, aaa.x, aaa.y, aaa.agentID);
+				if (num == 4) {
+					System.out.println("やばい");
+				}
+			}
+		}
+
 		////////////////////////////////////////////////////////////////////////////////////
 		// 基本変数の定義
 		////////////////////////////////////////////////////////////////////////////////////
@@ -267,7 +282,7 @@ public class OptimalActionFinder {
 						attentionLocal.type = Attention.type_MoveToWoodBreak;
 						reason = "Move to Wood Brake";
 					} else {
-						int numAgent = BBMUtility.numAgent(boardNow, x, y);
+						int numAgent = BBMUtility.numAgent(boardNow, x, y, me);
 						if (numAgent > 0) {
 							double threshold = param.getThresholdMoveToKill(d);
 							dir = BBMUtility.ComputeFirstDirection(dis, x, y);
@@ -326,8 +341,9 @@ public class OptimalActionFinder {
 		}
 
 		// 敵を殺すための爆弾設置でいいヤツ探す。
-		if (ab.numBombHold > 0 && bombExist[agentMe.x][agentMe.y] == false) {
+		if (true) {
 			for (int ai = 0; ai < 4; ai++) {
+				if (absNow[ai].isAlive == false) continue;
 				if (ai == aiMe) continue;
 
 				double thresholdMe = param.getThresholdAttack();
@@ -338,6 +354,11 @@ public class OptimalActionFinder {
 				double bad = Double.MAX_VALUE;
 				int actBad = -1;
 				for (int act = 0; act < 6; act++) {
+					if (act == 5) {
+						if (ab.numBombHold == 0 || bombExist[agentMe.x][agentMe.y] == true) {
+							continue;
+						}
+					}
 					if (safetyScoreAll[ai][act] > best) {
 						best = safetyScoreAll[ai][act];
 					}
@@ -347,15 +368,7 @@ public class OptimalActionFinder {
 					}
 				}
 				if (best - bad < thresholdEnemy) continue;
-
 				double score = safetyScore[actBad] - thresholdMe;
-				double unfocusPenalty = 0;
-				if (attentionCurrent.type == Attention.type_None) {
-					unfocusPenalty = 0;
-				} else {
-					unfocusPenalty = param.getUnfocusPenalty();
-				}
-				score = score - unfocusPenalty;
 				if (score > scoreBest) {
 					scoreBest = score;
 					actionBest = actBad;

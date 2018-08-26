@@ -204,10 +204,20 @@ public class Agent {
 
 			Pack pack = new Pack(board, abs, sh);
 
-			SafetyScoreEvaluator.set(pack, me);
-			Thread.sleep(timeSampling);
-			double[][] safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
-			SafetyScoreEvaluator.set(null, -1);
+			double[][] safetyScore;
+
+			if (false) {
+				// TODO Multi thread version
+				SafetyScoreEvaluator.set(pack, me);
+				Thread.sleep(timeSampling);
+				safetyScore = SafetyScoreEvaluator.getLatestSafetyScore();
+				SafetyScoreEvaluator.set(null, -1);
+			}
+			// TODO Single thread version for debug
+			if (true) {
+				safetyScore = SafetyScoreEvaluator.computeSafetyScore(pack, me);
+			}
+
 			action = oaf.findOptimalAction(pack, me, safetyScore);
 			if (verbose) {
 				int tryCounter = SafetyScoreEvaluator.getTryCounter();
