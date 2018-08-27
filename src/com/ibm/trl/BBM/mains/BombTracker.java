@@ -47,22 +47,19 @@ public class BombTracker {
 		}
 
 		public String toString() {
-			return String.format("● (%2d,%2d), type=%2d, lifeB=%2d, power=%2d, moveDirection=%2d, lifeFC=%2d, selected=%7b", x, y, type, lifeBomb, power, moveDirection, lifeFlameCenter, selected);
+			return String.format("● (%2d,%2d), type=%2d, lifeB=%2d, power=%2d, moveDirection=%2d, lifeFC=%2d, selected=%7b\n", x, y, type, lifeBomb, power, moveDirection, lifeFlameCenter, selected);
 		}
 	}
 
 	static public class NodeMatchBest {
 		List<Node> nodePairPre = new ArrayList<Node>();
 		List<Node> nodePairNow = new ArrayList<Node>();
-		double numBombMatched;
-		double numFlameDiff;
-		double moveIncorrect;
-
-		public NodeMatchBest() {
-			numBombMatched = -Double.MAX_VALUE;
-			numFlameDiff = Double.MAX_VALUE;
-			moveIncorrect = Double.MAX_VALUE;
-		}
+		double numBomb = Double.MAX_VALUE;
+		double numBombMatched = -Double.MAX_VALUE;
+		double moveDistanceError = Double.MAX_VALUE;
+		double numFlameDiff = Double.MAX_VALUE;
+		double moveIncorrect = Double.MAX_VALUE;
+		String moveIncorrectReason = "";
 	}
 
 	static Node[][] computeBombMap(Ability[] abs, MyMatrix board, MyMatrix bomb_life, MyMatrix bomb_blast_strength, List<MyMatrix> boardOld, List<MyMatrix> lifeOld, List<MyMatrix> powerOld,
@@ -88,8 +85,8 @@ public class BombTracker {
 				Node node2 = new Node(node);
 				int power = (int) power_pre.data[x][y];
 				int life = (int) life_pre.data[x][y];
-				if (node2.power != power) throw new Exception("error");
-				if (node2.lifeBomb != life) throw new Exception("error");
+				if (node2.power != power) throw new Exception("error1");
+				if (node2.lifeBomb != life) throw new Exception("error2");
 				nodesPre.add(node2);
 			}
 		}
@@ -218,8 +215,10 @@ public class BombTracker {
 		}
 
 		if (verbose) {
-			if (best.numFlameDiff > 0 || best.moveIncorrect > 0) {
-				System.out.println("おかしい??");
+			if (best.numBomb - best.numBombMatched > 0 || best.numFlameDiff > 0 || best.moveIncorrect > 0) {
+				System.out.println("おかしい");
+				System.out.println(best.moveIncorrectReason);
+				System.out.println();
 			}
 		}
 
@@ -318,6 +317,18 @@ public class BombTracker {
 				}
 			}
 
+			// マッチしている爆弾同士のマンハッタン距離が2以上の場合はペナルティをかける。
+			int moveDistanceError = 0;
+			int num = nodePairNow.size();
+			for (int i = 0; i < num; i++) {
+				Node now = nodePairNow.get(i);
+				Node pre = nodePairPre.get(i);
+				int ddd = Math.abs(now.x - pre.x) + Math.abs(now.y - pre.y);
+				if (ddd > 1) {
+					moveDistanceError += ddd - 1;
+				}
+			}
+
 			// FlameCenterを爆発させて、Boardと食い違いがあるかどうか調べる。
 			MyMatrix myFlame = new MyMatrix(numField, numField);
 			// MyMatrix flameCenter = new MyMatrix(numField, numField);
@@ -377,6 +388,7 @@ public class BombTracker {
 			}
 
 			// Bomb→BomtとかBomb→Flameの移動状態が食い違ってないかを調べる。食い違いが最も少ないやつが選ばれるようにする。
+			String reason = "";
 			double moveIncorrect = 0;
 			{
 				int numPair = nodePairNow.size();
@@ -398,141 +410,186 @@ public class BombTracker {
 					nodeNow.moveDirection = dir;
 				}
 
-				MyMatrix[] BDs = new MyMatrix[4];
-				BDs[0] = board;
-				BDs[1] = boardOld.get(0);
-				BDs[2] = boardOld.get(1);
-				BDs[3] = boardOld.get(2);
+				// 動きの変化で、変なところが無いか調べる。
+				if (true) {
+					MyMatrix[] BDs = new MyMatrix[4];
+					BDs[0] = board;
+					BDs[1] = boardOld.get(0);
+					BDs[2] = boardOld.get(1);
+					BDs[3] = boardOld.get(2);
 
-				for (int i = 0; i < numPair; i++) {
-					Node nodePre = nodePairPre.get(i);
-					Node nodeNow = nodePairNow.get(i);
+					for (int i = 0; i < numPair; i++) {
+						Node nodePre = nodePairPre.get(i);
+						Node nodeNow = nodePairNow.get(i);
 
-					int dirPre = nodePre.moveDirection;
-					int dirNow = nodeNow.moveDirection;
+						int dirPre = nodePre.moveDirection;
+						int dirNow = nodeNow.moveDirection;
 
-					if (dirPre == 0 || dirNow == 0) throw new Exception("error");
-					if (dirPre == -1 || dirNow == -1) throw new Exception("error");
+						if (dirPre == 0 || dirNow == 0) throw new Exception("error");
+						if (dirPre == -1 || dirNow == -1) throw new Exception("error");
 
-					double cost = 0;
+						double cost = 0;
 
-					if (dirPre == dirNow) {
-						cost = 0;
-					} else if (dirNow == 5) {
-						// Bombが動いていたのに止まった場合
-
-						int xCheck = nodePre.x;
-						int yCheck = nodePre.y;
-						if (dirPre == 1) {
-							xCheck--;
-						} else if (dirPre == 2) {
-							xCheck++;
-						} else if (dirPre == 3) {
-							yCheck--;
-						} else if (dirPre == 4) {
-							yCheck++;
-						}
-
-						if (xCheck < 0 || xCheck >= numField || yCheck < 0 || yCheck >= numField) {
+						if (dirPre == dirNow) {
 							cost = 0;
-						} else {
-							int typeCheckNow = (int) BDs[0].data[xCheck][yCheck];
-							int typeCheckPre = (int) BDs[1].data[xCheck][yCheck];
+						} else if (dirNow == 5) {
+							// Bombが動いていたのに止まった場合
 
-							if (typeCheckPre == Constant.Rigid) {
-								cost = 0;
-							} else if (typeCheckPre == Constant.Wood) {
-								cost = 0;
-							} else if (Constant.isAgent(typeCheckNow)) {
-								cost = 0;
+							int xCheck = nodePre.x;
+							int yCheck = nodePre.y;
+							if (dirPre == 1) {
+								xCheck--;
+							} else if (dirPre == 2) {
+								xCheck++;
+							} else if (dirPre == 3) {
+								yCheck--;
+							} else if (dirPre == 4) {
+								yCheck++;
+							}
 
-								// 真っ向からKickableなAgentが進んできた場合は、停止したように見えるけど、逆サイドに動く。フラグを修正しておく。
-								int xCheck2 = xCheck;
-								int yCheck2 = yCheck;
-								int dirNew = 5;
-								if (dirPre == 1) {
-									xCheck2--;
-									dirNow = 2;
-								} else if (dirPre == 2) {
-									xCheck2++;
-									dirNew = 1;
-								} else if (dirPre == 3) {
-									yCheck2--;
-									dirNew = 4;
-								} else if (dirPre == 4) {
-									yCheck2++;
-									dirNew = 3;
-								}
-								if (xCheck2 >= 0 && xCheck2 < numField && yCheck2 >= 0 && yCheck2 < numField) {
-									int typeCheck2Pre = (int) BDs[1].data[xCheck2][yCheck2];
-									if (typeCheck2Pre == typeCheckNow) {
-										if (abs[typeCheckNow - 10].kick == true) {
-											nodeNow.moveDirection = dirNew;
+							if (xCheck < 0 || xCheck >= numField || yCheck < 0 || yCheck >= numField) {
+								cost = 0;
+							} else {
+								int typeCheckNow = (int) BDs[0].data[xCheck][yCheck];
+								int typeCheckPre = (int) BDs[1].data[xCheck][yCheck];
+
+								if (typeCheckPre == Constant.Rigid) {
+									cost = 0;
+								} else if (typeCheckPre == Constant.Wood) {
+									cost = 0;
+								} else if (typeCheckPre == Constant.Bomb) {
+									cost = 0;
+								} else if (typeCheckPre == Constant.ExtraBomb) {
+									cost = 0;
+								} else if (typeCheckPre == Constant.IncrRange) {
+									cost = 0;
+								} else if (typeCheckPre == Constant.Kick) {
+									cost = 0;
+								} else if (Constant.isAgent(typeCheckNow)) {
+									cost = 0;
+
+									// 真っ向からKickableなAgentが進んできた場合は、停止したように見えるけど、逆サイドに動く。フラグを修正しておく。
+									int xCheck2 = xCheck;
+									int yCheck2 = yCheck;
+									int dirNew = 5;
+									if (dirPre == 1) {
+										xCheck2--;
+										dirNow = 2;
+									} else if (dirPre == 2) {
+										xCheck2++;
+										dirNew = 1;
+									} else if (dirPre == 3) {
+										yCheck2--;
+										dirNew = 4;
+									} else if (dirPre == 4) {
+										yCheck2++;
+										dirNew = 3;
+									}
+									if (xCheck2 >= 0 && xCheck2 < numField && yCheck2 >= 0 && yCheck2 < numField) {
+										int typeCheck2Pre = (int) BDs[1].data[xCheck2][yCheck2];
+										if (typeCheck2Pre == typeCheckNow) {
+											if (abs[typeCheckNow - 10].kick == true) {
+												nodeNow.moveDirection = dirNew;
+											}
 										}
 									}
-								}
-							} else {
-								// Bombが止まる理由がどこにもないので、コストを足す。
-								cost = 1;
-							}
-						}
+								} else if (typeCheckPre == Constant.Passage) {
+									// 移動する爆弾同士のコンフリクトだった場合は止まる。
+									boolean find = false;
+									for (int j = 0; j < numPair; j++) {
+										if (j == i) continue;
+										Node nodePre2 = nodePairPre.get(j);
+										int x2 = nodePre2.x;
+										int y2 = nodePre2.y;
+										if (nodePre2.moveDirection == 1) {
+											x2--;
+										} else if (nodePre2.moveDirection == 2) {
+											x2++;
+										} else if (nodePre2.moveDirection == 3) {
+											y2--;
+										} else if (nodePre2.moveDirection == 4) {
+											y2++;
+										}
 
-					} else {
-						// Bombが止まっていたのに、動き出した場合
+										if (x2 == xCheck && y2 == yCheck) {
+											find = true;
+											break;
+										}
+									}
 
-						if (nodeNow.type == Constant.Flames) {
-							// 移動が始まった直後にFlameになった場合。現ステップのAgentはFlameの下で死亡。前ステップは確認できるので、そこだけチェックする。
-							int xCheck = nodePre.x;
-							int yCheck = nodePre.y;
-							if (dirNow == 1) {
-								xCheck++;
-							} else if (dirNow == 2) {
-								xCheck--;
-							} else if (dirNow == 3) {
-								yCheck++;
-							} else if (dirNow == 4) {
-								yCheck--;
-							}
+									if (find) {
+										cost = 0;
+									} else {
+										cost = 1;
+										reason += String.format("移動する爆弾同士のコンフリクトのはず。ぶつかる爆弾がない。%s, %s\n", nodeNow, nodePre);
+									}
 
-							if (xCheck >= 0 && xCheck < numField && yCheck >= 0 && yCheck < numField) {
-								int typeCheckPre = (int) BDs[1].data[xCheck][yCheck];
-								if (Constant.isAgent(typeCheckPre) && abs[typeCheckPre - 10].kick && abs[typeCheckPre - 10].isAlive == false) {
-									cost = 0;
 								} else {
+									// Bombが止まる理由がどこにもないので、コストを足す。
 									cost = 1;
+									reason += String.format("爆弾が止まる理由がどこにもない。%s, %s\n", nodeNow, nodePre);
 								}
-							} else {
-								cost = 1;
 							}
+
 						} else {
-							// Bombのまま移動が始まった場合。
-							int xCheck = nodePre.x;
-							int yCheck = nodePre.y;
-							if (dirNow == 1) {
-								xCheck++;
-							} else if (dirNow == 2) {
-								xCheck--;
-							} else if (dirNow == 3) {
-								yCheck++;
-							} else if (dirNow == 4) {
-								yCheck--;
-							}
+							// Bombが止まっていたのに、動き出した場合
+							if (nodeNow.type == Constant.Flames) {
+								// 移動が始まった直後にFlameになった場合。現ステップのAgentはFlameの下で死亡。前ステップは確認できるので、そこだけチェックする。
+								int xCheck = nodePre.x;
+								int yCheck = nodePre.y;
+								if (dirNow == 1) {
+									xCheck++;
+								} else if (dirNow == 2) {
+									xCheck--;
+								} else if (dirNow == 3) {
+									yCheck++;
+								} else if (dirNow == 4) {
+									yCheck--;
+								}
 
-							if (xCheck >= 0 && xCheck < numField && yCheck >= 0 && yCheck < numField) {
-								int typeCheckPre = (int) BDs[1].data[xCheck][yCheck];
-								int typeCheckNow = (int) BDs[0].data[nodePre.x][nodePre.y];
-								if (Constant.isAgent(typeCheckPre) && typeCheckNow == typeCheckPre && abs[typeCheckPre - 10].kick) {
-									cost = 0;
+								if (xCheck >= 0 && xCheck < numField && yCheck >= 0 && yCheck < numField) {
+									int typeCheckNow = (int) BDs[0].data[xCheck][yCheck];
+									if (Constant.isAgent(typeCheckNow) && abs[typeCheckNow - 10].kick && abs[typeCheckNow - 10].isAlive == false) {
+										cost = 0;
+									} else {
+										reason += String.format("キックした瞬間に死亡したはず。キック直後に死亡したエージェントがいない。%s, %s\n", nodeNow, nodePre);
+										cost = 1;
+									}
 								} else {
+									reason += String.format("キックした瞬間に死亡したはず。ボード外からのキックになってる。%s, %s\n", nodeNow, nodePre);
 									cost = 1;
 								}
 							} else {
-								cost = 1;
+								// Bombのまま移動が始まった場合。
+								int xCheck = nodePre.x;
+								int yCheck = nodePre.y;
+								if (dirNow == 1) {
+									xCheck++;
+								} else if (dirNow == 2) {
+									xCheck--;
+								} else if (dirNow == 3) {
+									yCheck++;
+								} else if (dirNow == 4) {
+									yCheck--;
+								}
+
+								if (xCheck >= 0 && xCheck < numField && yCheck >= 0 && yCheck < numField) {
+									int typeCheckNow = (int) BDs[0].data[xCheck][yCheck];
+									if (Constant.isAgent(typeCheckNow) && abs[typeCheckNow - 10].kick && abs[typeCheckNow - 10].isAlive) {
+										cost = 0;
+									} else {
+										reason += String.format("キックしたはず。キックしたエージェントがいない。%s, %s\n", nodeNow, nodePre);
+										cost = 1;
+									}
+								} else {
+									reason += String.format("キックしたはず。ボード外からのキックになってる。%s, %s\n", nodeNow, nodePre);
+									cost = 1;
+								}
 							}
 						}
-					}
 
-					moveIncorrect += cost;
+						moveIncorrect += cost;
+					}
 				}
 			}
 
@@ -540,11 +597,15 @@ public class BombTracker {
 			if (numBombMatched > best.numBombMatched) {
 				isBest = true;
 			} else if (numBombMatched == best.numBombMatched) {
-				if (numFlameDiff < best.numFlameDiff) {
+				if (moveDistanceError < best.moveDistanceError) {
 					isBest = true;
-				} else if (numFlameDiff == best.numFlameDiff) {
-					if (moveIncorrect < best.moveIncorrect) {
+				} else if (moveDistanceError == best.moveDistanceError) {
+					if (numFlameDiff < best.numFlameDiff) {
 						isBest = true;
+					} else if (numFlameDiff == best.numFlameDiff) {
+						if (moveIncorrect < best.moveIncorrect) {
+							isBest = true;
+						}
 					}
 				}
 			}
@@ -554,9 +615,12 @@ public class BombTracker {
 				best.nodePairNow.clear();
 				best.nodePairPre.addAll(nodePairPre);
 				best.nodePairNow.addAll(nodePairNow);
+				best.numBomb = numBomb;
 				best.numBombMatched = numBombMatched;
+				best.moveDistanceError = moveDistanceError;
 				best.numFlameDiff = numFlameDiff;
 				best.moveIncorrect = moveIncorrect;
+				best.moveIncorrectReason = reason;
 
 				if (false) {
 					System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
@@ -585,7 +649,7 @@ public class BombTracker {
 
 				// マンハッタン距離1以下じゃないとペア不成立。
 				int dis = Math.abs(nodePre.x - nodeNow.x) + Math.abs(nodePre.y - nodeNow.y);
-				if (dis > 1) continue;
+				if (dis > 2) continue;
 
 				// BombからBombの遷移の場合、ライフが1減ってるものじゃないとペア不成立。
 				if (nodeNow.type == Constant.Bomb) {

@@ -5,6 +5,32 @@ import com.ibm.trl.BBM.mains.BombTracker.Node;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class BBMUtility {
+	
+	static public boolean isMoveable(int numField, MyMatrix board, int x, int y, int dir) {
+		if (dir == 0) return true;
+		if (dir == 5) return true;
+
+		int x2 = x;
+		int y2 = y;
+		if (dir == 1) {
+			x2--;
+		} else if (dir == 2) {
+			x2++;
+		} else if (dir == 3) {
+			y2--;
+		} else if (dir == 4) {
+			y2++;
+		}
+
+		if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) return false;
+
+		int type = (int) board.data[x2][y2];
+		if (Constant.isWall(type)) {
+			return false;
+		} else {
+			return true;
+		}
+	}
 
 	static public int numWoodBrakable(int numField, MyMatrix board, int x, int y, int strength) {
 		int num = 0;

@@ -1,6 +1,7 @@
 package com.ibm.trl.BBM.mains;
 
 import java.io.Serializable;
+import java.util.Random;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
@@ -12,6 +13,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 public class OptimalActionFinder {
 	static final boolean verbose = GlobalParameter.verbose;
 	static final int numField = GlobalParameter.numField;
+	static final Random rand = new Random();
 	OAFParameter param = new OAFParameter();
 
 	public static class OAFParameter implements Serializable {
@@ -40,15 +42,15 @@ public class OptimalActionFinder {
 		public OAFParameter() {
 			// 切片、距離増加分、個数増加分の順番に係数を格納する。
 			double[][] temp = new double[9][];
-			temp[0] = new double[] { 0.355, 0.050, 0.000 };// Move to ExtraBomb
-			temp[1] = new double[] { 0.355, 0.050, 0.000 };// Move to IncrRange
-			temp[2] = new double[] { 0.355, 0.050, 0.000 };// Move to Kick
-			temp[3] = new double[] { 0.606, 0.050, 0.035 };// Move to WoodBrake
-			temp[4] = new double[] { 0.604, 0.000, 0.000 };// Move to Kill
+			temp[0] = new double[] { 0.355, 0.010, 0.000 };// Move to ExtraBomb
+			temp[1] = new double[] { 0.355, 0.010, 0.000 };// Move to IncrRange
+			temp[2] = new double[] { 0.355, 0.010, 0.000 };// Move to Kick
+			temp[3] = new double[] { 0.506, 0.010, 0.035 };// Move to WoodBrake
+			temp[4] = new double[] { 0.504, 0.010, 0.000 };// Move to Kill
 			temp[5] = new double[] { 0.388, 0.000, 0.054 };// Bomb to WoodBrake
 			temp[6] = new double[] { 0.459, 0.000, 0.000 };// Attack
-			temp[7] = new double[] { 0.100, 0.000, 0.000 };// Attack Efficiency
-			temp[8] = new double[] { 0.000, 0.000, 0.000 };// Unfocus Penalty
+			temp[7] = new double[] { 0.400, 0.000, 0.000 };// Attack Efficiency
+			temp[8] = new double[] { 0.500, 0.000, 0.000 };// Unfocus Penalty
 			Keisu = new MyMatrix(temp);
 		}
 
@@ -127,6 +129,7 @@ public class OptimalActionFinder {
 		this.param = param;
 	}
 
+	
 	public int findOptimalAction(Pack packNow, int me, double[][] safetyScoreAll) throws Exception {
 
 		int aiMe = me - 10;
@@ -161,7 +164,7 @@ public class OptimalActionFinder {
 		}
 
 		// TODO やばいエージェントがいるときは止める。
-		{
+		if (false) {
 			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
 				int num = BBMUtility.numSurrounded2(packNow.board, aaa.x, aaa.y, aaa.agentID);
 				if (num == 4) {
@@ -189,6 +192,7 @@ public class OptimalActionFinder {
 		for (EEE bbb : shNow.getBombEntry()) {
 			bombExist[bbb.x][bbb.y] = true;
 		}
+
 		////////////////////////////////////////////////////////////////////////////////////
 		// 現在地から各地点への移動距離を計算する。
 		////////////////////////////////////////////////////////////////////////////////////
@@ -237,10 +241,13 @@ public class OptimalActionFinder {
 			attentionCurrent.type = Attention.type_None;
 		}
 
-		double scoreBest = 0;
-		int actionBest = -1;
-		Attention attentionBest = new Attention();
-		String reasonBest = "";
+		double[] scoreBest = new double[6];
+		Attention[] attentionBest = new Attention[6];
+		String[] reasonBest = new String[6];
+		for (int i = 0; i < 6; i++) {
+			attentionBest[i] = new Attention();
+			reasonBest[i] = "----";
+		}
 
 		// 移動系でいいやつ探す。
 		for (int x = 0; x < numField; x++) {
@@ -252,7 +259,7 @@ public class OptimalActionFinder {
 
 				double score = -Double.MAX_VALUE;
 				int dir = -1;
-				String reason = "";
+				String reason = "--++--";
 				Attention attentionLocal = new Attention(Attention.type_None, x, y);
 
 				if (type == Constant.ExtraBomb) {
@@ -293,6 +300,8 @@ public class OptimalActionFinder {
 					}
 				}
 
+				if (dir == -1) continue;
+
 				double unfocusPenalty = 0;
 				if (attentionCurrent.type == Attention.type_None) {
 					unfocusPenalty = 0;
@@ -302,11 +311,10 @@ public class OptimalActionFinder {
 					unfocusPenalty = param.getUnfocusPenalty();
 				}
 				score = score - unfocusPenalty;
-				if (score > scoreBest) {
-					scoreBest = score;
-					actionBest = dir;
-					attentionBest = attentionLocal;
-					reasonBest = reason;
+				if (score > scoreBest[dir]) {
+					scoreBest[dir] = score;
+					attentionBest[dir] = attentionLocal;
+					reasonBest[dir] = reason;
 				}
 			}
 		}
@@ -329,13 +337,12 @@ public class OptimalActionFinder {
 				}
 				score = score - unfocusPenalty;
 				int action = 5;
-				if (score > scoreBest) {
-					scoreBest = score;
-					actionBest = action;
-					attentionBest.type = Attention.type_BombToWoodBreak;
-					attentionBest.x = agentMe.x;
-					attentionBest.y = agentMe.y;
-					reasonBest = "Bomb for Wood Brake";
+				if (score > scoreBest[action]) {
+					scoreBest[action] = score;
+					attentionBest[action].type = Attention.type_BombToWoodBreak;
+					attentionBest[action].x = agentMe.x;
+					attentionBest[action].y = agentMe.y;
+					reasonBest[action] = "Bomb for Wood Brake";
 				}
 			}
 		}
@@ -367,51 +374,156 @@ public class OptimalActionFinder {
 						actBad = act;
 					}
 				}
-				if (best - bad < thresholdEnemy) continue;
+				double def = best - bad;
+				if (def < thresholdEnemy) continue;
 				double score = safetyScore[actBad] - thresholdMe;
-				if (score > scoreBest) {
-					scoreBest = score;
-					actionBest = actBad;
-					attentionBest.type = Attention.type_None;
-					reasonBest = "Atack";
+				if (score > scoreBest[actBad]) {
+					scoreBest[actBad] = score;
+					attentionBest[actBad].type = Attention.type_None;
+					reasonBest[actBad] = "Atack";
 				}
 			}
 		}
 
 		// 全ての行動が閾値を超えていない場合は、危険な状態なので、もっとも安全になる行動を選ぶ。
-		if (actionBest == -1) {
-			for (int act = 0; act < 6; act++) {
-				double score = safetyScore[act];
-				if (score > scoreBest) {
-					scoreBest = score;
-					actionBest = act;
-					attentionBest.type = Attention.type_None;
-					reasonBest = "Most Safety";
+		{
+			boolean isConflict = false;
+			if (actionPre >= 1 && actionPre <= 4) {
+				if (agentMe.x == xPre && agentMe.y == yPre && BBMUtility.isMoveable(numField, boardNow, xPre, yPre, actionPre)) {
+					isConflict = true;
 				}
 			}
-		}
 
-		// TODO 出力
-		if (verbose) {
-			String actionStr = "";
-			if (actionBest == 0) {
-				actionStr = "・";
-			} else if (actionBest == 1) {
-				actionStr = "↑";
-			} else if (actionBest == 2) {
-				actionStr = "↓";
-			} else if (actionBest == 3) {
-				actionStr = "←";
-			} else if (actionBest == 4) {
-				actionStr = "→";
-			} else if (actionBest == 5) {
-				actionStr = "＠";
+			int action = -1;
+			if (isConflict) {
+				double[] www = new double[6];
+				for (int i = 0; i < 6; i++) {
+					if (scoreBest[i] < 0) continue;
+					www[i] = Math.pow(scoreBest[i], 1);
+				}
+				double total = 0;
+				for (int i = 0; i < 6; i++) {
+					total += www[i];
+				}
+				if (total > 0) {
+					System.out.println("サンプリング");
+					double rrr = rand.nextDouble() * total;
+					double offset = 0;
+					for (int i = 0; i < 6; i++) {
+						offset += www[i];
+						if (rrr < offset) {
+							action = i;
+							break;
+						}
+					}
+					if (action == -1) {
+						action = 0;
+						reasonBest[action] = "AAAAAAAAAAAAAAA";
+					}
+				} else {
+					System.out.println("あああああ");
+					double safetyScoreBest = -Double.MAX_VALUE;
+					for (int i = 0; i < 6; i++) {
+						if (safetyScore[i] > safetyScoreBest) {
+							safetyScoreBest = safetyScore[i];
+							action = i;
+						}
+					}
+					reasonBest[action] = "Safety";
+				}
+			} else {
+				System.out.println("いいいいい");
+				double best = 0;
+				for (int i = 0; i < 6; i++) {
+					if (scoreBest[i] > best) {
+						best = scoreBest[i];
+						action = i;
+					}
+				}
+
+				if (best == 0) {
+					System.out.println("ううううう");
+					double safetyScoreBest = -Double.MAX_VALUE;
+					for (int i = 0; i < 6; i++) {
+						if (safetyScore[i] > safetyScoreBest) {
+							safetyScoreBest = safetyScore[i];
+							action = i;
+						}
+					}
+					reasonBest[action] = "Safety";
+				}
+				if (action == -1) {
+					action = 0;
+					reasonBest[action] = "BBBBBBBBBBBB";
+				}
 			}
-			System.out.println(reasonBest + ", " + actionBest + ", " + actionStr);
+
+			attentionCurrent = attentionBest[action];
+			// TODO 出力
+			if (verbose) {
+				String actionStr = "";
+				if (action == 0) {
+					actionStr = "・";
+				} else if (action == 1) {
+					actionStr = "↑";
+				} else if (action == 2) {
+					actionStr = "↓";
+				} else if (action == 3) {
+					actionStr = "←";
+				} else if (action == 4) {
+					actionStr = "→";
+				} else if (action == 5) {
+					actionStr = "＠";
+				}
+				System.out.println(reasonBest[action] + ", " + action + ", " + actionStr);
+			}
+
+			actionPre = action;
+			xPre = agentMe.x;
+			yPre = agentMe.y;
+
+			return action;
 		}
 
-		attentionCurrent = attentionBest;
-		return actionBest;
+		// if (actionBest == -1) {
+		// for (int act = 0; act < 6; act++) {
+		// double score = safetyScore[act];
+		// if (score > scoreBest) {
+		// scoreBest = score;
+		// actionBest = act;
+		// attentionBest.type = Attention.type_None;
+		// reasonBest = "Most Safety";
+		// }
+		// }
+		// }
+		//
+		// // TODO 出力
+		// if (verbose) {
+		// String actionStr = "";
+		// if (actionBest == 0) {
+		// actionStr = "・";
+		// } else if (actionBest == 1) {
+		// actionStr = "↑";
+		// } else if (actionBest == 2) {
+		// actionStr = "↓";
+		// } else if (actionBest == 3) {
+		// actionStr = "←";
+		// } else if (actionBest == 4) {
+		// actionStr = "→";
+		// } else if (actionBest == 5) {
+		// actionStr = "＠";
+		// }
+		// System.out.println(reasonBest + ", " + actionBest + ", " + actionStr);
+		// }
+		//
+		// attentionCurrent = attentionBest;
+		// return actionBest;
 	}
 
+
+	int actionPre = 0;
+	int xPre = 0;
+	int yPre = 0;
+	
+	
 }
