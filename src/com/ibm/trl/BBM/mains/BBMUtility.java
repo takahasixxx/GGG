@@ -1,11 +1,10 @@
 package com.ibm.trl.BBM.mains;
 
-import com.ibm.trl.BBM.mains.BombTracker.Node;
-
 import ibm.ANACONDA.Core.MyMatrix;
+import obsolete.BombTracker_Obsolete.Node;
 
 public class BBMUtility {
-	
+
 	static public boolean isMoveable(int numField, MyMatrix board, int x, int y, int dir) {
 		if (dir == 0) return true;
 		if (dir == 5) return true;
@@ -32,7 +31,8 @@ public class BBMUtility {
 		}
 	}
 
-	static public int numWoodBrakable(int numField, MyMatrix board, int x, int y, int strength) {
+	static public int numWoodBrakable(MyMatrix board, int x, int y, int strength) {
+		int numField = board.numd;
 		int num = 0;
 		for (int dir = 1; dir <= 4; dir++) {
 			for (int w = 1; w < strength; w++) {
@@ -94,7 +94,6 @@ public class BBMUtility {
 		return num;
 	}
 
-	
 	static public class SurroundedInformation {
 		int numWall = 0;
 		int numAgent = 0;
@@ -102,7 +101,6 @@ public class BBMUtility {
 		int numBombFixedByAgent = 0;
 		int numBombFixed = 0;
 	}
-	
 
 	static public SurroundedInformation numSurrounded_Rich(MyMatrix board, boolean[][] bombExist, int x, int y) {
 		int numField = board.numd;
@@ -248,8 +246,218 @@ public class BBMUtility {
 		return si;
 	}
 
-	
-	
+	static private int GGG_getType(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+		if (x >= 0 && x < numField && y >= 0 && y < numField) return (int) board.data[x][y];
+		return Constant.Rigid;
+	}
+
+	static private boolean GGG_bombExist(boolean[][] bombExist, int x, int y) {
+		int numField = bombExist.length;
+		if (x >= 0 && x < numField && y >= 0 && y < numField) return bombExist[x][y];
+		return false;
+	}
+
+	static private boolean GGG_isWall(int type, int type2, boolean bomb, boolean bomb2, boolean kick) {
+		if (Constant.isWall(type)) return true;
+		else return false;
+	}
+
+	static private boolean GGG_isStop2(int type, int type2, boolean bomb, boolean bomb2, boolean kick) {
+		if (Constant.isWall(type)) return true;
+
+		if (kick == false) {
+			if (bomb) {
+				return true;
+			} else {
+				return false;
+			}
+		} else {
+			if (bomb && (bomb2 || Constant.isWall(type2))) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	static public int GGG_Tateana(MyMatrix board, boolean[][] bombExist, int x, int y, boolean kick, int power) {
+		int numField = board.numd;
+
+		// boolean[] success = { true, true, true, true };
+		int[] wmax = { -1, -1, -1, -1 };
+		int[][] endType = new int[4][2];
+		boolean[][] endBomb = new boolean[4][2];
+		boolean[] isClose = new boolean[4];
+
+		for (int dir = 0; dir < 4; dir++) {
+			for (int w = 0; w < numField; w++) {
+				int u = 0;
+				int v = 0;
+				if (dir == 0) {
+					u = -1;
+					v = 0;
+				} else if (dir == 1) {
+					u = 1;
+					v = 0;
+				} else if (dir == 2) {
+					u = 0;
+					v = -1;
+				} else if (dir == 3) {
+					u = 0;
+					v = 1;
+				}
+
+				int x2 = x + w * u;
+				int y2 = y + w * v;
+
+				int type_f = GGG_getType(board, x2, y2);
+				int type_ff = GGG_getType(board, x2 + u, y2 + v);
+				int type_r = GGG_getType(board, x2 + v, y2 + u);
+				int type_rr = GGG_getType(board, x2 + 2 * v, y2 + 2 * u);
+				int type_l = GGG_getType(board, x2 - v, y2 - u);
+				int type_ll = GGG_getType(board, x2 - 2 * v, y2 - 2 * u);
+
+				boolean bomb_f = GGG_bombExist(bombExist, x2, y2);
+				boolean bomb_ff = GGG_bombExist(bombExist, x2 + u, y2 + v);
+				boolean bomb_r = GGG_bombExist(bombExist, x2 + v, y2 + u);
+				boolean bomb_rr = GGG_bombExist(bombExist, x2 + 2 * v, y2 + 2 * u);
+				boolean bomb_l = GGG_bombExist(bombExist, x2 - v, y2 - u);
+				boolean bomb_ll = GGG_bombExist(bombExist, x2 - 2 * v, y2 - 2 * u);
+
+				if (w == 0) {
+					if (GGG_isWall(type_r, type_rr, bomb_r, bomb_rr, kick) == false || GGG_isWall(type_l, type_ll, bomb_l, bomb_ll, kick) == false) {
+						// 左右が開いてたら、トンネルになってない。
+						wmax[dir] = w - 1;
+						break;
+					}
+				} else {
+					if (GGG_isWall(type_f, type_ff, bomb_f, bomb_ff, kick)) {
+						// 終端である。左右が閉じており、前方も閉じているタイプの終端にぶつかった。
+						endType[dir][0] = type_f;
+						endType[dir][1] = type_ff;
+						endBomb[dir][0] = bomb_f;
+						endBomb[dir][1] = bomb_ff;
+						isClose[dir] = true;
+						wmax[dir] = w - 1;
+						break;
+					} else if (GGG_isWall(type_r, type_rr, bomb_r, bomb_rr, kick) && GGG_isWall(type_l, type_ll, bomb_l, bomb_ll, kick)) {
+						// 前方は開いているが、左右が閉じている。トンネルが続いてる。
+						continue;
+					} else {
+						// 終端である。左右が開いてしまっている。
+						endType[dir][0] = type_f;
+						endType[dir][1] = type_ff;
+						endBomb[dir][0] = bomb_f;
+						endBomb[dir][1] = bomb_ff;
+						isClose[dir] = false;
+						wmax[dir] = w - 1;
+						break;
+					}
+				}
+			}
+		}
+
+		if (wmax[0] == -1 && wmax[1] == -1 && wmax[2] == -1 && wmax[3] == -1) {
+			// 一歩目で、縦にも横にも左右が閉じていなかったら、トンネル不成立。
+			return 0;
+		} else if (wmax[0] == 0 && wmax[1] == 0 && wmax[2] == 0 && wmax[3] == 0) {
+			// 1マスでトンネル完成状態
+			return 1;
+		} else {
+
+			int sideA = -1;
+			int sideB = -1;
+			if (wmax[0] >= 0 && wmax[1] >= 0) {
+				// 横方向にトンネル
+				sideA = 0;
+				sideB = 1;
+			} else if (wmax[2] >= 0 && wmax[3] >= 0) {
+				// 縦方向にトンネル
+				sideA = 2;
+				sideB = 3;
+			}
+
+			// トンネルの長さがpower以上だったら、不成立
+			int length = wmax[sideA] + wmax[sideB] + 1;
+			if (length > power - 1) return 0;
+
+			int sideOpen = -1;
+			if (isClose[sideA] == false && isClose[sideB] == false) {
+				// 左右が開いていいたら、不成立
+				return 0;
+			} else if (isClose[sideA] == false && isClose[sideB] == true) {
+				// 0方向が開いている。1方向は閉じている。0方向の開き具合で評価する。
+				sideOpen = sideA;
+			} else if (isClose[sideA] == true && isClose[sideB] == false) {
+				// 1方向が開いている。0方向は閉じている。1方向の開き具合で評価する。
+				sideOpen = sideB;
+			} else if (isClose[sideA] == true && isClose[sideB] == true) {
+				// 両方向閉じている。完成
+				return 1;
+			}
+
+			if (kick) {
+				String temae = "";
+				for (int i = 0; i < 2; i++) {
+					if (Constant.isAgent(endType[sideOpen][i])) {
+						temae += "A";
+					} else {
+						temae += "N";
+					}
+					if (endBomb[sideOpen][i]) {
+						temae += "B";
+					}
+					if (i == 0) {
+						temae += ",";
+					}
+				}
+				int score = 0;
+				if (temae.equals("NB,NB")) {
+					score = 1;
+				} else if (temae.equals("NB,AB")) {
+					score = 2;
+				} else if (temae.equals("NB,A")) {
+					score = 3;
+				} else if (temae.equals("AB,N")) {
+					score = 4;
+				} else if (temae.equals("A,N")) {
+					score = 5;
+				} else if (temae.equals("AB,NB")) {
+					score = 2;
+				} else if (temae.equals("A,NB")) {
+					score = 3;
+				}
+				return score;
+			} else {
+				String temae = "";
+				for (int i = 0; i < 1; i++) {
+					if (Constant.isAgent(endType[sideOpen][i])) {
+						temae += "A";
+					} else {
+						temae += "N";
+					}
+					if (endBomb[sideOpen][i]) {
+						temae += "B";
+					}
+					if (i == 0) {
+						temae += ",";
+					}
+				}
+
+				int score = 0;
+				if (temae.equals("NB,")) {
+					score = 1;
+				} else if (temae.equals("AB,")) {
+					score = 2;
+				} else if (temae.equals("A,")) {
+					score = 3;
+				}
+				return score;
+			}
+		}
+	}
+
 	static public int numSurrounded(MyMatrix board, int x, int y) {
 		int numField = board.numd;
 
@@ -348,7 +556,7 @@ public class BBMUtility {
 
 		return num + numMove;
 	}
-	
+
 	static public int numWall(MyMatrix board, int x, int y) {
 		int numField = board.numd;
 
@@ -621,9 +829,9 @@ public class BBMUtility {
 		}
 	}
 
-	static String[] zenkakuNumber = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９" };
+	static String[] zenkakuNumber = { "０", "１", "２", "３", "４", "５", "６", "７", "８", "９", "10", "11", "12", "13" };
 
-	static public void printBoard2(MyMatrix board, MyMatrix life, MyMatrix power) {
+	static public void printBoard2(MyMatrix board, MyMatrix board_org, MyMatrix life, MyMatrix power) {
 		int numt = board.numt;
 		int numd = board.numd;
 		for (int x = 0; x < numt; x++) {
@@ -658,9 +866,9 @@ public class BBMUtility {
 					print2 = "＃＃＃";
 					print3 = "＃＃＃";
 				} else if (type == Constant.Fog) {
-					print1 = "￥￥￥";
-					print2 = "￥￥￥";
-					print3 = "￥￥￥";
+					print1 = "FFFFFF";
+					print2 = "FFFFFF";
+					print3 = "FFFFFF";
 				} else if (type == Constant.ExtraBomb) {
 					print1 = "爆  弾";
 					print2 = "１  個";
@@ -717,6 +925,13 @@ public class BBMUtility {
 						print2 = "／｜＼";
 						print3 = "  ハ＠";
 					}
+				}
+
+				int type_org = (int) board_org.data[x][y];
+				if (type_org == Constant.Fog) {
+					print1 = "\u001b[30;47m" + print1 + "\u001b[00m";
+					print2 = "\u001b[30;47m" + print2 + "\u001b[00m";
+					print3 = "\u001b[30;47m" + print3 + "\u001b[00m";
 				}
 
 				line1 += print1;

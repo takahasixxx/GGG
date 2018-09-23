@@ -10,9 +10,8 @@ import java.util.Random;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
 
-import com.ibm.trl.BBM.mains.OptimalActionFinder.OAFParameter;
-
 import ibm.ANACONDA.Core.MyMatrix;
+import obsolete.OptimalActionFinder.OAFParameter;
 
 public class GlobalParameter {
 	static Random rand = new Random();
@@ -28,6 +27,8 @@ public class GlobalParameter {
 	static public OAFParameter[] oafparameters;
 	static public OAFParameter oafparamCenter;
 	static public MyMatrix KeisuGlobal;
+
+	static public int[][] onehopList = new int[][] { { 0, 0, 0 }, { 1, -1, 0 }, { 2, 1, 0 }, { 3, 0, -1 }, { 4, 0, 1 } };
 
 	static {
 		try {

@@ -15,9 +15,10 @@ def main(render=False, interactive=False):
     # List of four agents
     agent_list = [
         agents.SimpleAgent(),
+        #MyAgent(),
         agents.SimpleAgent(),
-        #agents.SimpleAgent(),
-        TimeExpandedAgent(),
+        agents.SimpleAgent(),
+        #TimeExpandedAgent(),
         MyAgent(),
         #MyAgent(),
         #MyAgent(),
@@ -26,7 +27,9 @@ def main(render=False, interactive=False):
     ]
 
     # Environment of FFA competition
-    env = pommerman.make('PommeFFACompetition-v0', agent_list)
+    #env = pommerman.make('PommeFFACompetition-v0', agent_list)
+    env = pommerman.make('PommeTeamCompetition-v0', agent_list)
+
 
     # Run
     rewards = list()

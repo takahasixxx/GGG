@@ -12,8 +12,8 @@ public class StatusHolder implements Serializable {
 
 	static public class EEE implements Serializable {
 		private static final long serialVersionUID = -2353862178915635651L;
-		int x;
-		int y;
+		public int x;
+		public int y;
 
 		public EEE(int x, int y) {
 			this.x = x;
@@ -33,7 +33,7 @@ public class StatusHolder implements Serializable {
 
 	static public class AgentEEE extends EEE {
 		private static final long serialVersionUID = 4716124278872758663L;
-		int agentID;
+		public int agentID;
 
 		public AgentEEE(int x, int y, int agentID) {
 			super(x, y);
@@ -54,10 +54,10 @@ public class StatusHolder implements Serializable {
 
 	static public class BombEEE extends EEE {
 		private static final long serialVersionUID = -1626810300949537606L;
-		int owner;
-		int life;
-		int dir;
-		int power;
+		public int owner;
+		public int life;
+		public int dir;
+		public int power;
 
 		public BombEEE(int x, int y, int owner, int life, int dir, int power) {
 			super(x, y);
@@ -76,39 +76,25 @@ public class StatusHolder implements Serializable {
 		}
 
 		@Override
+		public boolean equals(Object o) {
+			if (o instanceof BombEEE == false) return false;
+			BombEEE bbb = (BombEEE) o;
+			if (bbb.x == x && bbb.y == y && bbb.owner == owner && bbb.life == life && bbb.dir == dir && bbb.power == power) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		@Override
 		public String toString() {
 			String line = String.format("BombEEE : (%2d,%2d), onwer=%2d, life=%2d, dir=%2d, power=%2d\n", x, y, owner, life, dir, power);
 			return line;
 		}
 	}
 
-	static public class FlameCenterEEE extends EEE {
-		private static final long serialVersionUID = 4556260520750917456L;
-		int life;
-		int power;
-
-		public FlameCenterEEE(int x, int y, int life, int power) {
-			super(x, y);
-			this.life = life;
-			this.power = power;
-		}
-
-		public FlameCenterEEE(FlameCenterEEE f) {
-			super(f);
-			this.life = f.life;
-			this.power = f.power;
-		}
-
-		@Override
-		public String toString() {
-			String line = String.format("FlameCenterEEE : (%2d,%2d), life=%2d, power=%2d\n", x, y, life, power);
-			return line;
-		}
-	}
-
 	private Map<Integer, AgentEEE> agMap = new TreeMap<Integer, AgentEEE>();
 	private Map<Integer, BombEEE> bbMap = new TreeMap<Integer, BombEEE>();
-	private Map<Integer, FlameCenterEEE> fcMap = new TreeMap<Integer, FlameCenterEEE>();
 
 	public StatusHolder(int numField) {
 		this.numField = numField;
@@ -151,29 +137,6 @@ public class StatusHolder implements Serializable {
 
 	public Collection<BombEEE> getBombEntry() {
 		return bbMap.values();
-	}
-
-	public void setFlameCenter(int x, int y, int life, int power) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
-		FlameCenterEEE eee = new FlameCenterEEE(x, y, life, power);
-		fcMap.put(index, eee);
-	}
-
-	public boolean isFlameCenterExist(int x, int y, int life) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
-		if (fcMap.get(index) == null) return false;
-		return true;
-	}
-
-	public int getFlameCenterPower(int x, int y, int life) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam;
-		FlameCenterEEE eee = fcMap.get(index);
-		if (eee == null) return 0;
-		return eee.power;
-	}
-
-	public Collection<FlameCenterEEE> getFlameCenterEntry() {
-		return fcMap.values();
 	}
 
 	@Override
@@ -286,42 +249,42 @@ public class StatusHolder implements Serializable {
 		// FlameCenterÇÃà íuÇèoóÕÇ∑ÇÈÅB
 		//
 		////////////////////////////////////////////////////////////////////////////////
-		output += "========================================\n";
-		output += "========================================\n";
-		output += "========================================\n";
-		output += "FlameCenter\n";
-		for (int x = 0; x < numField; x++) {
-			String line1 = "";
-			String line2 = "";
-			String line3 = "";
-			for (int y = 0; y < numField; y++) {
-				String print1 = "";
-				String print2 = "";
-				String print3 = "";
-
-				String[] as = new String[4];
-				for (int life = 3; life >= 1; life--) {
-					if (this.isFlameCenterExist(x, y, life)) {
-						int power = this.getFlameCenterPower(x, y, life);
-						as[life] = String.format("%d", power);
-					} else {
-						as[life] = " ";
-					}
-				}
-
-				print1 = "/3:" + as[3] + " \\";
-				print2 = "|2:" + as[2] + " |";
-				print3 = "\\1:" + as[1] + " /";
-
-				line1 += print1;
-				line2 += print2;
-				line3 += print3;
-			}
-
-			output += line1 + "\n";
-			output += line2 + "\n";
-			output += line3 + "\n";
-		}
+		// output += "========================================\n";
+		// output += "========================================\n";
+		// output += "========================================\n";
+		// output += "FlameCenter\n";
+		// for (int x = 0; x < numField; x++) {
+		// String line1 = "";
+		// String line2 = "";
+		// String line3 = "";
+		// for (int y = 0; y < numField; y++) {
+		// String print1 = "";
+		// String print2 = "";
+		// String print3 = "";
+		//
+		// String[] as = new String[4];
+		// for (int life = 3; life >= 1; life--) {
+		// if (this.isFlameCenterExist(x, y, life)) {
+		// int power = this.getFlameCenterPower(x, y, life);
+		// as[life] = String.format("%d", power);
+		// } else {
+		// as[life] = " ";
+		// }
+		// }
+		//
+		// print1 = "/3:" + as[3] + " \\";
+		// print2 = "|2:" + as[2] + " |";
+		// print3 = "\\1:" + as[1] + " /";
+		//
+		// line1 += print1;
+		// line2 += print2;
+		// line3 += print3;
+		// }
+		//
+		// output += line1 + "\n";
+		// output += line2 + "\n";
+		// output += line3 + "\n";
+		// }
 
 		return output;
 	}

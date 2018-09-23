@@ -9,7 +9,6 @@ import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.EEE;
-import com.ibm.trl.BBM.mains.StatusHolder.FlameCenterEEE;
 
 import ibm.ANACONDA.Core.MyMatrix;
 
@@ -20,17 +19,19 @@ public class ForwardModel {
 	static public class Pack implements Serializable {
 		private static final long serialVersionUID = -8052436421835761684L;
 		MyMatrix board;
+		MyMatrix flameLife;
 		Ability[] abs;
 		StatusHolder sh;
 
-		public Pack(MyMatrix board, Ability[] abs, StatusHolder sh) {
+		public Pack(MyMatrix board, MyMatrix flameLife, Ability[] abs, StatusHolder sh) {
 			this.board = board;
+			this.flameLife = flameLife;
 			this.abs = abs;
 			this.sh = sh;
 		}
 	}
 
-	public Pack Step(MyMatrix boardNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
+	public Pack Step(MyMatrix boardNow, MyMatrix flameLifeNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
 
 		MyMatrix boardNext = new MyMatrix(boardNow);
 
@@ -47,30 +48,41 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		// FlameCenterの時刻を進める。
 		/////////////////////////////////////////////////////////////////////////////////////
-		List<FlameCenterEEE> flameCenterNext = new ArrayList<FlameCenterEEE>();
-		for (FlameCenterEEE fffNow : shNow.getFlameCenterEntry()) {
-			if (fffNow.life == 1) continue;
-			FlameCenterEEE fffNext = new FlameCenterEEE(fffNow);
-			fffNext.life--;
-			flameCenterNext.add(fffNext);
-		}
+		// List<FlameCenterEEE> flameCenterNext = new ArrayList<FlameCenterEEE>();
+		// for (FlameCenterEEE fffNow : shNow.getFlameCenterEntry()) {
+		// if (fffNow.life == 1) continue;
+		// FlameCenterEEE fffNext = new FlameCenterEEE(fffNow);
+		// fffNext.life--;
+		// flameCenterNext.add(fffNext);
+		// }
 
-		// 残っているFrameCenterからMyFlameを作って、boardのFlameで残っている部分があったら。Passageを表示する。
-		MyMatrix myFlameNext = new MyMatrix(numField, numField);
-		for (FlameCenterEEE fffNext : flameCenterNext) {
-			BBMUtility.PrintFlame(boardNext, myFlameNext, fffNext.x, fffNext.y, fffNext.power, 1);
+		MyMatrix flameLifeNext = new MyMatrix(flameLifeNow);
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				if (flameLifeNext.data[x][y] >= 1) {
+					flameLifeNext.data[x][y]--;
+				}
+			}
 		}
+		// 残っているFrameCenterからMyFlameを作って、boardのFlameで残っている部分があったら。Passageを表示する。
+		// for (FlameCenterEEE fffNext : flameCenterNext) {
+		// BBMUtility.PrintFlame(boardNext, myFlameNext, fffNext.x, fffNext.y, fffNext.power, 1);
+		// }
 
 		// 古いFlameCenterをレンダリングすると、フレーム終端が木だったのかが分からない。BoardNowとMyFlameNextの共通部分が今残っているFlameになる。その処理をする。
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
-				if (myFlameNext.data[x][y] == 1) {
-					if (boardNext.data[x][y] != Constant.Flames) {
-						myFlameNext.data[x][y] = 0;
-					}
-				} else {
+				if (flameLifeNext.data[x][y] == 0) {
+					// myFlame側でFlameが消滅したのに、board側でFlamesが残っていたら、boardのFlamesをPassageにする。
 					if (boardNext.data[x][y] == Constant.Flames) {
 						boardNext.data[x][y] = Constant.Passage;
+					}
+				} else {
+					// myFlame側でFlameが発生してるのに、board側でFlamesが消えていたら、myFlame側をクリアする。
+					if (boardNext.data[x][y] != Constant.Flames) {
+						flameLifeNext.data[x][y] = 0;
+						// TODO ここは到達し得ない？
+						System.out.println("error??");
 					}
 				}
 			}
@@ -191,8 +203,10 @@ public class ForwardModel {
 			boolean[] backAgent = new boolean[4];
 			for (int ai = 0; ai < 4; ai++) {
 				if (absNow[ai].isAlive == false) continue;
+				if (agentsNow[ai] == null) continue;
 				for (int aj = ai + 1; aj < 4; aj++) {
 					if (absNow[aj].isAlive == false) continue;
+					if (agentsNow[aj] == null) continue;
 					EEE eee1Now = agentsNow[ai];
 					EEE eee2Now = agentsNow[aj];
 					EEE eee1Next = agentsNext[ai];
@@ -222,6 +236,7 @@ public class ForwardModel {
 			// AgentとBombでクロスする場合。Agentは引戻さない。
 			for (int ai = 0; ai < 4; ai++) {
 				if (absNow[ai].isAlive == false) continue;
+				if (agentsNow[ai] == null) continue;
 				for (int j = 0; j < numBomb; j++) {
 					EEE eee1Now = agentsNow[ai];
 					EEE eee1Next = agentsNext[ai];
@@ -236,6 +251,7 @@ public class ForwardModel {
 			// 引き戻す必要があるやつは、位置を引き戻す。
 			for (int ai = 0; ai < 4; ai++) {
 				if (absNow[ai].isAlive == false) continue;
+				if (agentsNow[ai] == null) continue;
 				if (backAgent[ai]) {
 					agentsNext[ai].x = agentsNow[ai].x;
 					agentsNext[ai].y = agentsNow[ai].y;
@@ -269,6 +285,7 @@ public class ForwardModel {
 
 				for (int ai = 0; ai < 4; ai++) {
 					if (absNow[ai].isAlive == false) continue;
+					if (agentsNow[ai] == null) continue;
 					EEE eeeNow = agentsNow[ai];
 					EEE eeeNext = agentsNext[ai];
 					if (eeeNext.isSamePosition(eeeNow)) continue;
@@ -315,10 +332,11 @@ public class ForwardModel {
 
 			// 衝突相手のエージェントを探す。
 			int agentIndex = -1;
-			for (int j = 0; j < 4; j++) {
-				if (absNow[j].isAlive == false) continue;
-				if (bbbNext.isSamePosition(agentsNext[j])) {
-					agentIndex = j;
+			for (int aj = 0; aj < 4; aj++) {
+				if (absNow[aj].isAlive == false) continue;
+				if (agentsNow[aj] == null) continue;
+				if (bbbNext.isSamePosition(agentsNext[aj])) {
+					agentIndex = aj;
 					break;
 				}
 			}
@@ -409,6 +427,7 @@ public class ForwardModel {
 			isChanged = false;
 			for (int ai = 0; ai < 4; ai++) {
 				if (absNow[ai].isAlive == false) continue;
+				if (agentsNow[ai] == null) continue;
 				EEE aaaNow = agentsNow[ai];
 				EEE aaaNext = agentsNext[ai];
 				if (aaaNow.isSamePosition(aaaNext) == false && (occupancyAgent.data[aaaNext.x][aaaNext.y] > 1 || occupancyBomb.data[aaaNext.x][aaaNext.y] > 0)) {
@@ -449,6 +468,7 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		for (int ai = 0; ai < 4; ai++) {
 			if (absNow[ai].isAlive == false) continue;
+			if (agentsNow[ai] == null) continue;
 			EEE eeeNext = agentsNext[ai];
 			int type = (int) boardNow.data[eeeNext.x][eeeNext.y];
 			if (type == Constant.ExtraBomb) {
@@ -467,11 +487,11 @@ public class ForwardModel {
 		for (int bi = 0; bi < numBomb; bi++) {
 			BombEEE bbbNext = bombsNext[bi];
 			if (bbbNext.life == 0) {
-				absNext[bbbNext.owner - 10].numBombHold++;
-				FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
-				flameCenterNext.add(fff);
+				if (bbbNext.owner != -1) absNext[bbbNext.owner - 10].numBombHold++;
+				// FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
+				// flameCenterNext.add(fff);
 				bombsNext[bi] = null;
-				BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
+				BBMUtility.PrintFlame(boardNext, flameLifeNext, bbbNext.x, bbbNext.y, bbbNext.power, 3);
 			}
 		}
 
@@ -480,12 +500,12 @@ public class ForwardModel {
 			for (int bi = 0; bi < numBomb; bi++) {
 				BombEEE bbbNext = bombsNext[bi];
 				if (bbbNext == null) continue;
-				if (myFlameNext.data[bbbNext.x][bbbNext.y] == 1) {
-					absNext[bbbNext.owner - 10].numBombHold++;
-					FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
-					flameCenterNext.add(fff);
+				if (flameLifeNext.data[bbbNext.x][bbbNext.y] > 0) {
+					if (bbbNext.owner != -1) absNext[bbbNext.owner - 10].numBombHold++;
+					// FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
+					// flameCenterNext.add(fff);
 					bombsNext[bi] = null;
-					BBMUtility.PrintFlame(boardNext, myFlameNext, fff.x, fff.y, fff.power, 1);
+					BBMUtility.PrintFlame(boardNext, flameLifeNext, bbbNext.x, bbbNext.y, bbbNext.power, 3);
 					hasNewExplosions = true;
 				}
 			}
@@ -498,8 +518,9 @@ public class ForwardModel {
 		for (int ai = 0; ai < 4; ai++) {
 			Ability abNext = absNext[ai];
 			if (abNext.isAlive == false) continue;
+			if (agentsNow[ai] == null) continue;
 			EEE aaaNext = agentsNext[ai];
-			if (myFlameNext.data[aaaNext.x][aaaNext.y] == 1) {
+			if (flameLifeNext.data[aaaNext.x][aaaNext.y] > 0) {
 				abNext.isAlive = false;
 			}
 		}
@@ -511,6 +532,7 @@ public class ForwardModel {
 		for (int ai = 0; ai < 4; ai++) {
 			Ability abNext = absNext[ai];
 			if (abNext.isAlive == false) continue;
+			if (agentsNow[ai] == null) continue;
 			AgentEEE aaaNext = agentsNext[ai];
 			shNext.setAgent(aaaNext.x, aaaNext.y, aaaNext.agentID);
 		}
@@ -521,9 +543,9 @@ public class ForwardModel {
 			shNext.setBomb(bbbNext.x, bbbNext.y, bbbNext.owner, bbbNext.life, bbbNext.dir, bbbNext.power);
 		}
 
-		for (FlameCenterEEE fffNext : flameCenterNext) {
-			shNext.setFlameCenter(fffNext.x, fffNext.y, fffNext.life, fffNext.power);
-		}
+		// for (FlameCenterEEE fffNext : flameCenterNext) {
+		// shNext.setFlameCenter(fffNext.x, fffNext.y, fffNext.life, fffNext.power);
+		// }
 
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -542,20 +564,37 @@ public class ForwardModel {
 		}
 
 		for (int ai = 0; ai < 4; ai++) {
-			if (absNext[ai].isAlive) {
-				AgentEEE aaa = agentsNext[ai];
-				boardNext.data[aaa.x][aaa.y] = ai + 10;
-			}
+			if (absNext[ai].isAlive == false) continue;
+			if (agentsNow[ai] == null) continue;
+			AgentEEE aaa = agentsNext[ai];
+			boardNext.data[aaa.x][aaa.y] = ai + 10;
 		}
 
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
-				if (myFlameNext.data[x][y] == 1) {
+				if (flameLifeNext.data[x][y] > 0) {
 					boardNext.data[x][y] = Constant.Flames;
 				}
 			}
 		}
 
-		return new Pack(boardNext, absNext, shNext);
+		// TODO ログ
+		if (false) {
+			MyMatrix lifeNext = new MyMatrix(numField, numField);
+			MyMatrix powerNext = new MyMatrix(numField, numField);
+			for (int i = 0; i < numBomb; i++) {
+				BombEEE bbbNext = bombsNext[i];
+				if (bbbNext == null) continue;
+				lifeNext.data[bbbNext.x][bbbNext.y] = bbbNext.life;
+				powerNext.data[bbbNext.x][bbbNext.y] = bbbNext.power;
+			}
+
+			System.out.println("==========================================");
+			System.out.println("==========================================");
+			System.out.println("board picture");
+			BBMUtility.printBoard2(boardNext, boardNext, lifeNext, powerNext);
+		}
+
+		return new Pack(boardNext, flameLifeNext, absNext, shNext);
 	}
 }

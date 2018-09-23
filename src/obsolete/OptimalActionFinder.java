@@ -1,10 +1,14 @@
-package com.ibm.trl.BBM.mains;
+package obsolete;
 
 import java.io.Serializable;
 import java.util.Random;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.BBMUtility;
+import com.ibm.trl.BBM.mains.Constant;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
+import com.ibm.trl.BBM.mains.GlobalParameter;
+import com.ibm.trl.BBM.mains.StatusHolder;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.EEE;
 
@@ -33,11 +37,11 @@ public class OptimalActionFinder {
 			KeisuUsed[8] = new boolean[] { true, false, false };
 		}
 
-		MyMatrix Keisu;
-		double numEpisode = 0;
-		double numFrame = 0;
-		double numItemGet = 0;
-		double numWin = 0;
+		public MyMatrix Keisu;
+		public double numEpisode = 0;
+		public double numFrame = 0;
+		public double numItemGet = 0;
+		public double numWin = 0;
 
 		public OAFParameter() {
 			// Ø•ĞA‹——£‘‰Á•ªAŒÂ”‘‰Á•ª‚Ì‡”Ô‚ÉŒW”‚ğŠi”[‚·‚éB
@@ -129,7 +133,6 @@ public class OptimalActionFinder {
 		this.param = param;
 	}
 
-	
 	public int findOptimalAction(Pack packNow, int me, double[][] safetyScoreAll) throws Exception {
 
 		int aiMe = me - 10;
@@ -520,10 +523,8 @@ public class OptimalActionFinder {
 		// return actionBest;
 	}
 
-
 	int actionPre = 0;
 	int xPre = 0;
 	int yPre = 0;
-	
-	
+
 }
