@@ -36,7 +36,6 @@ public class Agent {
 		public int strength = 2;
 		public boolean kick = false;
 		public int numBombHold = 1;
-		public boolean justBombed = false;
 
 		public Ability() {
 		}
@@ -47,12 +46,11 @@ public class Agent {
 			this.strength = a.strength;
 			this.kick = a.kick;
 			this.numBombHold = a.numBombHold;
-			this.justBombed = a.justBombed;
 		}
 
 		@Override
 		public String toString() {
-			String line = String.format("isAlive=%5b, hold/max=%2d/%2d, strength=%2d, kick=%5b, justBombd=%5b\n", isAlive, numBombHold, numMaxBomb, strength, kick, justBombed);
+			String line = String.format("isAlive=%5b, hold/max=%2d/%2d, strength=%2d, kick=%5b\n", isAlive, numBombHold, numMaxBomb, strength, kick);
 			return line;
 		}
 
@@ -329,20 +327,7 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		Node[][] bombMap = BombTracker.computeBombMap(map, mapsOld);
 
-		// TODO 爆弾の移動方向で複数候補があるときは、とりあえず停止してることにする。
-		if (false) {
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					BombTracker.Node node = bombMap[x][y];
-					if (node == null) continue;
-					if (node.dirs[0]) {
-						for (int i = 1; i < 5; i++) {
-							node.dirs[i] = false;
-						}
-					}
-				}
-			}
-		}
+		// TODO 視界の中からFogへ出ていった爆弾を検知して記憶しておく。
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -373,7 +358,7 @@ public class Agent {
 			}
 		}
 
-		// TODO 保守的にやるなら、Fogで見積もれないFlameはLife=3にすると良いかもしれない。
+		// TODO 複数の爆弾が絶妙なタイミングで爆発して、Flamesが５連発とか出てくると、FlamesのLifeを間違える。なんとかしたい。
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//

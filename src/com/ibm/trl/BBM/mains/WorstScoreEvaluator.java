@@ -69,8 +69,6 @@ public class WorstScoreEvaluator {
 	private void rrr(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs, List<double[][]> scoresList)
 			throws Exception {
 		if (index == nodes.size()) {
-			// System.out.println("start");
-
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//
 			// 基本データを作る。
@@ -189,7 +187,7 @@ public class WorstScoreEvaluator {
 
 				List<Pack> packs_nagent = new ArrayList<Pack>();
 				List<Pack> packs_onlyme = new ArrayList<Pack>();
-				List<int[]> actionsList2 = new ArrayList<int[]>();
+				List<boolean[][]> firstActionSet = new ArrayList<boolean[][]>();
 				for (int[] actions : actionsList) {
 					Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
 
@@ -234,7 +232,9 @@ public class WorstScoreEvaluator {
 
 					// 同様の盤面があるかどうか調べる。
 					boolean find = false;
-					for (Pack pack : packs_onlyme) {
+					int findIndex = -1;
+					for (int i = 0; i < packs_onlyme.size(); i++) {
+						Pack pack = packs_onlyme.get(i);
 						if (pack.sh.getBombEntry().size() == packNext_onlyme.sh.getBombEntry().size()) {
 							double def = pack.board.minus(packNext_onlyme.board).normL1();
 							if (def == 0) {
@@ -260,25 +260,28 @@ public class WorstScoreEvaluator {
 								}
 							}
 						}
-						if (find) break;
+						if (find) {
+							findIndex = i;
+							break;
+						}
 					}
-					if (find) continue;
-					packs_nagent.add(packNext_nagent);
-					packs_onlyme.add(packNext_onlyme);
-					actionsList2.add(actions);
-				}
 
-				if (false) {
-					System.out.println("================================");
-					System.out.println("================================");
-					for (int[] act : actionsList2) {
-						int a = act[0];
-						int b = act[1];
-						int c = act[2];
-						int d = act[3];
-						System.out.println("代表されるアクション, " + a + ", " + b + ", " + c + ", " + d);
+					boolean[][] actionSet;
+					if (find) {
+						actionSet = firstActionSet.get(findIndex);
+					} else {
+						packs_nagent.add(packNext_nagent);
+						packs_onlyme.add(packNext_onlyme);
+						actionSet = new boolean[4][6];
+						firstActionSet.add(actionSet);
 					}
-					System.out.println("================================");
+					for (int ai = 0; ai < 4; ai++) {
+						int act = actions[ai];
+						if (act == 5) {
+							act = 0;
+						}
+						actionSet[ai][act] = true;
+					}
 				}
 
 				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -291,7 +294,7 @@ public class WorstScoreEvaluator {
 				for (int i = 0; i < packs_onlyme.size(); i++) {
 					Pack pack_onlyme = packs_onlyme.get(i);
 					Pack pack_nagent = packs_nagent.get(i);
-					int[] actions = actionsList2.get(i);
+					boolean[][] actionSet = firstActionSet.get(i);
 
 					// 自分エージェントが死んでいたら終了
 					double s;
@@ -299,24 +302,17 @@ public class WorstScoreEvaluator {
 						s = 0;
 					} else {
 						WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
-						s = wses.Do(me, firstAction, packNow, packNow_nagent, pack_onlyme, pack_nagent);
+						s = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
 					}
 
-					System.out.println(String.format("actions=(%d, %d, %d, %d), log(s)=%f", actions[0], actions[1], actions[2], actions[3], Math.log(s)));
 					if (s < worst) {
 						worst = s;
 					}
 					sum += s;
 				}
+				double ave = sum / packs_onlyme.size();
 
 				scores[0][firstAction] = worst;
-
-				double ave;
-				if (packs_onlyme.size() == 0) {
-					ave = 0;
-				} else {
-					ave = sum / packs_onlyme.size();
-				}
 				scores[1][firstAction] = ave;
 			}
 

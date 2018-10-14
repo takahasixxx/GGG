@@ -27,9 +27,7 @@ public class WorstScoreEvaluatorSingle {
 		int y_pre = -1;
 	}
 
-	public double Do(int me, int firstAction, Pack packNow, Pack packNow_nagent, Pack packNext_onlyme, Pack packNext_nagent) throws Exception {
-
-		if (firstAction == 5) firstAction = 0;
+	public double Do(int me, Pack packNow, Pack packNow_nagent, Pack packNext_onlyme, Pack packNext_nagent, boolean[][] firstActionSet) throws Exception {
 
 		// TODO エラーチェック
 		if (true) {
@@ -105,13 +103,14 @@ public class WorstScoreEvaluatorSingle {
 							int dy = vec[2];
 							int x2 = x + dx;
 							int y2 = y + dy;
+							if (t == 0 && firstActionSet[ai][dir] == false) continue;
 							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
 							int type = (int) packNext.board.data[x][y];
 							if (Constant.isWall(type)) continue;
 							if (dir != 0 && type == Constant.Bomb) continue;
 							if (type == Constant.Flames) continue;
-							count++;
 							able[dir] = true;
+							count++;
 						}
 
 						// 1/countに分割して次ステップの存在確率に足し込む。
@@ -184,7 +183,7 @@ public class WorstScoreEvaluatorSingle {
 							int dy = vec[2];
 							int x2 = x + dx;
 							int y2 = y + dy;
-							if (t == 0 && dir != firstAction) continue;
+							if (t == 0 && firstActionSet[me - 10][dir] == false) continue;
 							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
 							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;
