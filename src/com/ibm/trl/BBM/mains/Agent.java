@@ -34,6 +34,7 @@ public class Agent {
 		public boolean isAlive = true;
 		public int numMaxBomb = 1;
 		public int strength = 2;
+		public int strength_fix = -1;
 		public boolean kick = false;
 		public int numBombHold = 1;
 
@@ -44,13 +45,14 @@ public class Agent {
 			this.isAlive = a.isAlive;
 			this.numMaxBomb = a.numMaxBomb;
 			this.strength = a.strength;
+			this.strength_fix = a.strength_fix;
 			this.kick = a.kick;
 			this.numBombHold = a.numBombHold;
 		}
 
 		@Override
 		public String toString() {
-			String line = String.format("isAlive=%5b, hold/max=%2d/%2d, strength=%2d, kick=%5b\n", isAlive, numBombHold, numMaxBomb, strength, kick);
+			String line = String.format("isAlive=%5b, hold/max=%2d/%2d, strength=%2d, strength_fix=%2d, kick=%5b\n", isAlive, numBombHold, numMaxBomb, strength, strength_fix, kick);
 			return line;
 		}
 
@@ -185,7 +187,7 @@ public class Agent {
 
 		// エージェントのアイテム取得状況を観測し、Abilityをトラッキングする。
 		// Fogの中でアイテム取得されるケースがあるので、自分以外はトラック漏れが多々ある。
-		{
+		if (true) {
 			MapInformation mapPre = mapsOld.get(0);
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
@@ -202,22 +204,6 @@ public class Agent {
 						int id = (int) (board.data[x][y] - 10);
 						abs[id].kick = true;
 						if (id + 10 == me) numItemGet++;
-					}
-				}
-			}
-		}
-
-		// エージェントが爆弾を置く瞬間を発見できたら、Abilityのstrengthを更新する。
-		// TODO Woodが全て破壊されている状況であれば、Strength確定。
-		if (true) {
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					int type = map.getType(x, y);
-					int life = map.getLife(x, y);
-					int power = map.getPower(x, y);
-					if (Constant.isAgent(type) && life == 9) {
-						abs[type - 10].numBombHold--;
-						abs[type - 10].strength = power;
 					}
 				}
 			}
@@ -322,6 +308,41 @@ public class Agent {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
+		// エージェントが爆弾を置く瞬間を発見できたら、Abilityのstrengthを更新する。
+		// TODO Woodが全て破壊されている状況であれば、Strength確定。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if (true) {
+			boolean complete = true;
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = map.getType(x, y);
+					if (type == Constant.IncrRange || type == Constant.Wood || type == Constant.Flames) {
+						complete = false;
+						break;
+					}
+				}
+				if (complete == false) break;
+			}
+
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = map.getType(x, y);
+					int life = map.getLife(x, y);
+					int power = map.getPower(x, y);
+					if (Constant.isAgent(type) && life == 9) {
+						abs[type - 10].numBombHold--;
+						abs[type - 10].strength = power;
+						if (complete) {
+							abs[type - 10].strength_fix = power;
+						}
+					}
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
 		// 爆弾の動きをトラッキングする。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -334,7 +355,6 @@ public class Agent {
 		// FlameのLifeを計算する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		MyMatrix flameLife = new MyMatrix(numField, numField);
 		{
 			for (int x = 0; x < numField; x++) {
@@ -382,7 +402,11 @@ public class Agent {
 				abs2[ai].kick = true;
 				abs2[ai].numMaxBomb = 4;
 				abs2[ai].numBombHold = 3;
-				abs2[ai].strength = maxPower;
+				if (abs2[ai].strength_fix == -1) {
+					abs2[ai].strength = maxPower;
+				} else {
+					abs2[ai].strength = abs2[ai].strength_fix;
+				}
 			}
 			action = actionEvaluator.ComputeOptimalAction(me, friend, map_ex, abs2, worstScores);
 		}

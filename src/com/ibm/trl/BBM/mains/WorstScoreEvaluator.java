@@ -81,7 +81,11 @@ public class WorstScoreEvaluator {
 				abs2[ai].kick = true;
 				abs2[ai].numMaxBomb = 3;
 				abs2[ai].numBombHold = 3;
-				abs2[ai].strength = maxPower;
+				if (abs2[ai].strength_fix == -1) {
+					abs2[ai].strength = maxPower;
+				} else {
+					abs2[ai].strength = abs2[ai].strength_fix;
+				}
 			}
 
 			Pack packNow;
