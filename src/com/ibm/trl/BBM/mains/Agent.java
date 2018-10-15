@@ -21,7 +21,7 @@ public class Agent {
 	int frame = 0;
 	Ability[] abs = new Ability[4];
 	LinkedList<MapInformation> mapsOld = new LinkedList<MapInformation>();
-	LinkedList<MapInformation> mapsOld_ex = new LinkedList<MapInformation>();
+	LinkedList<MapInformation> exmapsOld = new LinkedList<MapInformation>();
 	MyMatrix board_memo = new MyMatrix(numField, numField, Constant.Rigid);
 	int maxPower = 2;
 	int numItemGet = 0;
@@ -35,7 +35,7 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	double[][] killScores = new double[4][2];
+	static double[][] killScores = new double[4][2];
 
 	static public class Ability implements Serializable {
 		private static final long serialVersionUID = 372642396371084459L;
@@ -114,13 +114,13 @@ public class Agent {
 			GlobalParameter.FinishOneEpisode(me, frame, reward, numItemGet);
 		}
 
-		// 殺された場合（reward==-1 && frame!=801）、最後の20ステップの盤面遷移を出力する。
+		// 殺された場合、最後の20ステップの盤面遷移を出力する。
 		if (reward == -1 && frame != 801) {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
-			for (MapInformation map : mapsOld_ex) {
+			for (MapInformation map : exmapsOld) {
 				System.out.println("=========================================================================================");
 				BBMUtility.printBoard2(map.board, map.board, map.life, map.power);
 			}
@@ -226,7 +226,7 @@ public class Agent {
 			}
 		}
 
-		// 自分が最後に爆弾を設置した時刻から9フレーム以上経過していたら、所有爆弾数はかならずMAXになっている。
+		// 自分だけは爆弾保有数が観測できる。
 		abs[me - 10].numBombHold = ammo;
 
 		// TODO Abilityを出力してみる。
@@ -302,7 +302,7 @@ public class Agent {
 		// Fogの部分を埋めたBoardを作る。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MapInformation map_ex;
+		MapInformation exmap;
 		{
 			MyMatrix board_ex = new MyMatrix(board);
 			for (int x = 0; x < numField; x++) {
@@ -312,7 +312,7 @@ public class Agent {
 					}
 				}
 			}
-			map_ex = new MapInformation(board_ex, map.power, map.life);
+			exmap = new MapInformation(board_ex, map.power, map.life);
 
 			// TODO 出力してみる。
 			if (verbose) {
@@ -323,9 +323,9 @@ public class Agent {
 			}
 		}
 
-		if (mapsOld_ex.size() == 0) {
+		if (exmapsOld.size() == 0) {
 			for (int i = 0; i < numPast; i++) {
-				mapsOld_ex.add(map_ex);
+				exmapsOld.add(exmap);
 			}
 		}
 
@@ -376,8 +376,8 @@ public class Agent {
 			maps.addAll(mapsOld);
 
 			List<MapInformation> exmaps = new ArrayList<MapInformation>();
-			exmaps.add(map_ex);
-			exmaps.addAll(mapsOld_ex);
+			exmaps.add(exmap);
+			exmaps.addAll(exmapsOld);
 
 			bombMap = BombTracker.computeBombMap(maps, exmaps);
 		}
@@ -422,7 +422,7 @@ public class Agent {
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			double[] worstScores = worstScoreEvaluator.Do(me, maxPower, abs, map_ex, bombMap, flameLife);
+			double[] worstScores = worstScoreEvaluator.Do(me, maxPower, abs, exmap, bombMap, flameLife);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -440,17 +440,17 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(me, friend, map_ex, abs2, worstScores);
+			action = actionEvaluator.ComputeOptimalAction(me, friend, exmap, abs2, worstScores);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// TODO 詰められる状態をカウントする。
+		// TODO 詰められる状態を発見してカウントする。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (false) {
 			KillScoreEvaluator kse = new KillScoreEvaluator();
-			double[][] temp = kse.Do(me, maxPower, abs, map_ex, bombMap, flameLife);
+			double[][] temp = kse.Do(me, maxPower, abs, exmap, bombMap, flameLife);
 			for (int ai = 0; ai < 4; ai++) {
 				if (temp[ai][1] > 0) {
 					killScores[ai][0] += temp[ai][0] / temp[ai][1];
@@ -467,8 +467,8 @@ public class Agent {
 		mapsOld.addFirst(map);
 		mapsOld.removeLast();
 
-		mapsOld_ex.addFirst(map_ex);
-		mapsOld_ex.removeLast();
+		exmapsOld.addFirst(exmap);
+		exmapsOld.removeLast();
 
 		frame++;
 

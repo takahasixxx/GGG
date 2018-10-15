@@ -61,11 +61,6 @@ public class WorstScoreEvaluator {
 		}
 	}
 
-	/**
-	 * 
-	 * 爆弾の移動方向が未確定の場合、1ステップ目でキックできる場合、条件を増やす。
-	 * 
-	 */
 	private void rrr(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs, List<double[][]> scoresList)
 			throws Exception {
 		if (index == nodes.size()) {

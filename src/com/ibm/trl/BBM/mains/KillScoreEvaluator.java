@@ -452,11 +452,6 @@ public class KillScoreEvaluator {
 		return scores;
 	}
 
-	/**
-	 * 
-	 * 爆弾の移動方向が未確定の場合、1ステップ目でキックできる場合、条件を増やす。
-	 * 
-	 */
 	private void rrr(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs, List<double[][]> scoresList)
 			throws Exception {
 		if (index == nodes.size()) {
@@ -504,12 +499,61 @@ public class KillScoreEvaluator {
 			}
 
 			double[][] scores = new double[4][2];
-			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
-				int gg = computeKillScore(packNow, aaa.agentID - 10);
-				if (gg != Integer.MAX_VALUE) {
-					scores[aaa.agentID - 10][0]++;
+			if (false) {
+				for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+					int gg = computeKillScore(packNow, aaa.agentID - 10);
+					if (gg != Integer.MAX_VALUE) {
+						scores[aaa.agentID - 10][0]++;
+					}
+					scores[aaa.agentID - 10][1]++;
 				}
-				scores[aaa.agentID - 10][1]++;
+			}
+
+			// 一手先で、かならず誰か殺せるかどうか調べる。
+			if (true) {
+				ForwardModel fm = new ForwardModel();
+				boolean[] now = new boolean[4];
+				for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+					now[aaa.agentID - 10] = true;
+				}
+
+				boolean[] findHissatsu = new boolean[4];
+				for (int b = 0; b < 6; b++) {
+					for (int d = 0; d < 6; d++) {
+						boolean[] hissatsu = new boolean[] { now[0], now[1], now[2], now[3] };
+						for (int a = 0; a < 6; a++) {
+							for (int c = 0; c < 6; c++) {
+								int[] actions = new int[] { a, b, c, d };
+								Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
+								boolean[] next = new boolean[4];
+								for (AgentEEE aaa : packNext.sh.getAgentEntry()) {
+									next[aaa.agentID - 10] = true;
+								}
+								for (int ai = 0; ai < 4; ai++) {
+									if (now[ai] && next[ai]) {
+										hissatsu[ai] = false;
+									}
+								}
+							}
+						}
+
+						for (int ai = 0; ai < 4; ai++) {
+							if (now[ai] && hissatsu[ai]) {
+								if (ai == 0 || ai == 2) {
+									findHissatsu[ai] = true;
+								}
+							}
+						}
+					}
+				}
+				for (int ai = 0; ai < 4; ai++) {
+					if (now[ai]) {
+						if (findHissatsu[ai]) {
+							scores[ai][0]++;
+						}
+						scores[ai][1]++;
+					}
+				}
 			}
 
 			scoresList.add(scores);

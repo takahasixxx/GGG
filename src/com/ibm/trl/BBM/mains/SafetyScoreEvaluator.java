@@ -46,8 +46,9 @@ public class SafetyScoreEvaluator {
 
 				// TODO ‹l‚ß‚ç‚ê‚éó‹µ‚©”»’f‚·‚éB
 				if (t < 2) {
+					KillScoreEvaluator kse = new KillScoreEvaluator();
 					for (AgentEEE aaa : packNext.sh.getAgentEntry()) {
-						int ks = KillScoreEvaluator.computeKillScore(packNext, aaa.agentID - 10);
+						int ks = kse.computeKillScore(packNext, aaa.agentID - 10);
 						if (ks != Integer.MAX_VALUE) {
 							tsume[aaa.agentID - 10] = true;
 						}
