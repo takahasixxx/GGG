@@ -1,12 +1,16 @@
 package com.ibm.trl.BBM.mains;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
+import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
+
+import ibm.ANACONDA.Core.MyMatrix;
 
 public class KillScoreEvaluator {
 
@@ -423,7 +427,106 @@ public class KillScoreEvaluator {
 		}
 	}
 
-	public static int computeKillScore(Pack pack, int ai) throws Exception {
+	public double[][] Do(int me, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
+		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				BombTracker.Node node = bombMap[x][y];
+				if (node == null) continue;
+				nodes.add(node);
+			}
+		}
+
+		List<double[][]> scoresList = new ArrayList<double[][]>();
+		LinkedList<BombEEE> bbbs = new LinkedList<BombEEE>();
+		rrr(0, me, maxPower, abs, map, nodes, flameLife, bbbs, scoresList);
+
+		double[][] scores = new double[4][2];
+		for (double[][] temp : scoresList) {
+			for (int ai = 0; ai < 4; ai++) {
+				for (int i = 0; i < 2; i++) {
+					scores[ai][i] += temp[ai][i];
+				}
+			}
+		}
+		return scores;
+	}
+
+	/**
+	 * 
+	 * 爆弾の移動方向が未確定の場合、1ステップ目でキックできる場合、条件を増やす。
+	 * 
+	 */
+	private void rrr(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs, List<double[][]> scoresList)
+			throws Exception {
+		if (index == nodes.size()) {
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//
+			// 基本データを作る。
+			//
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			Ability[] abs2 = new Ability[4];
+			for (int ai = 0; ai < 4; ai++) {
+				abs2[ai] = new Ability(abs[ai]);
+				if (ai + 10 == me) continue;
+				abs2[ai].kick = true;
+				abs2[ai].numMaxBomb = 3;
+				abs2[ai].numBombHold = 3;
+				if (abs2[ai].strength_fix == -1) {
+					abs2[ai].strength = maxPower;
+				} else {
+					abs2[ai].strength = abs2[ai].strength_fix;
+				}
+			}
+
+			Pack packNow;
+			if (true) {
+				StatusHolder sh = new StatusHolder(numField);
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = map.getType(x, y);
+						if (Constant.isAgent(type)) {
+							sh.setAgent(x, y, type);
+						}
+					}
+				}
+
+				for (BombEEE bbb : bbbs) {
+					sh.setBomb(bbb.x, bbb.y, -1, bbb.life, bbb.dir, bbb.power);
+				}
+
+				packNow = new Pack(map.board, flameLife, abs2, sh);
+			}
+
+			AgentEEE[] agents = new AgentEEE[4];
+			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+				agents[aaa.agentID - 10] = aaa;
+			}
+
+			double[][] scores = new double[4][2];
+			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+				int gg = computeKillScore(packNow, aaa.agentID - 10);
+				if (gg != Integer.MAX_VALUE) {
+					scores[aaa.agentID - 10][0]++;
+				}
+				scores[aaa.agentID - 10][1]++;
+			}
+
+			scoresList.add(scores);
+		} else {
+			BombTracker.Node node = nodes.get(index);
+			for (int dir = 0; dir < 5; dir++) {
+				if (node.dirs[dir]) {
+					BombEEE bbb = new BombEEE(node.x, node.y, -1, node.life, dir, node.power);
+					bbbs.addLast(bbb);
+					rrr(index + 1, me, maxPower, abs, map, nodes, flameLife, bbbs, scoresList);
+					bbbs.removeLast();
+				}
+			}
+		}
+	}
+
+	public int computeKillScore(Pack pack, int ai) throws Exception {
 		int index = index(pack, ai);
 		if (index == -1) return Integer.MAX_VALUE;
 		return phi[index];

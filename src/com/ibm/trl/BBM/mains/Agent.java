@@ -1,10 +1,13 @@
 package com.ibm.trl.BBM.mains;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 import com.ibm.trl.BBM.mains.BombTracker.Node;
 
+import ibm.ANACONDA.Core.MatrixUtility;
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class Agent {
@@ -28,6 +31,11 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	WorstScoreEvaluator worstScoreEvaluator = new WorstScoreEvaluator();
 	ActionEvaluator actionEvaluator = new ActionEvaluator();
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	double[][] killScores = new double[4][2];
 
 	static public class Ability implements Serializable {
 		private static final long serialVersionUID = 372642396371084459L;
@@ -118,6 +126,15 @@ public class Agent {
 			}
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+		}
+
+		{
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("Kill Score");
+			MatrixUtility.OutputMatrix(new MyMatrix(killScores));
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 		}
@@ -306,6 +323,12 @@ public class Agent {
 			}
 		}
 
+		if (mapsOld_ex.size() == 0) {
+			for (int i = 0; i < numPast; i++) {
+				mapsOld_ex.add(map_ex);
+			}
+		}
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// エージェントが爆弾を置く瞬間を発見できたら、Abilityのstrengthを更新する。
@@ -346,9 +369,18 @@ public class Agent {
 		// 爆弾の動きをトラッキングする。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		Node[][] bombMap = BombTracker.computeBombMap(map, mapsOld);
+		Node[][] bombMap;
+		if (true) {
+			List<MapInformation> maps = new ArrayList<MapInformation>();
+			maps.add(map);
+			maps.addAll(mapsOld);
 
-		// TODO 視界の中からFogへ出ていった爆弾を検知して記憶しておく。
+			List<MapInformation> exmaps = new ArrayList<MapInformation>();
+			exmaps.add(map_ex);
+			exmaps.addAll(mapsOld_ex);
+
+			bombMap = BombTracker.computeBombMap(maps, exmaps);
+		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -413,16 +445,30 @@ public class Agent {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
+		// TODO 詰められる状態をカウントする。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if (false) {
+			KillScoreEvaluator kse = new KillScoreEvaluator();
+			double[][] temp = kse.Do(me, maxPower, abs, map_ex, bombMap, flameLife);
+			for (int ai = 0; ai < 4; ai++) {
+				if (temp[ai][1] > 0) {
+					killScores[ai][0] += temp[ai][0] / temp[ai][1];
+					killScores[ai][1] += 1;
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
 		// 過去フレーム情報を保存する。その他の後処理。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		mapsOld.addFirst(map);
 		mapsOld.removeLast();
 
-		mapsOld_ex.addLast(map_ex);
-		if (mapsOld_ex.size() > 20) {
-			mapsOld_ex.removeFirst();
-		}
+		mapsOld_ex.addFirst(map_ex);
+		mapsOld_ex.removeLast();
 
 		frame++;
 

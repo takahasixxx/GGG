@@ -15,7 +15,7 @@
         <entry file="file://$PROJECT_DIR$/takahasi_test.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="230">
-              <caret line="19" column="8" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
+              <caret line="19" column="9" selection-start-line="19" selection-start-column="9" selection-end-line="19" selection-end-column="9" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -121,10 +121,10 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="619" />
-    <option name="y" value="231" />
-    <option name="width" value="1920" />
-    <option name="height" value="1143" />
+    <option name="x" value="403" />
+    <option name="y" value="22" />
+    <option name="width" value="2131" />
+    <option name="height" value="1558" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
@@ -213,12 +213,13 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="619" y="231" width="1920" height="1143" extended-state="0" />
+    <frame x="408" y="73" width="2131" height="1558" extended-state="0" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.184375" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16611919" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.5046875" side_tool="true" visible="true" weight="0.4097287" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.4953125" visible="true" weight="0.4097287" />
+      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.504458" side_tool="true" visible="true" weight="0.29514825" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.495542" visible="true" weight="0.29514825" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -612,7 +613,7 @@
     <entry file="file://$PROJECT_DIR$/takahasi_test.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="230">
-          <caret line="19" column="8" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
+          <caret line="19" column="9" selection-start-line="19" selection-start-column="9" selection-end-line="19" selection-end-column="9" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>

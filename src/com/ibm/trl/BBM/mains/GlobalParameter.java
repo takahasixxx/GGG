@@ -16,8 +16,8 @@ import obsolete.OptimalActionFinder.OAFParameter;
 public class GlobalParameter {
 	static Random rand = new Random();
 	static NormalDistribution nd = new NormalDistribution();
-	static final public boolean verbose = true;
-	// static final public boolean verbose = false;
+	// static final public boolean verbose = true;
+	static final public boolean verbose = false;
 	static final int timeStampling = 200;
 	static final boolean isOptimizeParameter = false;
 
