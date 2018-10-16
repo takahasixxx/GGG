@@ -15,7 +15,7 @@ public class ActionEvaluator {
 	static NormalDistribution nd = new NormalDistribution();
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
-	double worstScoreThreshold = 4.999;
+	double worstScoreThreshold = Math.log(4.9999);
 
 	/**
 	 * アクションを決定する。

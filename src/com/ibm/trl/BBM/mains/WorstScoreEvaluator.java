@@ -29,35 +29,39 @@ public class WorstScoreEvaluator {
 			}
 		}
 
+		// 爆弾の動く方向が複数ケースあるので、全組み合わせ試す。
 		List<double[][]> scoresList = new ArrayList<double[][]>();
 		LinkedList<BombEEE> bbbs = new LinkedList<BombEEE>();
 		rrr(0, me, maxPower, abs, map, nodes, flameLife, bbbs, scoresList);
 
-		double[][] scores = new double[2][];
-		scores[0] = new double[] { Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE };
-		scores[1] = new double[6];
+		double[] worstScores = new double[6];
+		double[] averageScores = new double[6];
+		for (int a = 0; a < 6; a++) {
+			worstScores[a] = Double.MAX_VALUE;
+			averageScores[a] = Double.NEGATIVE_INFINITY;
+		}
 		for (double[][] temp : scoresList) {
 			for (int a = 0; a < 6; a++) {
-				if (temp[0][a] < scores[0][a]) {
-					scores[0][a] = temp[0][a];
+				if (temp[0][a] < worstScores[a]) {
+					worstScores[a] = temp[0][a];
 				}
-				scores[1][a] += temp[1][a] / scoresList.size();
+				averageScores[a] = WorstScoreEvaluatorSingle.add_log(averageScores[a], temp[1][a] - Math.log(scoresList.size()));
 			}
 		}
 
 		boolean allzero = true;
 		for (int a = 0; a < 6; a++) {
-			if (scores[0][a] > 0) {
+			if (worstScores[a] != Double.NEGATIVE_INFINITY) {
 				allzero = false;
 				break;
 			}
 		}
 
 		if (allzero == false) {
-			return scores[0];
+			return worstScores;
 		} else {
 			System.out.println("最悪ケースが全部0なので平均を使う。");
-			return scores[1];
+			return averageScores;
 		}
 	}
 
@@ -289,30 +293,31 @@ public class WorstScoreEvaluator {
 				//
 				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				double worst = Double.MAX_VALUE;
-				double sum = 0;
+				double sum_log = Double.NEGATIVE_INFINITY;
 				for (int i = 0; i < packs_onlyme.size(); i++) {
 					Pack pack_onlyme = packs_onlyme.get(i);
 					Pack pack_nagent = packs_nagent.get(i);
 					boolean[][] actionSet = firstActionSet.get(i);
 
 					// 自分エージェントが死んでいたら終了
-					double s;
+					double score;
 					if (pack_onlyme.abs[me - 10].isAlive == false) {
-						s = 0;
+						score = Double.NEGATIVE_INFINITY;
 					} else {
 						WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
-						s = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
+						score = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
 					}
 
-					if (s < worst) {
-						worst = s;
+					if (score < worst) {
+						worst = score;
 					}
-					sum += s;
+
+					sum_log = WorstScoreEvaluatorSingle.add_log(sum_log, score);
 				}
-				double ave = sum / packs_onlyme.size();
+				double ave_log = sum_log - Math.log(packs_onlyme.size());
 
 				scores[0][firstAction] = worst;
-				scores[1][firstAction] = ave;
+				scores[1][firstAction] = ave_log;
 			}
 
 			scoresList.add(scores);

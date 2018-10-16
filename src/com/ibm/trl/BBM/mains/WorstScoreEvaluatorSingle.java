@@ -50,7 +50,7 @@ public class WorstScoreEvaluatorSingle {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// numtステップ先までシミュレーションする。
+		// numtステップ先まで盤面をシミュレーションしておく。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		Pack[] packs_nagent = new Pack[numt];
@@ -74,15 +74,18 @@ public class WorstScoreEvaluatorSingle {
 
 		for (int t = 0; t < numt; t++) {
 			for (int ai = 0; ai < 4; ai++) {
-				agentWeight[t][ai] = new MyMatrix(numField, numField);
+				agentWeight[t][ai] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
 			}
 		}
 
 		for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
 			int ai = aaa.agentID - 10;
 			if (ai == me - 10) continue;
-			agentWeight[0][ai].data[aaa.x][aaa.y] = 1;
+			agentWeight[0][ai].data[aaa.x][aaa.y] = 0;
 		}
+
+		double divideRate_near_log = Math.log(divideRate_near);
+		double divideRate_far_log = Math.log(divideRate_far);
 
 		for (int ai = 0; ai < 4; ai++) {
 			if (ai == me - 10) continue;
@@ -92,7 +95,7 @@ public class WorstScoreEvaluatorSingle {
 				for (int x = 0; x < numField; x++) {
 					for (int y = 0; y < numField; y++) {
 						double weight = agentWeight[t][ai].data[x][y];
-						if (weight == 0) continue;
+						if (weight == Double.NEGATIVE_INFINITY) continue;
 
 						// 遷移先の数を数える。
 						double count = 0;
@@ -105,7 +108,7 @@ public class WorstScoreEvaluatorSingle {
 							int y2 = y + dy;
 							if (t == 0 && firstActionSet[ai][dir] == false) continue;
 							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-							int type = (int) packNext.board.data[x][y];
+							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;
 							if (dir != 0 && type == Constant.Bomb) continue;
 							if (type == Constant.Flames) continue;
@@ -122,12 +125,12 @@ public class WorstScoreEvaluatorSingle {
 							int y2 = y + dy;
 							if (able[dir] == false) continue;
 							if (t <= numtNear) {
-								double weightNext = weight * divideRate_near;
+								double weightNext = weight + divideRate_near_log;
 								if (weightNext > agentWeight[t + 1][ai].data[x2][y2]) {
 									agentWeight[t + 1][ai].data[x2][y2] = weightNext;
 								}
 							} else {
-								double weightNext = weight / count * divideRate_far;
+								double weightNext = add_log(weight - Math.log(count), divideRate_far_log);
 								if (weightNext > agentWeight[t + 1][ai].data[x2][y2]) {
 									agentWeight[t + 1][ai].data[x2][y2] = weightNext;
 								}
@@ -157,18 +160,18 @@ public class WorstScoreEvaluatorSingle {
 
 		if (true) {
 			for (int t = 0; t < numt; t++) {
-				reachProb[t] = new MyMatrix(numField, numField);
-				aliveProb[t] = new MyMatrix(numField, numField);
+				reachProb[t] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
+				aliveProb[t] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
 			}
 			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
 				if (aaa.agentID != me) continue;
-				reachProb[0].data[aaa.x][aaa.y] = 1;
-				aliveProb[0].data[aaa.x][aaa.y] = 1;
+				reachProb[0].data[aaa.x][aaa.y] = 0;
+				aliveProb[0].data[aaa.x][aaa.y] = 0;
 			}
 			for (AgentEEE aaa : packNext_onlyme.sh.getAgentEntry()) {
 				if (aaa.agentID != me) continue;
-				reachProb[1].data[aaa.x][aaa.y] = 1;
-				aliveProb[1].data[aaa.x][aaa.y] = 1;
+				reachProb[1].data[aaa.x][aaa.y] = 0;
+				aliveProb[1].data[aaa.x][aaa.y] = 0;
 			}
 
 			for (int t = 1; t < numt - 1; t++) {
@@ -202,19 +205,19 @@ public class WorstScoreEvaluatorSingle {
 							int y2 = y + dy;
 							if (able[dir] == false) continue;
 
-							double nonEnemyProb = 1;
+							double nonEnemyProb = 0;
 							for (int ai = 0; ai < 4; ai++) {
 								if (ai == me - 10) continue;
 								double temp = agentWeight[t + 1][ai].data[x2][y2];
-								if (temp > 1) temp = 1;
-								nonEnemyProb *= (1 - temp);
+								if (temp > 0) temp = 0;
+								nonEnemyProb += sub_log(0, temp);
 							}
 
 							// リーチ確率の計算
 							if (true) {
 								double probNow = reachProb[t].data[x][y];
-								if (probNow > 0) {
-									double probNext = probNow * nonEnemyProb;
+								if (probNow != Double.NEGATIVE_INFINITY) {
+									double probNext = probNow + nonEnemyProb;
 									if (probNext > reachProb[t + 1].data[x2][y2]) {
 										reachProb[t + 1].data[x2][y2] = probNext;
 									}
@@ -224,10 +227,12 @@ public class WorstScoreEvaluatorSingle {
 							// 生存確率の計算
 							if (true) {
 								double probNow = aliveProb[t].data[x][y];
-								double moveNextProb = probNow * nonEnemyProb / count;
-								double stayProb = probNow / count - moveNextProb;
-								aliveProb[t + 1].data[x][y] += stayProb;
-								aliveProb[t + 1].data[x2][y2] += moveNextProb;
+								if (probNow != Double.NEGATIVE_INFINITY) {
+									double moveNextProb = probNow + nonEnemyProb - Math.log(count);
+									double stayProb = sub_log(probNow - Math.log(count), moveNextProb);
+									aliveProb[t + 1].data[x][y] = add_log(aliveProb[t + 1].data[x][y], stayProb);
+									aliveProb[t + 1].data[x2][y2] = add_log(aliveProb[t + 1].data[x2][y2], moveNextProb);
+								}
 							}
 						}
 					}
@@ -243,7 +248,7 @@ public class WorstScoreEvaluatorSingle {
 
 		// 到達セル
 		if (true) {
-			double temp = reachProb[numt - 1].normL1();
+			double temp = total_log(reachProb[numt - 1]);
 			return temp;
 		}
 
@@ -262,5 +267,45 @@ public class WorstScoreEvaluatorSingle {
 		}
 
 		return 0;
+	}
+
+	static double add_log(double a, double b) {
+		if (a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+		if (a > b) {
+			return Math.log(1 + Math.exp(b - a)) + a;
+		} else {
+			return Math.log(Math.exp(a - b) + 1) + b;
+		}
+	}
+
+	static double sub_log(double a, double b) {
+		if (a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+		if (a > b) {
+			return Math.log(1 - Math.exp(b - a)) + a;
+		} else {
+			return Math.log(Math.exp(a - b) - 1) + b;
+		}
+	}
+
+	static double total_log(MyMatrix a) {
+
+		double max = Double.NEGATIVE_INFINITY;
+		for (int t = 0; t < a.numt; t++) {
+			for (int d = 0; d < a.numd; d++) {
+				if (a.data[t][d] > max) {
+					max = a.data[t][d];
+				}
+			}
+		}
+		if (max == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+
+		double total = 0;
+		for (int t = 0; t < a.numt; t++) {
+			for (int d = 0; d < a.numd; d++) {
+				total += Math.exp(a.data[t][d] - max);
+			}
+		}
+
+		return Math.log(total) + max;
 	}
 }
