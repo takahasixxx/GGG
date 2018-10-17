@@ -142,7 +142,7 @@ public class ActionEvaluator {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (action_final == -1) {
-			double scoreMax = -Double.MAX_VALUE;
+			double scoreMax = Double.NEGATIVE_INFINITY;
 			for (int action = 0; action < 6; action++) {
 				double score = safetyScore[me - 10][action];
 				if (score > scoreMax) {

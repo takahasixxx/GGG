@@ -17,6 +17,7 @@ public class WorstScoreEvaluator {
 	static final Random rand = new Random();
 	static final int numThread = GlobalParameter.numThread;
 	static final int numField = GlobalParameter.numField;
+	static final boolean verbose = GlobalParameter.verbose;
 	static final ForwardModel fm = new ForwardModel();
 
 	public double[] Do(int me, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
@@ -306,6 +307,21 @@ public class WorstScoreEvaluator {
 					} else {
 						WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
 						score = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
+					}
+
+					// TODO
+					if (verbose) {
+						System.out.println("======");
+						System.out.println(String.format("WorstScoreEvaluator: myFirstAction = %d", firstAction));
+						for (int ai = 0; ai < 4; ai++) {
+							System.out.print("WorstScoreEvaluator: " + ai + " : {");
+							for (int a = 0; a < 6; a++) {
+								System.out.print(String.format("%d=%5b, ", a, actionSet[ai][a]));
+							}
+							System.out.println("}");
+						}
+						String line = String.format("WorstScoreEvaluator: score=%f, exp(score)=%f", score, Math.exp(score));
+						System.out.println(line);
 					}
 
 					if (score < worst) {

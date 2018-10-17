@@ -15,8 +15,8 @@ def main(render=False, interactive=False):
     # List of four agents
     agent_list = [
         agents.SimpleAgent(),
-        MyAgent(),
-        #agents.SimpleAgent(),
+        #MyAgent(),
+        agents.SimpleAgent(),
         agents.SimpleAgent(),
         #TimeExpandedAgent(),
         MyAgent(),

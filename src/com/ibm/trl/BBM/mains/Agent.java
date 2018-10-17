@@ -6,6 +6,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.ibm.trl.BBM.mains.BombTracker.Node;
+import com.ibm.trl.BBM.mains.BombTracker.ResultBT;
 
 import ibm.ANACONDA.Core.MatrixUtility;
 import ibm.ANACONDA.Core.MyMatrix;
@@ -120,6 +121,17 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("LOSELOSELOSE");
 			for (MapInformation map : exmapsOld) {
 				System.out.println("=========================================================================================");
 				BBMUtility.printBoard2(map.board, map.board, map.life, map.power);
@@ -317,7 +329,8 @@ public class Agent {
 			// TODO 出力してみる。
 			if (verbose) {
 				System.out.println("board_ex picture");
-				BBMUtility.printBoard2(board_ex, board, bomb_life, bomb_blast_strength);
+				// BBMUtility.printBoard2(board_ex, board, bomb_life, bomb_blast_strength);
+				BBMUtility.printBoard2(board_ex, board_ex, bomb_life, bomb_blast_strength);
 				System.out.println("=========================================================================================");
 				System.out.println("=========================================================================================");
 			}
@@ -370,6 +383,7 @@ public class Agent {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		Node[][] bombMap;
+		MyMatrix flameLife;
 		if (true) {
 			List<MapInformation> maps = new ArrayList<MapInformation>();
 			maps.add(map);
@@ -379,7 +393,42 @@ public class Agent {
 			exmaps.add(exmap);
 			exmaps.addAll(exmapsOld);
 
-			bombMap = BombTracker.computeBombMap(maps, exmaps);
+			ResultBT res = BombTracker.computeBombMap(maps, exmaps);
+			bombMap = res.bombMap;
+			flameLife = res.flames;
+		}
+
+		// exmapのboardのBombを書き換える。
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				Node node = bombMap[x][y];
+				if (node != null) {
+					int type = (int) exmap.board.data[x][y];
+					if (Constant.isAgent(type) == false) {
+						exmap.board.data[x][y] = Constant.Bomb;
+						exmap.life.data[x][y] = node.life;
+						exmap.power.data[x][y] = node.power;
+					}
+				}
+			}
+		}
+
+		// exmapのboardのFlameを書き換える。
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				if (flameLife.data[x][y] > 0) {
+					exmap.board.data[x][y] = Constant.Flames;
+				}
+			}
+		}
+
+		if (verbose) {
+			System.out.println("board_ex & bomb_ex & flame_ex picture");
+			// BBMUtility.printBoard2(exmap.board, map.board, bomb_life, exmap.power);
+			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			MatrixUtility.OutputMatrix(flameLife);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -387,28 +436,28 @@ public class Agent {
 		// FlameのLifeを計算する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix flameLife = new MyMatrix(numField, numField);
-		{
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					if (board.data[x][y] == Constant.Flames) {
-						// 今のBoardがFlamesだった場合、Flameが出現する瞬間を見つけて、残りLifeを計算する。
-						int life = 3;
-						for (int t = 0; t < 3; t++) {
-							MapInformation mapPre = mapsOld.get(t);
-							int type2 = mapPre.getType(x, y);
-							if (type2 != Constant.Flames) {
-								life = 3 - t;
-								break;
-							}
-						}
-						// TODO とりあえず炎は全部Life3にする。
-						// life = 3;
-						flameLife.data[x][y] = life;
-					}
-				}
-			}
-		}
+		// MyMatrix flameLife = new MyMatrix(numField, numField);
+		// {
+		// for (int x = 0; x < numField; x++) {
+		// for (int y = 0; y < numField; y++) {
+		// if (board.data[x][y] == Constant.Flames) {
+		// // 今のBoardがFlamesだった場合、Flameが出現する瞬間を見つけて、残りLifeを計算する。
+		// int life = 3;
+		// for (int t = 0; t < 3; t++) {
+		// MapInformation mapPre = mapsOld.get(t);
+		// int type2 = mapPre.getType(x, y);
+		// if (type2 != Constant.Flames) {
+		// life = 3 - t;
+		// break;
+		// }
+		// }
+		// // TODO とりあえず炎は全部Life3にする。
+		// // life = 3;
+		// flameLife.data[x][y] = life;
+		// }
+		// }
+		// }
+		// }
 
 		// TODO 複数の爆弾が絶妙なタイミングで爆発して、Flamesが５連発とか出てくると、FlamesのLifeを間違える。なんとかしたい。
 

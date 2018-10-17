@@ -850,13 +850,13 @@ public class BBMUtility {
 					print2 = "  --  ";
 					print3 = "      ";
 				} else if (type == Constant.Rigid) {
-					print1 = "¡¡¡";
-					print2 = "¡¡¡";
-					print3 = "¡¡¡";
+					print1 = "‰ñ‰ñ‰ñ";
+					print2 = "‰ñ‰ñ‰ñ";
+					print3 = "‰ñ‰ñ‰ñ";
 				} else if (type == Constant.Wood) {
-					print1 = "   ";
-					print2 = "   ";
-					print3 = "   ";
+					print1 = "ƒƒƒ";
+					print2 = "ƒƒƒ";
+					print3 = "ƒƒƒ";
 				} else if (type == Constant.Bomb) {
 					print1 = "^P_";
 					print2 = "" + zenkakuNumber[lll] + "";

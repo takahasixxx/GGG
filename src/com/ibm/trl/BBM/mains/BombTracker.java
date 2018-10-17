@@ -6,6 +6,9 @@ import java.util.List;
 
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
 
+import ibm.ANACONDA.Core.MatrixUtility;
+import ibm.ANACONDA.Core.MyMatrix;
+
 public class BombTracker {
 
 	static boolean verbose = GlobalParameter.verbose;
@@ -38,7 +41,17 @@ public class BombTracker {
 		}
 	}
 
-	static Node[][] computeBombMap(List<MapInformation> mapsOrg, List<MapInformation> exmapsOrg) throws Exception {
+	static public class ResultBT {
+		Node[][] bombMap;
+		MyMatrix flames;
+
+		public ResultBT(Node[][] bombMap, MyMatrix flames) {
+			this.bombMap = bombMap;
+			this.flames = flames;
+		}
+	}
+
+	static ResultBT computeBombMap(List<MapInformation> mapsOrg, List<MapInformation> exmapsOrg) throws Exception {
 		List<MapInformation> maps = new ArrayList<MapInformation>();
 		maps.addAll(mapsOrg);
 		Collections.reverse(maps);
@@ -49,12 +62,35 @@ public class BombTracker {
 
 		List<BombEEE> bbbs = new ArrayList<BombEEE>();
 
+		MyMatrix flames = new MyMatrix(numField, numField);
+		{
+			MapInformation mapNow = maps.get(0);
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = mapNow.getType(x, y);
+					if (type == Constant.Flames) {
+						flames.data[x][y] = 4;
+					}
+				}
+			}
+		}
+
 		int numt = maps.size();
-		for (int t = 1; t < numt; t++) {
+		for (int t = 10; t < numt; t++) {
 
 			MapInformation mapNow = maps.get(t);
 			MapInformation mapPre = maps.get(t - 1);
 			MapInformation exmapNow = exmaps.get(t);
+			MapInformation exmapPre = exmaps.get(t - 1);
+
+			// 炎のライフを1減じる。
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					if (flames.data[x][y] > 0) {
+						flames.data[x][y] -= 1;
+					}
+				}
+			}
 
 			// 今のフレームまでで見つかっている爆弾を動かす。
 			for (BombEEE bbb : bbbs) {
@@ -76,8 +112,8 @@ public class BombTracker {
 					}
 
 					// 次のフレームに移動先に障害物があるかどうか調べる。
-					int type2 = exmapNow.getType(x2, y2);
-					if (Constant.isWall(type2) || Constant.isAgent(type2) || type2 == Constant.Flames) {
+					int type2 = exmapPre.getType(x2, y2);
+					if (Constant.isWall(type2) || Constant.isAgent(type2)) {
 						x2 = x;
 						y2 = y;
 						bbb.dir = 0;
@@ -87,18 +123,102 @@ public class BombTracker {
 					bbb.y = y2;
 				}
 				bbb.life--;
+			}
 
-				// Fogの中じゃないのに、観測と食い違っている爆弾は、無効にする。
-				if (bbb.life > 0) {
-					int type = mapNow.getType(bbb.x, bbb.y);
-					int life = mapNow.getLife(bbb.x, bbb.y);
-					int power = mapNow.getPower(bbb.x, bbb.y);
-					if (type != Constant.Fog) {
+			// 爆発している爆弾に巻き込まれている爆弾があれば、life=0にして、dir=0にする。
+			while (true) {
+
+				// 爆発してるやつで矛盾してる爆弾があれば、無効にする。
+				for (BombEEE bbb : bbbs) {
+					// Fogの中じゃないのに、観測と食い違っている爆弾は、無効にする。
+					if (bbb.life > 0) {
+						int type = mapNow.getType(bbb.x, bbb.y);
+						int life = mapNow.getLife(bbb.x, bbb.y);
+						int power = mapNow.getPower(bbb.x, bbb.y);
+						if (type == Constant.Fog) continue;
 						if (life != bbb.life || power != bbb.power) {
 							bbb.life = -1000;
 						}
+					} else if (bbb.life == 0) {
+						MyMatrix flames_test = new MyMatrix(flames);
+						BBMUtility.PrintFlame(exmapPre.board, flames_test, bbb.x, bbb.y, bbb.power, 3);
+						boolean mujun = false;
+						for (int x = 0; x < numField; x++) {
+							for (int y = 0; y < numField; y++) {
+								int type = mapNow.getType(x, y);
+								if (type == Constant.Fog) continue;
+								if (flames_test.data[x][y] > 0) {
+									if (type != Constant.Flames) {
+										mujun = true;
+										break;
+									}
+								}
+							}
+							if (mujun) break;
+						}
+						if (mujun) {
+							bbb.life = -1000;
+						} else {
+							flames = flames_test;
+						}
 					}
 				}
+
+				// 連鎖爆弾に巻き込まれるやつは爆発させる。
+				boolean changed = false;
+
+				for (BombEEE bbb : bbbs) {
+					if (bbb.life == 0) {
+						BBMUtility.PrintFlame(exmapPre.board, flames, bbb.x, bbb.y, bbb.power, 3);
+					}
+				}
+
+				for (BombEEE bbb : bbbs) {
+					if (bbb.life > 0) {
+						if (flames.data[bbb.x][bbb.y] > 0) {
+							bbb.life = 0;
+							changed = true;
+						}
+					}
+				}
+
+				if (changed == false) {
+					// 矛盾チェックしてみる。
+					boolean mujun = false;
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = mapNow.getType(x, y);
+							if (type == Constant.Fog) continue;
+
+							// 独自ロジックではFlamesなのに、MapではFlamesじゃない場合。
+							if (flames.data[x][y] > 0) {
+								if (type != Constant.Flames) {
+									flames.data[x][y] = 0;
+									mujun = true;
+									break;
+								}
+							}
+
+							// MapではFlamesなのに、独自ロジックではFlamesじゃない場合。
+							if (type == Constant.Flames) {
+								if (flames.data[x][y] == 0) {
+									flames.data[x][y] = 3;
+								}
+							}
+						}
+					}
+					// System.out.println("t=" + t + ", 矛盾＝" + mujun);
+					break;
+				}
+			}
+
+			// TODO
+			if (false) {
+				System.out.println("=========================================================");
+				System.out.println("t = " + t);
+				BBMUtility.printBoard2(exmapNow.board, mapNow.board, mapNow.life, mapNow.power);
+				MatrixUtility.OutputMatrix(flames);
+				System.out.println("=========================================================");
 			}
 
 			// 新しい爆弾を見つける。
@@ -162,7 +282,7 @@ public class BombTracker {
 										bbbs.add(bbb);
 										none = false;
 										if (t > 1) {
-											System.out.println("ないはず？" + bbb);
+											// System.out.println("ないはず？??" + bbb);
 										}
 									}
 								}
@@ -173,7 +293,7 @@ public class BombTracker {
 							// トラッキングミスしてる爆弾の移動
 							BombEEE bbb = new BombEEE(x, y, -1, life, 0, power);
 							bbbs.add(bbb);
-							System.out.println("ないはず？" + bbb);
+							// System.out.println("ないはず？" + bbb);
 						}
 					} else if (life == 9) {
 						// 新規設置の爆弾
@@ -195,7 +315,7 @@ public class BombTracker {
 				bombMap[bbb.x][bbb.y].dirs[bbb.dir] = true;
 			}
 		}
-		return bombMap;
+		return new ResultBT(bombMap, flames);
 	}
 
 	static Node[][] computeBombMap_Old(MapInformation map, List<MapInformation> mapsOld) throws Exception {

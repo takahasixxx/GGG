@@ -82,7 +82,7 @@ public class ForwardModel {
 					if (boardNext.data[x][y] != Constant.Flames) {
 						flameLifeNext.data[x][y] = 0;
 						// TODO ‚±‚±‚Í“’B‚µ“¾‚È‚¢H
-						System.out.println("error??");
+						System.out.println("Forward Model: error??");
 					}
 				}
 			}
