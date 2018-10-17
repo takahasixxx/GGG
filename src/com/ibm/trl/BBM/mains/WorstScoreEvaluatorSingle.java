@@ -258,24 +258,22 @@ public class WorstScoreEvaluatorSingle {
 			return temp;
 		}
 
-		// 到達セル
-		if (true) {
-			double temp = total_log(reachProb[numt - 1]);
-			return temp;
-		}
-
 		// 到達セルの前ステップ総和
 		if (true) {
 			double sum = 0;
 			double total = 0;
 			for (int t = 1; t < numt; t++) {
-				double temp = Math.pow(decayRate, t - 1);
-				double len = reachProb[t].normL1();
-				sum += len * temp;
-				total += temp;
+				double temp = total_log(reachProb[t]);
+				System.out.println(t + ", " + temp);
 			}
 			double ave = sum / total;
-			return ave;
+			// return ave;
+		}
+
+		// 到達セル
+		if (true) {
+			double temp = total_log(reachProb[numt - 1]);
+			return temp;
 		}
 
 		return 0;

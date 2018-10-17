@@ -245,17 +245,17 @@ public class WorstScoreEvaluator {
 					// “¯—l‚Ì”Õ–Ê‚ª‚ ‚é‚©‚Ç‚¤‚©’²‚×‚éB
 					boolean find = false;
 					int findIndex = -1;
-					for (int i = 0; i < packs_onlyme.size(); i++) {
-						Pack pack = packs_onlyme.get(i);
-						if (pack.sh.getBombEntry().size() == packNext_onlyme.sh.getBombEntry().size()) {
-							double def = pack.board.minus(packNext_onlyme.board).normL1();
+					for (int i = 0; i < packs_nagent.size(); i++) {
+						Pack pack = packs_nagent.get(i);
+						if (pack.sh.getBombEntry().size() == packNext_nagent.sh.getBombEntry().size()) {
+							double def = pack.board.minus(packNext_nagent.board).normL1();
 							if (def == 0) {
-								double def2 = pack.flameLife.minus(packNext_onlyme.flameLife).normL1();
+								double def2 = pack.flameLife.minus(packNext_nagent.flameLife).normL1();
 								if (def2 == 0) {
 									boolean allsame = true;
 									for (BombEEE bbb1 : pack.sh.getBombEntry()) {
 										boolean same = false;
-										for (BombEEE bbb2 : packNext_onlyme.sh.getBombEntry()) {
+										for (BombEEE bbb2 : packNext_nagent.sh.getBombEntry()) {
 											if (bbb1.equals(bbb2)) {
 												same = true;
 												break;
@@ -314,7 +314,6 @@ public class WorstScoreEvaluator {
 						score = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
 					}
 
-					// TODO
 					if (verbose) {
 						System.out.println("======");
 						System.out.println(String.format("WorstScoreEvaluator: myFirstAction = %d", firstAction));
@@ -332,7 +331,6 @@ public class WorstScoreEvaluator {
 					if (score < worst) {
 						worst = score;
 					}
-
 					sum_log = WorstScoreEvaluatorSingle.add_log(sum_log, score);
 				}
 				double ave_log = sum_log - Math.log(packs_onlyme.size());
