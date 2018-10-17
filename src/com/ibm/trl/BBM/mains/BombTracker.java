@@ -92,6 +92,24 @@ public class BombTracker {
 				}
 			}
 
+			// 爆弾を整理する。同じ奴は消す。無効のやつは消す。
+			if (true) {
+				List<BombEEE> bbbs_temp = new ArrayList<BombEEE>();
+				for (BombEEE bbb2 : bbbs) {
+					if (bbb2.life <= 0) continue;
+					boolean find = false;
+					for (BombEEE bbb_temp : bbbs_temp) {
+						if (bbb_temp.equals(bbb2)) {
+							find = true;
+							break;
+						}
+					}
+					if (find) continue;
+					bbbs_temp.add(bbb2);
+				}
+				bbbs = bbbs_temp;
+			}
+
 			// 今のフレームまでで見つかっている爆弾を動かす。
 			for (BombEEE bbb : bbbs) {
 				if (bbb.life > 0) {
