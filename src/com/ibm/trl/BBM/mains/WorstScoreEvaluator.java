@@ -138,15 +138,6 @@ public class WorstScoreEvaluator {
 							board_nagent.data[aaa.x][aaa.y] = Constant.Bomb;
 						}
 					}
-
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = (int) board_nagent.data[x][y];
-							if (Constant.isItem(type)) {
-								board_nagent.data[x][y] = Constant.Passage;
-							}
-						}
-					}
 				}
 
 				packNow_nagent = new Pack(board_nagent, flameLife, abs2, sh_nagent);
@@ -167,7 +158,7 @@ public class WorstScoreEvaluator {
 						if (agents[ai] == null) {
 							temp[ai][0] = true;
 						} else {
-							temp[ai] = new boolean[] { true, true, true, true, true, true };
+							temp[ai] = new boolean[] { true, true, true, true, true, false };
 						}
 					}
 				}
@@ -230,6 +221,23 @@ public class WorstScoreEvaluator {
 							sh_onlyme.setBomb(bbb.x, bbb.y, bbb.owner, bbb.life, bbb.dir, bbb.power);
 						}
 
+						for (int x = 0; x < numField; x++) {
+							for (int y = 0; y < numField; y++) {
+								int type = (int) board_nagent.data[x][y];
+								if (Constant.isItem(type)) {
+									board_nagent.data[x][y] = Constant.Passage;
+								}
+							}
+						}
+						for (int x = 0; x < numField; x++) {
+							for (int y = 0; y < numField; y++) {
+								int type = (int) board_onlyme.data[x][y];
+								if (Constant.isItem(type)) {
+									board_onlyme.data[x][y] = Constant.Passage;
+								}
+							}
+						}
+
 						packNext_nagent = new Pack(board_nagent, packNext.flameLife, packNext.abs, sh_nagent);
 						packNext_onlyme = new Pack(board_onlyme, packNext.flameLife, packNext.abs, sh_onlyme);
 					}
@@ -281,9 +289,6 @@ public class WorstScoreEvaluator {
 					}
 					for (int ai = 0; ai < 4; ai++) {
 						int act = actions[ai];
-						if (act == 5) {
-							act = 0;
-						}
 						actionSet[ai][act] = true;
 					}
 				}

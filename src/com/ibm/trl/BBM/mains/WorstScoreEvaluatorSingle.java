@@ -106,7 +106,13 @@ public class WorstScoreEvaluatorSingle {
 							int dy = vec[2];
 							int x2 = x + dx;
 							int y2 = y + dy;
-							if (t == 0 && firstActionSet[ai][dir] == false) continue;
+							if (t == 0) {
+								if (dir == 0) {
+									if (firstActionSet[ai][0] == false && firstActionSet[ai][5] == false) continue;
+								} else {
+									if (firstActionSet[ai][dir] == false) continue;
+								}
+							}
 							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
 							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;
@@ -186,7 +192,13 @@ public class WorstScoreEvaluatorSingle {
 							int dy = vec[2];
 							int x2 = x + dx;
 							int y2 = y + dy;
-							if (t == 0 && firstActionSet[me - 10][dir] == false) continue;
+							if (t == 0) {
+								if (dir == 0) {
+									if (firstActionSet[me - 10][0] == false && firstActionSet[me - 10][5] == false) continue;
+								} else {
+									if (firstActionSet[me - 10][dir] == false) continue;
+								}
+							}
 							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
 							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;

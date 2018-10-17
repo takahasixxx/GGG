@@ -327,7 +327,7 @@ public class Agent {
 			exmap = new MapInformation(board_ex, map.power, map.life);
 
 			// TODO o—Í‚µ‚Ä‚İ‚éB
-			if (verbose) {
+			if (false) {
 				System.out.println("board_ex picture");
 				// BBMUtility.printBoard2(board_ex, board, bomb_life, bomb_blast_strength);
 				BBMUtility.printBoard2(board_ex, board_ex, bomb_life, bomb_blast_strength);
