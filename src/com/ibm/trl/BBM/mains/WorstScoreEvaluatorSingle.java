@@ -71,6 +71,8 @@ public class WorstScoreEvaluatorSingle {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		MyMatrix[][] agentWeight = new MyMatrix[numt][4];
+		double divideRate_near_log = Math.log(divideRate_near);
+		double divideRate_far_log = Math.log(divideRate_far);
 
 		for (int t = 0; t < numt; t++) {
 			for (int ai = 0; ai < 4; ai++) {
@@ -81,11 +83,8 @@ public class WorstScoreEvaluatorSingle {
 		for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
 			int ai = aaa.agentID - 10;
 			if (ai == me - 10) continue;
-			agentWeight[0][ai].data[aaa.x][aaa.y] = 0;
+			agentWeight[0][ai].data[aaa.x][aaa.y] = divideRate_near_log;
 		}
-
-		double divideRate_near_log = Math.log(divideRate_near);
-		double divideRate_far_log = Math.log(divideRate_far);
 
 		for (int ai = 0; ai < 4; ai++) {
 			if (ai == me - 10) continue;
