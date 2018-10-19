@@ -38,7 +38,7 @@ public class WorstScoreEvaluator {
 		double[] worstScores = new double[6];
 		double[] averageScores = new double[6];
 		for (int a = 0; a < 6; a++) {
-			worstScores[a] = Double.MAX_VALUE;
+			worstScores[a] = Double.POSITIVE_INFINITY;
 			averageScores[a] = Double.NEGATIVE_INFINITY;
 		}
 		for (double[][] temp : scoresList) {
@@ -298,7 +298,7 @@ public class WorstScoreEvaluator {
 				// 全行動の経路のスコアを計算してみる。
 				//
 				/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-				double worst = Double.MAX_VALUE;
+				double worst = Double.POSITIVE_INFINITY;
 				double sum_log = Double.NEGATIVE_INFINITY;
 				for (int i = 0; i < packs_onlyme.size(); i++) {
 					Pack pack_onlyme = packs_onlyme.get(i);
@@ -311,7 +311,8 @@ public class WorstScoreEvaluator {
 						score = Double.NEGATIVE_INFINITY;
 					} else {
 						WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
-						score = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
+						// score = wses.Do(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
+						score = wses.Do2(me, packNow, packNow_nagent, pack_onlyme, pack_nagent, actionSet);
 					}
 
 					if (verbose) {

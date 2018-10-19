@@ -29,25 +29,6 @@ public class WorstScoreEvaluatorSingle {
 
 	public double Do(int me, Pack packNow, Pack packNow_nagent, Pack packNext_onlyme, Pack packNext_nagent, boolean[][] firstActionSet) throws Exception {
 
-		// TODO エラーチェック
-		if (true) {
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					int type = (int) packNow_nagent.board.data[x][y];
-					if (Constant.isAgent(type)) throw new Exception();
-				}
-			}
-			if (packNow_nagent.sh.getAgentEntry().size() > 0) throw new Exception();
-
-			// for (int x = 0; x < numField; x++) {
-			// for (int y = 0; y < numField; y++) {
-			// int type = (int) pack2_na.board.data[x][y];
-			// if (Constant.isAgent(type)) throw new Exception();
-			// }
-			// }
-			// if (pack2_na.sh.getAgentEntry().size() > 0) throw new Exception();
-		}
-
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// numtステップ先まで盤面をシミュレーションしておく。
@@ -151,6 +132,16 @@ public class WorstScoreEvaluatorSingle {
 						}
 					}
 				}
+
+				// Flamesが存在したら、0にクリアする。
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = (int) packNext.board.data[x][y];
+						if (type == Constant.Flames) {
+							agentWeight[t + 1][ai].data[x][y] = Double.NEGATIVE_INFINITY;
+						}
+					}
+				}
 			}
 		}
 
@@ -159,7 +150,6 @@ public class WorstScoreEvaluatorSingle {
 		// 全行動の経路のスコアを計算してみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		MyMatrix[] reachProb = new MyMatrix[numt];
 		MyMatrix[] aliveProb = new MyMatrix[numt];
 
@@ -273,6 +263,253 @@ public class WorstScoreEvaluatorSingle {
 		if (true) {
 			double temp = total_log(reachProb[numt - 1]);
 			return temp;
+		}
+
+		return 0;
+	}
+
+	public double Do2(int me, Pack packNow, Pack packNow_nagent, Pack packNext_onlyme, Pack packNext_nagent, boolean[][] firstActionSet) throws Exception {
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// numtステップ先まで盤面をシミュレーションしておく。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		Pack[] packs_nagent = new Pack[numt];
+		if (true) {
+			packs_nagent[0] = packNow_nagent;
+			packs_nagent[1] = packNext_nagent;
+			Pack packNext = packNext_nagent;
+			int[] actions = new int[4];
+			for (int t = 2; t < numt; t++) {
+				packNext = fm.Step(packNext.board, packNext.flameLife, packNext.abs, packNext.sh, actions);
+				packs_nagent[t] = packNext;
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// エージェントを動かして、存在確率を計算する。酔歩。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		MyMatrix[][] agentsStepCounter = new MyMatrix[numt][4];
+
+		for (int t = 0; t < numt; t++) {
+			for (int ai = 0; ai < 4; ai++) {
+				agentsStepCounter[t][ai] = new MyMatrix(numField, numField, numt);
+			}
+		}
+
+		for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+			int ai = aaa.agentID - 10;
+			if (ai == me - 10) continue;
+			agentsStepCounter[0][ai].data[aaa.x][aaa.y] = 0;
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			if (ai == me - 10) continue;
+			for (int t = 0; t < numt - 1; t++) {
+				Pack packNext = packs_nagent[t + 1];
+
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						double stepCount = agentsStepCounter[t][ai].data[x][y];
+						if (stepCount == numt) continue;
+
+						// 遷移先の数を数える。
+						boolean[] able = new boolean[5];
+						for (int[] vec : GlobalParameter.onehopList) {
+							int dir = vec[0];
+							int dx = vec[1];
+							int dy = vec[2];
+							int x2 = x + dx;
+							int y2 = y + dy;
+							if (t == 0) {
+								if (dir == 0) {
+									if (firstActionSet[ai][0] == false && firstActionSet[ai][5] == false) continue;
+								} else {
+									if (firstActionSet[ai][dir] == false) continue;
+								}
+							}
+							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+							int type = (int) packNext.board.data[x2][y2];
+							if (Constant.isWall(type)) continue;
+							if (dir != 0 && type == Constant.Bomb) continue;
+							if (type == Constant.Flames) continue;
+							able[dir] = true;
+						}
+
+						for (int[] vec : GlobalParameter.onehopList) {
+							int dir = vec[0];
+							int dx = vec[1];
+							int dy = vec[2];
+							int x2 = x + dx;
+							int y2 = y + dy;
+							if (able[dir] == false) continue;
+							double stepCountNext = stepCount + 1;
+							if (stepCountNext < agentsStepCounter[t + 1][ai].data[x2][y2]) {
+								agentsStepCounter[t + 1][ai].data[x2][y2] = stepCountNext;
+							}
+						}
+					}
+				}
+
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						if (agentsStepCounter[t + 1][ai].data[x][y] > agentsStepCounter[t][ai].data[x][y]) {
+							agentsStepCounter[t + 1][ai].data[x][y] = agentsStepCounter[t][ai].data[x][y];
+						}
+					}
+				}
+
+				// Flamesが存在したら、0にクリアする。
+				if (false) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								agentsStepCounter[t + 1][ai].data[x][y] = Double.NEGATIVE_INFINITY;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 全行動の経路のスコアを計算してみる。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		MyMatrix[] hitNearestStep = new MyMatrix[numt];
+		if (true) {
+			for (int t = 0; t < numt; t++) {
+				hitNearestStep[t] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
+			}
+			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
+				if (aaa.agentID != me) continue;
+				hitNearestStep[0].data[aaa.x][aaa.y] = numt;
+			}
+			for (AgentEEE aaa : packNext_onlyme.sh.getAgentEntry()) {
+				if (aaa.agentID != me) continue;
+				hitNearestStep[1].data[aaa.x][aaa.y] = numt;
+			}
+
+			for (int t = 1; t < numt - 1; t++) {
+				Pack packNext = packs_nagent[t + 1];
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+
+						double nearestStepNow = hitNearestStep[t].data[x][y];
+						if (nearestStepNow == Double.NEGATIVE_INFINITY) continue;
+
+						double count = 0;
+						boolean[] able = new boolean[5];
+						for (int[] vec : GlobalParameter.onehopList) {
+							int dir = vec[0];
+							int dx = vec[1];
+							int dy = vec[2];
+							int x2 = x + dx;
+							int y2 = y + dy;
+							if (t == 0) {
+								if (dir == 0) {
+									if (firstActionSet[me - 10][0] == false && firstActionSet[me - 10][5] == false) continue;
+								} else {
+									if (firstActionSet[me - 10][dir] == false) continue;
+								}
+							}
+							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+							int type = (int) packNext.board.data[x2][y2];
+							if (Constant.isWall(type)) continue;
+							if (dir != 0 && type == Constant.Bomb) continue;
+							if (type == Constant.Flames) continue;
+							able[dir] = true;
+							count++;
+						}
+						if (count == 0) continue;
+
+						for (int[] vec : GlobalParameter.onehopList) {
+							int dir = vec[0];
+							int dx = vec[1];
+							int dy = vec[2];
+							int x2 = x + dx;
+							int y2 = y + dy;
+							if (able[dir] == false) continue;
+
+							double nearestStepNext = nearestStepNow;
+							for (int ai = 0; ai < 4; ai++) {
+								if (ai == me - 10) continue;
+								double stepCount = agentsStepCounter[t + 1][ai].data[x2][y2];
+								if (stepCount < nearestStepNext) {
+									nearestStepNext = stepCount;
+								}
+							}
+
+							if (nearestStepNext > hitNearestStep[t + 1].data[x2][y2]) {
+								hitNearestStep[t + 1].data[x2][y2] = nearestStepNext;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// 到達セルの前ステップ総和
+		if (true) {
+			double rate = 7;
+			double ratelog = Math.log(rate);
+			double sum = 0;
+			double weightTotal = 0;
+			double decay = 0.9;
+			for (int t = 1; t < numt; t++) {
+				MyMatrix mat = hitNearestStep[t];
+				double sss = Double.NEGATIVE_INFINITY;
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						double score = mat.data[x][y];
+						double temp = ratelog * (score - numt);
+						sss = add_log(sss, temp);
+					}
+				}
+				System.out.println(t + ", " + sss + ", " + Math.exp(sss));
+
+				double weight = Math.pow(decay, t - 1);
+				sum += sss * weight;
+				weightTotal += weight;
+			}
+			double average = sum / weightTotal;
+			System.out.println("重み付きスコア: " + average);
+			// return average;
+		}
+
+		// 到達セル
+		if (true) {
+			double rate = 7;
+			double ratelog = Math.log(rate);
+			double sum = 0;
+			double weightTotal = 0;
+			double decay = 0.9;
+			// for (int t = 1; t < numt; t++) {
+			{
+				int t = numt - 1;
+				MyMatrix mat = hitNearestStep[t];
+				double sss = Double.NEGATIVE_INFINITY;
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						double score = mat.data[x][y];
+						double temp = ratelog * (score - numt);
+						sss = add_log(sss, temp);
+					}
+				}
+				System.out.println(t + ", " + sss + ", " + Math.exp(sss));
+
+				double weight = Math.pow(decay, t - 1);
+				sum += sss * weight;
+				weightTotal += weight;
+			}
+			double average = sum / weightTotal;
+			System.out.println("重み付きスコア: " + average);
+			return average;
 		}
 
 		return 0;
