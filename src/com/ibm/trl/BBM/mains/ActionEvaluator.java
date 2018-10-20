@@ -15,12 +15,15 @@ public class ActionEvaluator {
 	static NormalDistribution nd = new NormalDistribution();
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
-	double worstScoreThreshold = Math.log(4.9999);
+	double worstScoreThreshold = Math.log(4.5);
+	double attackThreshold = -5;
 
 	/**
 	 * アクションを決定する。
 	 */
-	public int ComputeOptimalAction(int me, int friend, MapInformation map, Ability abs[], double[] worstScores) throws Exception {
+	public int ComputeOptimalAction(int me, int friend, MapInformation map, Ability abs[], double[][][][] worstScores) throws Exception {
+		worstScoreThreshold = 1.3;
+
 		MyMatrix board = map.board;
 
 		AgentEEE[] agentsNow = new AgentEEE[4];
@@ -41,16 +44,171 @@ public class ActionEvaluator {
 		// 自分の位置から、各セルへの移動距離を計算しておく。
 		MyMatrix dis = BBMUtility.ComputeOptimalDistance(board, agentMe.x, agentMe.y, Integer.MAX_VALUE);
 
-		int action_final = -1;
-		String reason = "なし";
-
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// safetyScoreを計算する。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		double[][] safetyScore = new double[4][6];
-		safetyScore[me - 10] = worstScores;
+		for (int ai = 0; ai < 4; ai++) {
+			if (ai == me - 10) {
+
+				int numzero = 6;
+
+				// 自分のスコアは最悪ケースで見積もる。
+				if (numzero == 6) {
+					for (int a = 0; a < 6; a++) {
+						double min = Double.POSITIVE_INFINITY;
+						for (int b = 0; b < 6; b++) {
+							double num = worstScores[a][b][ai][3];
+							if (num == 0) continue;
+							double temp = worstScores[a][b][ai][1];
+							if (temp < min) {
+								min = temp;
+							}
+						}
+						if (min == Double.POSITIVE_INFINITY) min = Double.NEGATIVE_INFINITY;
+						safetyScore[ai][a] = min;
+					}
+				}
+
+				numzero = 0;
+				for (int a = 0; a < 6; a++) {
+					if (safetyScore[ai][a] == Double.NEGATIVE_INFINITY) numzero++;
+				}
+
+				// 最悪ケースが全部0なら、しょうがないので平均で見積もる。
+				if (numzero == 6) {
+					for (int a = 0; a < 6; a++) {
+						double sum = Double.NEGATIVE_INFINITY;
+						double count = 0;
+						for (int b = 0; b < 6; b++) {
+							double num = worstScores[a][b][ai][3];
+							if (num == 0) continue;
+							sum = BBMUtility.add_log(sum, worstScores[a][b][ai][0]);
+							count += num;
+						}
+						double ave;
+						if (count == 0) {
+							ave = Double.NEGATIVE_INFINITY;
+						} else {
+							ave = sum - Math.log(count);
+						}
+						safetyScore[ai][a] = ave;
+					}
+				}
+
+				numzero = 0;
+				for (int a = 0; a < 6; a++) {
+					if (safetyScore[ai][a] == Double.NEGATIVE_INFINITY) numzero++;
+				}
+
+				if (numzero == 6) {
+					System.out.println("次で死ぬね");
+				}
+			} else {
+				// 自分以外のスコアは、平均で見積もる。
+				for (int a = 0; a < 6; a++) {
+					double sum = Double.NEGATIVE_INFINITY;
+					double count = 0;
+					for (int b = 0; b < 6; b++) {
+						double num = worstScores[a][b][ai][3];
+						if (num == 0) continue;
+						sum = BBMUtility.add_log(sum, worstScores[a][b][ai][0]);
+						count += num;
+					}
+					double ave;
+					if (count == 0) {
+						ave = Double.POSITIVE_INFINITY;
+					} else {
+						ave = sum - Math.log(count);
+					}
+					safetyScore[ai][a] = ave;
+				}
+			}
+		}
 
 		if (verbose) {
 			System.out.println("==============================");
+			System.out.println("==============================");
 			MatrixUtility.OutputMatrix(new MyMatrix(safetyScore));
 			System.out.println("==============================");
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 詰められる状態であれば、詰める。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if (true) {
+
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 自分の安全を確保した状態で、相手を危険にできるケースを探す。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		int action_final = -1;
+		String reason = "なし";
+
+		if (true) {
+			int action_attack = -1;
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+				double min = Double.POSITIVE_INFINITY;
+				int mina = -1;
+				for (int a = 0; a < 6; a++) {
+					double sss = safetyScore[ai][a];
+					double sssme = safetyScore[me - 10][a];
+					if (sssme < attackThreshold) continue;
+					if (Double.isNaN(sss)) continue;
+					if (sss < min) {
+						min = sss;
+						mina = a;
+					}
+				}
+
+				if (min < -22) {
+					action_attack = mina;
+				}
+			}
+			if (action_attack != -1) {
+				System.out.println("追い詰め可能？a=" + action_attack);
+				action_final = action_attack;
+				reason = "攻撃するべし。";
+			}
+		}
+
+		// ペア攻撃
+		if (true) {
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+
+				double min = Double.POSITIVE_INFINITY;
+				int mina = -1;
+				int minb = -1;
+				for (int a = 0; a < 6; a++) {
+					for (int b = 0; b < 6; b++) {
+						double num = worstScores[a][b][ai][3];
+						if (num == 0) continue;
+						double ave = worstScores[a][b][ai][0] - Math.log(num);
+
+						if (ave < min) {
+							min = ave;
+							mina = a;
+							minb = b;
+						}
+					}
+				}
+
+				if (min < -22) {
+					System.out.println("ペアで追い詰め可能？ai=" + ai + ", amin=" + mina + ", bmin=" + minb);
+					System.out.println("ペアで追い詰め可能？ai=" + ai + ", amin=" + mina + ", bmin=" + minb);
+				}
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

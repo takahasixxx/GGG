@@ -428,6 +428,7 @@ public class Agent {
 			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
 			MatrixUtility.OutputMatrix(flameLife);
 		}
 
@@ -436,12 +437,12 @@ public class Agent {
 		// 最適アクションを選択する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		int action;
+		int action = 0;
 		if (true) {
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			double[] worstScores = worstScoreEvaluator.Do(me, maxPower, abs, exmap, bombMap, flameLife);
+			double[][][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -451,7 +452,7 @@ public class Agent {
 				abs2[ai] = new Ability(abs[ai]);
 				if (ai + 10 == me) continue;
 				abs2[ai].kick = true;
-				abs2[ai].numMaxBomb = 4;
+				abs2[ai].numMaxBomb = 3;
 				abs2[ai].numBombHold = 3;
 				if (abs2[ai].strength_fix == -1) {
 					abs2[ai].strength = maxPower;
@@ -490,6 +491,15 @@ public class Agent {
 		exmapsOld.removeLast();
 
 		frame++;
+
+		if (false) {
+			System.out.println("board_ex & bomb_ex & flame_ex picture");
+			// BBMUtility.printBoard2(exmap.board, map.board, bomb_life, exmap.power);
+			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			MatrixUtility.OutputMatrix(flameLife);
+		}
 
 		return action;
 	}

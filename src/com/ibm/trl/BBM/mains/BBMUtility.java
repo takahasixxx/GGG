@@ -1015,4 +1015,43 @@ public class BBMUtility {
 		}
 	}
 
+	static double add_log(double a, double b) {
+		if (a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+		if (a > b) {
+			return Math.log(1 + Math.exp(b - a)) + a;
+		} else {
+			return Math.log(Math.exp(a - b) + 1) + b;
+		}
+	}
+
+	static double sub_log(double a, double b) {
+		if (a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+		if (a > b) {
+			return Math.log(1 - Math.exp(b - a)) + a;
+		} else {
+			return Math.log(Math.exp(a - b) - 1) + b;
+		}
+	}
+
+	static double total_log(MyMatrix a) {
+
+		double max = Double.NEGATIVE_INFINITY;
+		for (int t = 0; t < a.numt; t++) {
+			for (int d = 0; d < a.numd; d++) {
+				if (a.data[t][d] > max) {
+					max = a.data[t][d];
+				}
+			}
+		}
+		if (max == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
+
+		double total = 0;
+		for (int t = 0; t < a.numt; t++) {
+			for (int d = 0; d < a.numd; d++) {
+				total += Math.exp(a.data[t][d] - max);
+			}
+		}
+
+		return Math.log(total) + max;
+	}
 }
