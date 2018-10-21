@@ -128,6 +128,8 @@ public class WorstScoreEvaluator {
 				Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
 				double[][] temp2 = wses.Do2(packNow, packNext, instructions);
 
+				// System.out.println(firstAction + ", " + temp2[3][0] + ", " + temp2[3][1]);
+
 				for (int ai = 0; ai < 4; ai++) {
 					double sss = temp2[ai][0];
 					double num = temp2[ai][1];

@@ -5,6 +5,8 @@ import java.util.Random;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.BombTracker.Node;
+import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 
 import ibm.ANACONDA.Core.MatrixUtility;
@@ -21,7 +23,16 @@ public class ActionEvaluator {
 	/**
 	 * アクションを決定する。
 	 */
-	public int ComputeOptimalAction(int me, int friend, MapInformation map, Ability abs[], double[][][][] worstScores) throws Exception {
+	public int ComputeOptimalAction(int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife, double[][][][] worstScores)
+			throws Exception {
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 基本変数の計算
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// TODO
 		worstScoreThreshold = 1.3;
 
 		MyMatrix board = map.board;
@@ -44,6 +55,33 @@ public class ActionEvaluator {
 		// 自分の位置から、各セルへの移動距離を計算しておく。
 		MyMatrix dis = BBMUtility.ComputeOptimalDistance(board, agentMe.x, agentMe.y, Integer.MAX_VALUE);
 
+		int numVisibleTeam = 0;
+		int numVisibleEnemy = 0;
+		for (int ai = 0; ai < 4; ai++) {
+			AgentEEE aaa = agentsNow[ai];
+			if (aaa == null) continue;
+			if (ai == me - 10) {
+				numVisibleTeam++;
+			} else if (ai == friend - 10) {
+				numVisibleTeam++;
+			} else {
+				numVisibleEnemy++;
+			}
+		}
+
+		int numAliveTeam = 0;
+		int numAliveEnemy = 0;
+		for (int ai = 0; ai < 4; ai++) {
+			if (abs[ai].isAlive == false) continue;
+			if (ai == me - 10) {
+				numAliveTeam++;
+			} else if (ai == friend - 10) {
+				numAliveTeam++;
+			} else {
+				numAliveEnemy++;
+			}
+		}
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// safetyScoreを計算する。
@@ -51,7 +89,7 @@ public class ActionEvaluator {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		double[][] safetyScore = new double[4][6];
 		for (int ai = 0; ai < 4; ai++) {
-			if (ai == me - 10) {
+			if (ai == me - 10 || ai == friend - 10) {
 
 				int numzero = 6;
 
@@ -79,6 +117,7 @@ public class ActionEvaluator {
 
 				// 最悪ケースが全部0なら、しょうがないので平均で見積もる。
 				if (numzero == 6) {
+					System.out.println("最悪ケースでは必ず死ぬので平均を使う。");
 					for (int a = 0; a < 6; a++) {
 						double sum = Double.NEGATIVE_INFINITY;
 						double count = 0;
@@ -103,7 +142,7 @@ public class ActionEvaluator {
 					if (safetyScore[ai][a] == Double.NEGATIVE_INFINITY) numzero++;
 				}
 
-				if (numzero == 6) {
+				if (ai == me && numzero == 6) {
 					System.out.println("次で死ぬね");
 				}
 			} else {
@@ -119,7 +158,7 @@ public class ActionEvaluator {
 					}
 					double ave;
 					if (count == 0) {
-						ave = Double.POSITIVE_INFINITY;
+						ave = Double.NaN;
 					} else {
 						ave = sum - Math.log(count);
 					}
@@ -137,11 +176,209 @@ public class ActionEvaluator {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// 詰められる状態であれば、詰める。
+		// アクション決定ルーチン
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (true) {
 
+		int action_final = -1;
+		String reason = "なし";
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// ２：１のときに、自爆巻き込みできる場合は、実行する。(^o^)/
+		// 単独
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		if (action_final == -1 && numAliveTeam == 2 && numAliveEnemy == 1) {
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+
+				double max = Double.NEGATIVE_INFINITY;
+				double min = Double.POSITIVE_INFINITY;
+				int amin = -1;
+				for (int a = 0; a < 6; a++) {
+					double sen = safetyScore[ai][a];
+					if (Double.isNaN(sen)) continue;
+					if (sen < min) {
+						min = sen;
+						amin = a;
+					}
+					if (sen > max) {
+						max = sen;
+					}
+				}
+
+				if (amin != -1 && min == Double.NEGATIVE_INFINITY && max != Double.NEGATIVE_INFINITY) {
+					action_final = amin;
+					reason = "自爆する。(^o^)/";
+					System.out.println("自爆する。(^o^)/" + action_final);
+					System.out.println("！！！");
+				}
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 全行動ペアで見て、片方（または両方）が瀕死になる場合、二人揃って最善策を取る。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		if (action_final == -1 && numVisibleTeam == 2) {
+			double max = Double.NEGATIVE_INFINITY;
+			int amax = -1;
+			int bmax = -1;
+			double aaa = 0;
+			double bbb = 0;
+			int count = 0;
+			for (int a = 0; a < 6; a++) {
+				for (int b = 0; b < 6; b++) {
+					double sme = worstScores[a][b][me - 10][1];
+					double sfr = worstScores[a][b][friend - 10][1];
+					double nme = worstScores[a][b][me - 10][3];
+					double nfr = worstScores[a][b][friend - 10][3];
+					if (nme == 0) continue;
+					if (nfr == 0) continue;
+					count++;
+					double temp = Math.min(sme, sfr);
+					if (temp > max) {
+						max = temp;
+						amax = a;
+						bmax = b;
+						aaa = sme;
+						bbb = sfr;
+					}
+				}
+			}
+
+			if (count > 0 && max == Double.NEGATIVE_INFINITY) {
+				System.out.println("！！！");
+			}
+
+			if (amax != -1 && bmax != -1 && max < -20) {
+				action_final = amax;
+				reason = "ふたりともやばい！";
+				System.out.println("ふたりともやばい？a=" + amax + ", b=" + bmax);
+				System.out.println("！！！");
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 詰められる状態であれば、詰める。
+		// TODO 詰める要員が誰なのかを返すようにしたい。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		if (action_final == -1) {
+			Pack packNow;
+			if (true) {
+				Ability[] abs2 = new Ability[4];
+				for (int ai = 0; ai < 4; ai++) {
+					abs2[ai] = new Ability(abs[ai]);
+					if (ai + 10 == me) continue;
+					abs2[ai].kick = true;
+					abs2[ai].numMaxBomb = 3;
+					abs2[ai].numBombHold = 3;
+					if (abs2[ai].strength_fix == -1) {
+						abs2[ai].strength = maxPower;
+					} else {
+						abs2[ai].strength = abs2[ai].strength_fix;
+					}
+				}
+
+				StatusHolder sh = new StatusHolder(numField);
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = map.getType(x, y);
+						if (Constant.isAgent(type)) {
+							sh.setAgent(x, y, type);
+						}
+					}
+				}
+
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						Node node = bombMap[x][y];
+						if (node == null) continue;
+						// TODO とりあえず停止してる爆弾だけ考慮する。
+						if (node.dirs[0] == false) continue;
+						sh.setBomb(x, y, -1, node.life, 0, node.power);
+					}
+				}
+
+				packNow = new Pack(map.board, flameLife, abs2, sh);
+			}
+
+			int killScoreMin = Integer.MAX_VALUE;
+			int aiTarget = -1;
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+
+				int killScore = KillScoreEvaluator.computeKillScore(packNow, ai);
+				if (killScore < Integer.MAX_VALUE) {
+					killScoreMin = killScore;
+					aiTarget = ai;
+					System.out.println("詰める！！");
+					System.out.println("！！！");
+					break;
+				}
+			}
+
+			if (aiTarget != -1) {
+				ForwardModel fm = new ForwardModel();
+				if (numVisibleTeam == 2) {
+					int amin = -1;
+					int bmin = -1;
+					for (int a = 0; a < 6; a++) {
+						for (int b = 0; b < 6; b++) {
+							double sme = worstScores[a][b][me - 10][1];
+							double sfr = worstScores[a][b][friend - 10][1];
+							double nme = worstScores[a][b][me - 10][3];
+							double nfr = worstScores[a][b][friend - 10][3];
+							if (nme == 0) continue;
+							if (nfr == 0) continue;
+							if (sme < attackThreshold) continue;
+							if (sfr < attackThreshold) continue;
+							int[] actions = new int[4];
+							actions[me - 10] = a;
+							actions[friend - 10] = b;
+							Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
+							int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
+							if (temp < killScoreMin) {
+								killScoreMin = temp;
+								amin = a;
+								bmin = b;
+							}
+						}
+					}
+					if (amin != -1 && bmin != -1) {
+						action_final = amin;
+						reason = "より詰める。";
+						System.out.println("より詰める。！！！" + action_final);
+					}
+				} else if (numVisibleTeam == 1) {
+					int amin = -1;
+					for (int a = 0; a < 6; a++) {
+						double sme = safetyScore[me - 10][a];
+						if (sme < attackThreshold) continue;
+						int[] actions = new int[4];
+						actions[me - 10] = a;
+						Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
+						int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
+						if (temp < killScoreMin) {
+							killScoreMin = temp;
+							amin = a;
+						}
+					}
+					if (amin != -1) {
+						action_final = amin;
+						reason = "より詰める。";
+						System.out.println("より詰める。！！！" + action_final);
+					}
+				}
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -149,40 +386,9 @@ public class ActionEvaluator {
 		// 自分の安全を確保した状態で、相手を危険にできるケースを探す。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		int action_final = -1;
-		String reason = "なし";
-
-		if (true) {
-			int action_attack = -1;
-			for (int ai = 0; ai < 4; ai++) {
-				if (ai == me - 10) continue;
-				if (ai == friend - 10) continue;
-				double min = Double.POSITIVE_INFINITY;
-				int mina = -1;
-				for (int a = 0; a < 6; a++) {
-					double sss = safetyScore[ai][a];
-					double sssme = safetyScore[me - 10][a];
-					if (sssme < attackThreshold) continue;
-					if (Double.isNaN(sss)) continue;
-					if (sss < min) {
-						min = sss;
-						mina = a;
-					}
-				}
-
-				if (min < -22) {
-					action_attack = mina;
-				}
-			}
-			if (action_attack != -1) {
-				System.out.println("追い詰め可能？a=" + action_attack);
-				action_final = action_attack;
-				reason = "攻撃するべし。";
-			}
-		}
 
 		// ペア攻撃
-		if (true) {
+		if (action_final == -1 && numVisibleTeam == 2) {
 			for (int ai = 0; ai < 4; ai++) {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
@@ -192,22 +398,60 @@ public class ActionEvaluator {
 				int minb = -1;
 				for (int a = 0; a < 6; a++) {
 					for (int b = 0; b < 6; b++) {
-						double num = worstScores[a][b][ai][3];
-						if (num == 0) continue;
-						double ave = worstScores[a][b][ai][0] - Math.log(num);
-
-						if (ave < min) {
-							min = ave;
+						double numMe = worstScores[a][b][me - 10][3];
+						double numFriend = worstScores[a][b][friend - 10][3];
+						double numEnemy = worstScores[a][b][ai][3];
+						if (numMe == 0) continue;
+						if (numFriend == 0) continue;
+						if (numEnemy == 0) continue;
+						double scoreMe = worstScores[a][b][me - 10][1];
+						double scoreFriend = worstScores[a][b][friend - 10][1];
+						double scoreEnemy = worstScores[a][b][ai][0] - Math.log(numEnemy);
+						if (scoreMe < attackThreshold || scoreFriend < attackThreshold) continue;
+						if (scoreEnemy < min) {
+							min = scoreEnemy;
 							mina = a;
 							minb = b;
 						}
 					}
 				}
 
-				if (min < -22) {
+				if (min < -25) {
 					System.out.println("ペアで追い詰め可能？ai=" + ai + ", amin=" + mina + ", bmin=" + minb);
-					System.out.println("ペアで追い詰め可能？ai=" + ai + ", amin=" + mina + ", bmin=" + minb);
+					System.out.println("！！！");
 				}
+			}
+		}
+
+		// 単独
+		if (action_final == -1) {
+			int action_attack = -1;
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+				double min = Double.POSITIVE_INFINITY;
+				int mina = -1;
+				for (int a = 0; a < 6; a++) {
+					double scoreMe = safetyScore[me - 10][a];
+					double scoreEnemy = safetyScore[ai][a];
+					if (Double.isNaN(scoreMe)) continue;
+					if (Double.isNaN(scoreEnemy)) continue;
+					if (scoreMe < attackThreshold) continue;
+					if (scoreEnemy < min) {
+						min = scoreEnemy;
+						mina = a;
+					}
+				}
+
+				if (min < -22) {
+					action_attack = mina;
+				}
+			}
+			if (action_attack != -1) {
+				action_final = action_attack;
+				reason = "攻撃するべし。";
+				System.out.println("追い詰め可能？a=" + action_attack);
+				System.out.println("！！！");
 			}
 		}
 

@@ -350,12 +350,31 @@ public class WorstScoreEvaluatorSingle {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
-		// エージェントを動かして、存在確率を計算する。酔歩。
+		// エージェントを動かして、存在確率を計算する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		MyMatrix[][] agentsStepCounter_stop = new MyMatrix[numt][4];
+		for (int t = 0; t < numt; t++) {
+			for (int ai = 0; ai < 4; ai++) {
+				agentsStepCounter_stop[t][ai] = new MyMatrix(numField, numField, numt);
+			}
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			AgentEEE aaaPre = agentsPre[ai];
+			if (aaaPre == null) continue;
+			agentsStepCounter_stop[0][ai].data[aaaPre.x][aaaPre.y] = -1;
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			AgentEEE aaaNow = agentsNow[ai];
+			if (aaaNow == null) continue;
+			for (int t = 1; t < numt; t++) {
+				agentsStepCounter_stop[t][ai].data[aaaNow.x][aaaNow.y] = 0;
+			}
+		}
 
 		MyMatrix[][] agentsStepCounter = new MyMatrix[numt][4];
-
 		for (int t = 0; t < numt; t++) {
 			for (int ai = 0; ai < 4; ai++) {
 				agentsStepCounter[t][ai] = new MyMatrix(numField, numField, numt);
@@ -523,7 +542,27 @@ public class WorstScoreEvaluatorSingle {
 							double nearestStepNext = nearestStepNow;
 							for (int ai2 = 0; ai2 < 4; ai2++) {
 								if (ai2 == ai) continue;
-								double stepCount = agentsStepCounter[t + 1][ai2].data[x2][y2];
+								// TODO 友達の計算の仕方をもう少し賢くする。
+
+								MyMatrix step = agentsStepCounter[t + 1][ai2];
+								if (ai == 0) {
+									if (ai2 == 2) {
+										step = agentsStepCounter_stop[t + 1][ai2];
+									}
+								} else if (ai == 1) {
+									if (ai2 == 3) {
+										step = agentsStepCounter_stop[t + 1][ai2];
+									}
+								} else if (ai == 2) {
+									if (ai2 == 0) {
+										step = agentsStepCounter_stop[t + 1][ai2];
+									}
+								} else if (ai == 3) {
+									if (ai2 == 1) {
+										step = agentsStepCounter_stop[t + 1][ai2];
+									}
+								}
+								double stepCount = step.data[x2][y2];
 								if (stepCount < nearestStepNext) {
 									nearestStepNext = stepCount;
 								}

@@ -131,6 +131,21 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
+			System.out.println("");
 			System.out.println("LOSELOSELOSE");
 			for (MapInformation map : exmapsOld) {
 				System.out.println("=========================================================================================");
@@ -155,6 +170,8 @@ public class Agent {
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
 			throws Exception {
 
+		// KillScoreEvaluator.learn();
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// 盤面をログに出力してみる。
@@ -162,11 +179,12 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (verbose) {
 			// Thread.sleep(1000);
-			// System.out.println("=========================================================================================");
-			// System.out.println("=========================================================================================");
-			// System.out.println("=========================================================================================");
-			// System.out.println("=========================================================================================");
-			// System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("me=" + me);
 			// System.out.println("board picture");
 			// BBMUtility.printBoard2(board, board, bomb_life, bomb_blast_strength);
 			// System.out.println("=========================================================================================");
@@ -423,10 +441,12 @@ public class Agent {
 		}
 
 		if (verbose) {
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
 			System.out.println("board_ex & bomb_ex & flame_ex picture");
 			// BBMUtility.printBoard2(exmap.board, map.board, bomb_life, exmap.power);
 			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
-			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			MatrixUtility.OutputMatrix(flameLife);
@@ -460,23 +480,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(me, friend, exmap, abs2, worstScores);
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//
-		// TODO 詰められる状態を発見してカウントする。
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (false) {
-			KillScoreEvaluator kse = new KillScoreEvaluator();
-			double[][] temp = kse.Do(me, maxPower, abs, exmap, bombMap, flameLife);
-			for (int ai = 0; ai < 4; ai++) {
-				if (temp[ai][1] > 0) {
-					killScores[ai][0] += temp[ai][0] / temp[ai][1];
-					killScores[ai][1] += 1;
-				}
-			}
+			action = actionEvaluator.ComputeOptimalAction(me, friend, maxPower, abs2, exmap, bombMap, flameLife, worstScores);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,16 +1,12 @@
 package com.ibm.trl.BBM.mains;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
-
-import ibm.ANACONDA.Core.MyMatrix;
 
 public class KillScoreEvaluator {
 
@@ -29,7 +25,6 @@ public class KillScoreEvaluator {
 	}
 
 	private static int index(Pack pack, int ai) throws Exception {
-
 		AgentEEE[] agents = new AgentEEE[4];
 		for (AgentEEE aaa : pack.sh.getAgentEntry()) {
 			if (aaa == null) continue;
@@ -113,13 +108,11 @@ public class KillScoreEvaluator {
 						id = 1;
 					} else {
 						int type = (int) pack.board.data[x2][y2];
+						BombEEE bbb = bombMap[x2][y2];
 						if (Constant.isWall(type)) {
 							id = 1;
-						} else if (type == Constant.Bomb) {
-							BombEEE bbb = bombMap[x2][y2];
-							if (bbb != null && bbb.dir == 0) {
-								id = 2;
-							}
+						} else if (bbb != null && bbb.dir == 0) {
+							id = 2;
 						}
 					}
 					ids[dir][dis - 1] = id;
@@ -221,37 +214,20 @@ public class KillScoreEvaluator {
 				if (dir1 != 100) apos[dir1] = pos1;
 				if (dir2 != 100) apos[dir2] = pos2;
 
-				int[] dirList = new int[] { -1, -1 };
-				if (true) {
-					int numOpen = 0;
-					int numWall = 0;
-					for (int dir = 1; dir < 5; dir++) {
-						if (ids[dir][0] == 0 || ids[dir][0] == 2) {
-							if (apos[dir] != 0 && apos[dir] != 2) {
-								numOpen++;
-							}
-						} else if (ids[dir][0] == 1) {
-							numWall++;
-						}
-					}
-
-					if (numOpen > 0) continue;
-					if (numWall < 2) continue;
-
-					int count = 0;
-					for (int dir = 1; dir < 5; dir++) {
-						if (ids[dir][0] == 1) continue;
-						dirList[count] = dir;
-						count++;
-					}
+				int[] nonwalldirList = new int[] { -1, -1 };
+				int count = 0;
+				for (int dir = 1; dir < 5; dir++) {
+					if (ids[dir][0] == 1) continue;
+					nonwalldirList[count] = dir;
+					count++;
 				}
 
 				// dirListの方角に対して、ids, aposから特徴量を作る。
 				int[][] stateList = new int[2][3];
 				for (int i = 0; i < 2; i++) {
-					int dir = dirList[i];
+					int dir = nonwalldirList[i];
 					if (dir == -1) {
-						stateList[i] = new int[] { 1, 1, 0 };
+						stateList[i] = new int[] { 1, 1, 4 };
 					} else {
 						stateList[i] = new int[] { ids[dir][0], ids[dir][1], apos[dir] };
 					}
@@ -346,12 +322,60 @@ public class KillScoreEvaluator {
 		if (type2 == 1 && apos == 1) return false;
 
 		// 隣接セルが空白だったら詰めてる状態じゃないので、おかしい。
-		if (type1 == 0 && apos != 0 && apos != 1 && apos != 2) return false;
-		if (type1 == 1 && apos != 0 && apos != 1 && apos != 2 && apos != 3) return false;
+		if (type1 == 0) {
+			if (type2 == 0) {
+				// □□
+				if (apos == 0) return true;
+				if (apos == 1) return true;
+				if (apos == 2) return true;
+				if (apos == 3) return false;
+				if (apos == 4) return false;
+			} else if (type2 == 1) {
+				// □■
+				if (apos == 0) return true;
+				if (apos == 1) return false;
+				if (apos == 2) return true;
+				if (apos == 3) return false;
+				if (apos == 4) return false;
+			} else if (type2 == 2) {
+				// □●
+				if (apos == 0) return true;
+				if (apos == 1) return false;
+				if (apos == 2) return true;
+				if (apos == 3) return false;
+				if (apos == 4) return false;
+			}
+		} else if (type1 == 1) {
+			if (type2 == 0) {
+				// ■□
+				return true;
+			} else if (type2 == 1) {
+				// ■■
+				return true;
+			} else if (type2 == 2) {
+				// ■●
+				return true;
+			}
+		} else if (type1 == 2) {
+			if (type2 == 0) {
+				// ●□
+				if (apos == 0) return true;
+				if (apos == 1) return true;
+				if (apos == 2) return false;
+				if (apos == 3) return true;
+				if (apos == 4) return false;
+			} else if (type2 == 1) {
+				// ●■
+				return true;
+			} else if (type2 == 2) {
+				// ●●
+				return true;
+			}
+		}
 		return true;
 	}
 
-	private static void learn() throws Exception {
+	public static void learn() throws Exception {
 
 		for (int i = 0; i < phi.length; i++) {
 			phi[i] = Integer.MAX_VALUE;
@@ -393,6 +417,11 @@ public class KillScoreEvaluator {
 					int indexNow = state2index(state1, state2);
 					int phiNow = phi[indexNow];
 
+					// if (indexNow == 445) {
+					// int temp = 0;
+					// System.out.println(temp);
+					// }
+
 					System.out.println(state1[0] + ", " + state1[1] + ", " + state1[2] + ", " + state2[0] + ", " + state2[1] + ", " + state2[2] + ", " + indexNow + ", " + phiNow);
 
 					// s1を動かす。
@@ -419,6 +448,15 @@ public class KillScoreEvaluator {
 						}
 					}
 
+					System.out.println(state1[0] + ", " + state1[1] + ", " + state1[2] + ", " + state2[0] + ", " + state2[1] + ", " + state2[2] + ", " + indexNow + ", " + phiNow);
+
+					if (state1[0] == 1 && state1[1] == 1 && state1[2] == 4) {
+						if (state2[0] == 2 && state2[1] == 0 && state2[2] == 1) {
+							int temp = 0;
+							System.out.println(temp);
+						}
+					}
+
 				}
 			}
 			if (changed == false) {
@@ -427,150 +465,7 @@ public class KillScoreEvaluator {
 		}
 	}
 
-	public double[][] Do(int me, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
-		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
-		for (int x = 0; x < numField; x++) {
-			for (int y = 0; y < numField; y++) {
-				BombTracker.Node node = bombMap[x][y];
-				if (node == null) continue;
-				nodes.add(node);
-			}
-		}
-
-		List<double[][]> scoresList = new ArrayList<double[][]>();
-		LinkedList<BombEEE> bbbs = new LinkedList<BombEEE>();
-		rrr(0, me, maxPower, abs, map, nodes, flameLife, bbbs, scoresList);
-
-		double[][] scores = new double[4][2];
-		for (double[][] temp : scoresList) {
-			for (int ai = 0; ai < 4; ai++) {
-				for (int i = 0; i < 2; i++) {
-					scores[ai][i] += temp[ai][i];
-				}
-			}
-		}
-		return scores;
-	}
-
-	private void rrr(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs, List<double[][]> scoresList)
-			throws Exception {
-		if (index == nodes.size()) {
-			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//
-			// 基本データを作る。
-			//
-			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			Ability[] abs2 = new Ability[4];
-			for (int ai = 0; ai < 4; ai++) {
-				abs2[ai] = new Ability(abs[ai]);
-				if (ai + 10 == me) continue;
-				abs2[ai].kick = true;
-				abs2[ai].numMaxBomb = 3;
-				abs2[ai].numBombHold = 3;
-				if (abs2[ai].strength_fix == -1) {
-					abs2[ai].strength = maxPower;
-				} else {
-					abs2[ai].strength = abs2[ai].strength_fix;
-				}
-			}
-
-			Pack packNow;
-			if (true) {
-				StatusHolder sh = new StatusHolder(numField);
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						int type = map.getType(x, y);
-						if (Constant.isAgent(type)) {
-							sh.setAgent(x, y, type);
-						}
-					}
-				}
-
-				for (BombEEE bbb : bbbs) {
-					sh.setBomb(bbb.x, bbb.y, -1, bbb.life, bbb.dir, bbb.power);
-				}
-
-				packNow = new Pack(map.board, flameLife, abs2, sh);
-			}
-
-			AgentEEE[] agents = new AgentEEE[4];
-			for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
-				agents[aaa.agentID - 10] = aaa;
-			}
-
-			double[][] scores = new double[4][2];
-			if (false) {
-				for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
-					int gg = computeKillScore(packNow, aaa.agentID - 10);
-					if (gg != Integer.MAX_VALUE) {
-						scores[aaa.agentID - 10][0]++;
-					}
-					scores[aaa.agentID - 10][1]++;
-				}
-			}
-
-			// 一手先で、かならず誰か殺せるかどうか調べる。
-			if (true) {
-				ForwardModel fm = new ForwardModel();
-				boolean[] now = new boolean[4];
-				for (AgentEEE aaa : packNow.sh.getAgentEntry()) {
-					now[aaa.agentID - 10] = true;
-				}
-
-				boolean[] findHissatsu = new boolean[4];
-				for (int b = 0; b < 6; b++) {
-					for (int d = 0; d < 6; d++) {
-						boolean[] hissatsu = new boolean[] { now[0], now[1], now[2], now[3] };
-						for (int a = 0; a < 6; a++) {
-							for (int c = 0; c < 6; c++) {
-								int[] actions = new int[] { a, b, c, d };
-								Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
-								boolean[] next = new boolean[4];
-								for (AgentEEE aaa : packNext.sh.getAgentEntry()) {
-									next[aaa.agentID - 10] = true;
-								}
-								for (int ai = 0; ai < 4; ai++) {
-									if (now[ai] && next[ai]) {
-										hissatsu[ai] = false;
-									}
-								}
-							}
-						}
-
-						for (int ai = 0; ai < 4; ai++) {
-							if (now[ai] && hissatsu[ai]) {
-								if (ai == 0 || ai == 2) {
-									findHissatsu[ai] = true;
-								}
-							}
-						}
-					}
-				}
-				for (int ai = 0; ai < 4; ai++) {
-					if (now[ai]) {
-						if (findHissatsu[ai]) {
-							scores[ai][0]++;
-						}
-						scores[ai][1]++;
-					}
-				}
-			}
-
-			scoresList.add(scores);
-		} else {
-			BombTracker.Node node = nodes.get(index);
-			for (int dir = 0; dir < 5; dir++) {
-				if (node.dirs[dir]) {
-					BombEEE bbb = new BombEEE(node.x, node.y, -1, node.life, dir, node.power);
-					bbbs.addLast(bbb);
-					rrr(index + 1, me, maxPower, abs, map, nodes, flameLife, bbbs, scoresList);
-					bbbs.removeLast();
-				}
-			}
-		}
-	}
-
-	public int computeKillScore(Pack pack, int ai) throws Exception {
+	static public int computeKillScore(Pack pack, int ai) throws Exception {
 		int index = index(pack, ai);
 		if (index == -1) return Integer.MAX_VALUE;
 		return phi[index];
