@@ -1,7 +1,6 @@
 package com.ibm.trl.BBM.mains;
 
 import ibm.ANACONDA.Core.MyMatrix;
-import obsolete.BombTracker_Obsolete.Node;
 
 public class BBMUtility {
 
@@ -592,6 +591,41 @@ public class BBMUtility {
 		return num;
 	}
 
+	static public int numRigid(MyMatrix board, int x, int y) {
+		int numField = board.numd;
+
+		int num = 0;
+		if (x > 0) {
+			int type = (int) board.data[x - 1][y];
+			if (type == Constant.Rigid) num++;
+		} else {
+			num++;
+		}
+
+		if (x < numField - 1) {
+			int type = (int) board.data[x + 1][y];
+			if (type == Constant.Rigid) num++;
+		} else {
+			num++;
+		}
+
+		if (y > 0) {
+			int type = (int) board.data[x][y - 1];
+			if (type == Constant.Rigid) num++;
+		} else {
+			num++;
+		}
+
+		if (y < numField - 1) {
+			int type = (int) board.data[x][y + 1];
+			if (type == Constant.Rigid) num++;
+		} else {
+			num++;
+		}
+
+		return num;
+	}
+
 	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep) throws Exception {
 		int numField = board.numd;
 
@@ -832,8 +866,14 @@ public class BBMUtility {
 	static String[] zenkakuNumber = { "‚O", "‚P", "‚Q", "‚R", "‚S", "‚T", "‚U", "‚V", "‚W", "‚X", "10", "11", "12", "13" };
 
 	static public void printBoard2(MyMatrix board, MyMatrix board_org, MyMatrix life, MyMatrix power) {
+		String text = printBoard2_str(board, board_org, life, power);
+		System.out.println(text);
+	}
+
+	static public String printBoard2_str(MyMatrix board, MyMatrix board_org, MyMatrix life, MyMatrix power) {
 		int numt = board.numt;
 		int numd = board.numd;
+		String alltext = "";
 		for (int x = 0; x < numt; x++) {
 			String line1 = "";
 			String line2 = "";
@@ -938,47 +978,13 @@ public class BBMUtility {
 				line2 += print2;
 				line3 += print3;
 			}
-			System.out.println(line1);
-			System.out.println(line2);
-			System.out.println(line3);
-		}
-	}
 
-	static public void printBombMap(MyMatrix board, Node[][] bombMap) {
-		int numt = board.numt;
-		int numd = board.numd;
-		for (int x = 0; x < numt; x++) {
-			String line1 = "";
-			String line2 = "";
-			String line3 = "";
-			for (int y = 0; y < numd; y++) {
-				Node node = bombMap[x][y];
-				String print1 = "";
-				String print2 = "";
-				String print3 = "";
-				if (node == null) {
-					print1 = "      ";
-					print2 = "  --  ";
-					print3 = "      ";
-				} else if (node.type == Constant.Bomb) {
-					int id = node.owner - 10 + 1;
-					print1 = String.format("@%d pw%d", id, node.power);
-					print2 = String.format("   lf%d", node.lifeBomb);
-					print3 = String.format("   mv%d", node.moveDirection);
-				} else {
-					int id = node.owner - 10 + 1;
-					print1 = String.format("#%d pw%d", id, node.power);
-					print2 = String.format("   lf%d", node.lifeFlameCenter);
-					print3 = String.format("   mv%d", node.moveDirection);
-				}
-				line1 += print1;
-				line2 += print2;
-				line3 += print3;
-			}
-			System.out.println(line1);
-			System.out.println(line2);
-			System.out.println(line3);
+			alltext += line1 + "\n";
+			alltext += line2 + "\n";
+			alltext += line3 + "\n";
 		}
+
+		return alltext;
 	}
 
 	static public void PrintFlame(MyMatrix boardPre, MyMatrix myFlame, int x, int y, int power, int value) {

@@ -1,14 +1,15 @@
 package com.ibm.trl.BBM.mains;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.List;
+
+import ibm.ANACONDA.Core.MyMatrix;
 
 public class StatusHolder implements Serializable {
 	private static final long serialVersionUID = -1727998598195786413L;
-	int numField;
-	int numParam = 100;
+	private static final int numField = GlobalParameter.numField;
 
 	static public class EEE implements Serializable {
 		private static final long serialVersionUID = -2353862178915635651L;
@@ -46,6 +47,17 @@ public class StatusHolder implements Serializable {
 		}
 
 		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof AgentEEE == false) return false;
+			AgentEEE aaa = (AgentEEE) obj;
+			if (agentID == aaa.agentID && aaa.x == x && aaa.y == y) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+
+		@Override
 		public String toString() {
 			String line = String.format("AgentEEE : (%2d,%2d), agentID=%2d\n", x, y, agentID);
 			return line;
@@ -76,9 +88,9 @@ public class StatusHolder implements Serializable {
 		}
 
 		@Override
-		public boolean equals(Object o) {
-			if (o instanceof BombEEE == false) return false;
-			BombEEE bbb = (BombEEE) o;
+		public boolean equals(Object obj) {
+			if (obj instanceof BombEEE == false) return false;
+			BombEEE bbb = (BombEEE) obj;
 			if (bbb.x == x && bbb.y == y && bbb.owner == owner && bbb.life == life && bbb.dir == dir && bbb.power == power) {
 				return true;
 			} else {
@@ -93,50 +105,87 @@ public class StatusHolder implements Serializable {
 		}
 	}
 
-	private Map<Integer, AgentEEE> agMap = new TreeMap<Integer, AgentEEE>();
-	private Map<Integer, BombEEE> bbMap = new TreeMap<Integer, BombEEE>();
+	private List<AgentEEE> agentList = new ArrayList<AgentEEE>();
+	private AgentEEE[] agents = new AgentEEE[4];
 
-	public StatusHolder(int numField) {
-		this.numField = numField;
+	private List<BombEEE> bombList = new ArrayList<BombEEE>();
+	private BombEEE[][] bombMap = new BombEEE[numField][numField];
+
+	public StatusHolder() {
+	}
+
+	public StatusHolder(StatusHolder sh) {
+		for (AgentEEE aaa : sh.agentList) {
+			this.setAgent(aaa.x, aaa.y, aaa.agentID);
+		}
+
+		for (BombEEE bbb : sh.bombList) {
+			this.setBomb(bbb.x, bbb.y, bbb.owner, bbb.life, bbb.dir, bbb.power);
+		}
 	}
 
 	public void setAgent(int x, int y, int agentID) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + agentID * numParam;
-		AgentEEE eee = new AgentEEE(x, y, agentID);
-		agMap.put(index, eee);
+		AgentEEE aaa = new AgentEEE(x, y, agentID);
+		agents[agentID - 10] = aaa;
+		agentList.add(aaa);
 	}
 
-	public boolean isAgentExist(int x, int y, int agent) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + agent * numParam;
-		if (agMap.get(index) == null) return false;
-		return true;
+	public void removeAgent(int agentID) {
+		AgentEEE aaa = agents[agentID - 10];
+		if (aaa == null) return;
+		agents[agentID - 10] = null;
+		agentList.remove(aaa);
 	}
 
 	public Collection<AgentEEE> getAgentEntry() {
-		return agMap.values();
+		return agentList;
+	}
+
+	public AgentEEE getAgent(int agentID) {
+		return agents[agentID - 10];
 	}
 
 	public void setBomb(int x, int y, int owner, int life, int dir, int power) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
 		BombEEE eee = new BombEEE(x, y, owner, life, dir, power);
-		bbMap.put(index, eee);
+		bombMap[x][y] = eee;
+		bombList.add(eee);
 	}
 
-	public boolean isBombExist(int x, int y, int life, int dir) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
-		if (bbMap.get(index) == null) return false;
-		return true;
-	}
-
-	public int getBombPower(int x, int y, int life, int dir) {
-		int index = x * numParam * numParam * numField + y * numParam * numParam + life * numParam + dir;
-		BombEEE eee = bbMap.get(index);
-		if (eee == null) return 0;
-		return eee.power;
+	public BombEEE getBomb(int x, int y) {
+		return bombMap[x][y];
 	}
 
 	public Collection<BombEEE> getBombEntry() {
-		return bbMap.values();
+		return bombList;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof StatusHolder == false) return false;
+		StatusHolder sh = (StatusHolder) obj;
+
+		if (agentList.size() != sh.agentList.size()) return false;
+		if (bombList.size() != sh.bombList.size()) return false;
+
+		for (int ai = 0; ai < 4; ai++) {
+			if (agents[ai] == null && sh.agents[ai] == null) continue;
+			if (agents[ai] == null && sh.agents[ai] != null) return false;
+			if (agents[ai] != null && sh.agents[ai] == null) return false;
+			if (agents[ai].equals(sh.agents[ai]) == false) return false;
+		}
+
+		for (BombEEE bbb : bombList) {
+			boolean find = false;
+			for (BombEEE bbb2 : sh.bombList) {
+				if (bbb.equals(bbb2)) {
+					find = true;
+					break;
+				}
+			}
+			if (find == false) return false;
+		}
+
+		return true;
 	}
 
 	@Override
@@ -152,36 +201,32 @@ public class StatusHolder implements Serializable {
 		output += "========================================\n";
 		output += "========================================\n";
 		output += "Agent\n";
+
+		MyMatrix temp = new MyMatrix(numField, numField);
+		for (int ai = 0; ai < 4; ai++) {
+			AgentEEE aaa = agents[ai];
+			if (aaa == null) continue;
+			temp.data[aaa.x][aaa.y] = aaa.agentID;
+		}
+
 		for (int x = 0; x < numField; x++) {
 			String line1 = "";
-			String line2 = "";
-			String line3 = "";
 			for (int y = 0; y < numField; y++) {
-				String print1 = "";
-				String print2 = "";
-				String print3 = "";
-
-				String[] as = new String[4];
-				for (int i = 0; i < 4; i++) {
-					if (this.isAgentExist(x, y, i + 10)) {
-						as[i] = "œ";
-					} else {
-						as[i] = "›";
-					}
+				int id = (int) temp.data[x][y];
+				String moji = "[";
+				if (id == 10) {
+					moji = "‡@";
+				} else if (id == 11) {
+					moji = "‡A";
+				} else if (id == 12) {
+					moji = "‡B";
+				} else if (id == 13) {
+					moji = "‡C";
 				}
-
-				print1 = as[0] + "[" + as[1];
-				print2 = "b{b";
-				print3 = as[2] + "[" + as[3];
-
-				line1 += print1;
-				line2 += print2;
-				line3 += print3;
+				line1 += moji;
 			}
 
 			output += line1 + "\n";
-			output += line2 + "\n";
-			output += line3 + "\n";
 		}
 
 		////////////////////////////////////////////////////////////////////////////////
@@ -189,102 +234,6 @@ public class StatusHolder implements Serializable {
 		// ”š’e‚ÌˆÊ’u‚ðo—Í‚·‚éB
 		//
 		////////////////////////////////////////////////////////////////////////////////
-
-		for (int life = 9; life >= 1; life--) {
-			boolean exist = false;
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					for (int moveDirection = 0; moveDirection <= 5; moveDirection++) {
-						if (this.isBombExist(x, y, life, moveDirection)) {
-							exist = true;
-						}
-					}
-				}
-			}
-			if (exist == false) continue;
-
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "========================================\n";
-			output += "Bomb life=" + life + "\n";
-
-			for (int x = 0; x < numField; x++) {
-				String line1 = "";
-				String line2 = "";
-				String line3 = "";
-				for (int y = 0; y < numField; y++) {
-					String print1 = "";
-					String print2 = "";
-					String print3 = "";
-
-					String[] as = new String[6];
-					for (int moveDirection = 0; moveDirection <= 5; moveDirection++) {
-						if (this.isBombExist(x, y, life, moveDirection)) {
-							int power = this.getBombPower(x, y, life, moveDirection);
-							as[moveDirection] = String.format("%d", power);
-							if (moveDirection == 0) as[5] = as[0];
-							if (moveDirection == 5) as[0] = as[5];
-						} else {
-							as[moveDirection] = " ";
-						}
-					}
-
-					print1 = "// " + as[1] + " \\";
-					print2 = "||" + as[3] + as[0] + as[4] + "|";
-					print3 = "\\\\_" + as[2] + "_/";
-
-					line1 += print1;
-					line2 += print2;
-					line3 += print3;
-				}
-
-				output += line1 + "\n";
-				output += line2 + "\n";
-				output += line3 + "\n";
-			}
-		}
-
-		////////////////////////////////////////////////////////////////////////////////
-		//
-		// FlameCenter‚ÌˆÊ’u‚ðo—Í‚·‚éB
-		//
-		////////////////////////////////////////////////////////////////////////////////
-		// output += "========================================\n";
-		// output += "========================================\n";
-		// output += "========================================\n";
-		// output += "FlameCenter\n";
-		// for (int x = 0; x < numField; x++) {
-		// String line1 = "";
-		// String line2 = "";
-		// String line3 = "";
-		// for (int y = 0; y < numField; y++) {
-		// String print1 = "";
-		// String print2 = "";
-		// String print3 = "";
-		//
-		// String[] as = new String[4];
-		// for (int life = 3; life >= 1; life--) {
-		// if (this.isFlameCenterExist(x, y, life)) {
-		// int power = this.getFlameCenterPower(x, y, life);
-		// as[life] = String.format("%d", power);
-		// } else {
-		// as[life] = " ";
-		// }
-		// }
-		//
-		// print1 = "/3:" + as[3] + " \\";
-		// print2 = "|2:" + as[2] + " |";
-		// print3 = "\\1:" + as[1] + " /";
-		//
-		// line1 += print1;
-		// line2 += print2;
-		// line3 += print3;
-		// }
-		//
-		// output += line1 + "\n";
-		// output += line2 + "\n";
-		// output += line3 + "\n";
-		// }
 
 		return output;
 	}

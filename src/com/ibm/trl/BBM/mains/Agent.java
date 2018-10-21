@@ -2,6 +2,7 @@ package com.ibm.trl.BBM.mains;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -26,6 +27,7 @@ public class Agent {
 	MyMatrix board_memo = new MyMatrix(numField, numField, Constant.Rigid);
 	int maxPower = 2;
 	int numItemGet = 0;
+	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,7 +38,6 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static double[][] killScores = new double[4][2];
 
 	static public class Ability implements Serializable {
 		private static final long serialVersionUID = 372642396371084459L;
@@ -115,6 +116,10 @@ public class Agent {
 			GlobalParameter.FinishOneEpisode(me, frame, reward, numItemGet);
 		}
 
+		if (reward == -1) {
+			System.out.println("aaa");
+		}
+
 		// 殺された場合、最後の20ステップの盤面遷移を出力する。
 		if (reward == -1 && frame != 801) {
 			System.out.println("=========================================================================================");
@@ -147,21 +152,15 @@ public class Agent {
 			System.out.println("");
 			System.out.println("");
 			System.out.println("LOSELOSELOSE");
-			for (MapInformation map : exmapsOld) {
+			List<MapInformation> temp = new ArrayList<MapInformation>();
+			temp.addAll(exmapsOld);
+			Collections.reverse(temp);
+			for (MapInformation map : temp) {
 				System.out.println("=========================================================================================");
 				BBMUtility.printBoard2(map.board, map.board, map.life, map.power);
 			}
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
-			System.out.println("=========================================================================================");
-			System.out.println("=========================================================================================");
-		}
-
-		{
-			System.out.println("=========================================================================================");
-			System.out.println("=========================================================================================");
-			System.out.println("Kill Score");
-			MatrixUtility.OutputMatrix(new MyMatrix(killScores));
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 		}
@@ -319,6 +318,14 @@ public class Agent {
 			}
 		}
 
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				int type = (int) board.data[x][y];
+				if (type == Constant.Fog) continue;
+				lastLook.data[x][y] = frame;
+			}
+		}
+
 		// TODO 出力してみる。
 		if (false) {
 			System.out.println("board_memo picture");
@@ -444,12 +451,18 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
-			System.out.println("board_ex & bomb_ex & flame_ex picture");
-			// BBMUtility.printBoard2(exmap.board, map.board, bomb_life, exmap.power);
-			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
+			// System.out.println("=========================================================================================");
+			System.out.println("life");
+			MatrixUtility.OutputMatrix(exmap.life);
 			System.out.println("=========================================================================================");
+			System.out.println("power");
+			MatrixUtility.OutputMatrix(exmap.power);
 			System.out.println("=========================================================================================");
+			System.out.println("flame life");
 			MatrixUtility.OutputMatrix(flameLife);
+			System.out.println("=========================================================================================");
+			System.out.println("board_ex & bomb_ex & flame_ex picture");
+			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -462,6 +475,7 @@ public class Agent {
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			// double[][][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
 			double[][][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -480,7 +494,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(me, friend, maxPower, abs2, exmap, bombMap, flameLife, worstScores);
+			action = actionEvaluator.ComputeOptimalAction(frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, worstScores);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

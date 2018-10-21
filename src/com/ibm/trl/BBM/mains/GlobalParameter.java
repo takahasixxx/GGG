@@ -2,16 +2,14 @@ package com.ibm.trl.BBM.mains;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
-
-import ibm.ANACONDA.Core.MyMatrix;
-import obsolete.OptimalActionFinder.OAFParameter;
 
 public class GlobalParameter {
 	static Random rand = new Random();
@@ -25,11 +23,28 @@ public class GlobalParameter {
 	static public int numThread = 1;
 	static final public int numField = 11;
 
-	static public OAFParameter[] oafparameters;
-	static public OAFParameter oafparamCenter;
-	static public MyMatrix KeisuGlobal;
-
 	static public int[][] onehopList = new int[][] { { 0, 0, 0 }, { 1, -1, 0 }, { 2, 1, 0 }, { 3, 0, -1 }, { 4, 0, 1 } };
+
+	static public ExecutorService executor;
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	static int numGame = 0;
+	static double numWin = 0;
+	static double numLose = 0;
+	static double numTie = 0;
+	static int lastFrame = -1;
+
+	static public double rateLevel;
+	static public double usualMoveThreshold;
+	static public double attackThreshold;
+	static public double[] param = new double[4];
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	static {
 		try {
@@ -51,24 +66,11 @@ public class GlobalParameter {
 				System.out.println("numThread = " + numThread);
 			}
 
-			{
-				File file = new File("data/oafparameter_average.dat");
-				if (file.exists()) {
-					ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file));
-					KeisuGlobal = (MyMatrix) ois.readObject();
-					ois.close();
-					oafparamCenter = new OAFParameter(KeisuGlobal);
-				} else {
-					oafparamCenter = new OAFParameter();
-					KeisuGlobal = new MyMatrix(oafparamCenter.Keisu);
-				}
-				oafparamCenter.numEpisode = 1;
-				oafparamCenter.numFrame = 1;
+			executor = Executors.newFixedThreadPool(numThread);
 
-				oafparameters = new OAFParameter[4];
-				for (int ai = 0; ai < 4; ai++) {
-					oafparameters[ai] = new OAFParameter(KeisuGlobal);
-				}
+			{
+				FinishOneEpisode(11, 0, 0, 0);
+				FinishOneEpisode(13, 0, 0, 0);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -77,109 +79,67 @@ public class GlobalParameter {
 	}
 
 	/**
-	 * Episode終了時に呼ばれる。 KPIを集計する。 ある程度Episodeがたまったら、以下をやる。
 	 * 
-	 * １．GlobalParameterのOAPParameterのKPIと比較して、良ければGlobalParamterに登録する。ついでにファイルにも保存する。
-	 * ２．GlobalParameterのOAFParameterの設定をランダムに動かして、新規トライOAFParameterを設定する。
+	 * 
 	 */
 
-	static public void FinishOneEpisode(int me, double numFrame, double reward, double numItemGet) throws Exception {
-		OAFParameter oafparam = oafparameters[me - 10];
-		oafparam.numEpisode++;
-		oafparam.numFrame += numFrame;
-		oafparam.numItemGet += numItemGet;
-		if (reward == 1) oafparam.numWin++;
+	static public void FinishOneEpisode(int me, int numFrame, int reward, double numItemGet) throws Exception {
+		if (me == 11) {
+			lastFrame = numField;
+			return;
+		}
 
-		if (isOptimizeParameter && oafparam.numEpisode >= 10) {
-			double stepSize = 0.01;
-
-			///////////////////////////////////////////////////////////
-			// KPIがItem取得率の場合
-			double score = oafparam.numWin + oafparam.numItemGet * 0.1;
-			double scoreCenter = oafparamCenter.numWin + oafparamCenter.numItemGet * 0.1;
-			double max = Math.max(score, scoreCenter);
-			score = score / max;
-			scoreCenter = scoreCenter / max;
-			score = Math.pow(score, 10);
-			scoreCenter = Math.pow(scoreCenter, 10);
-
-			System.out.println("今の起点OAFParameter");
-			System.out.println(oafparamCenter.Keisu);
-			System.out.println("試したOAFParameter");
-			System.out.println(oafparam.Keisu);
-			System.out.println("差分");
-			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
-			System.out.println("結果は、");
-			System.out.println(score + " vs " + scoreCenter + "（起点）");
-
-			boolean accept;
-			if (rand.nextDouble() * scoreCenter < score) {
-				oafparamCenter = oafparam;
-				accept = true;
-				System.out.println("新しいOAFParameterを受理した。");
+		int frameMax = Math.max(lastFrame, numFrame);
+		if (reward == 1) {
+			numWin++;
+		} else if (reward == -1) {
+			if (frameMax == 801) {
+				numTie++;
 			} else {
-				accept = false;
-				System.out.println("新しいOAFParameterを棄却した。");
+				numLose++;
 			}
-			System.out.println(String.format("score=%f, numEpisode=%f, numFrame=%f, numItemGet=%f, numWin=%f, accept=%b", score, oafparam.numEpisode, oafparam.numFrame, oafparam.numItemGet,
-					oafparam.numWin, accept));
+		}
 
-			// グローバルの係数をちょっと動かす。
-			double rate = 0.95;
-			KeisuGlobal = KeisuGlobal.times(rate).plus(oafparamCenter.Keisu.times(1 - rate));
+		int onePack = 400;
 
-			// 保存する。
-			{
-				File file = new File("data/oafparameter_average.dat");
-				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
-				oos.writeObject(KeisuGlobal);
-				oos.flush();
-				oos.close();
-			}
-
-			// パラメータを散らす。
-			MyMatrix Keisu = new MyMatrix(oafparamCenter.Keisu);
-			for (int ii = 0; ii < 3; ii++) {
-				int numt = Keisu.numt;
-				int numd = Keisu.numd;
-				int index = -1;
-				int dim = -1;
-				boolean increment;
-				while (true) {
-					index = rand.nextInt(numt);
-					dim = rand.nextInt(numd);
-					increment = rand.nextBoolean();
-					if (OAFParameter.KeisuUsed[index][dim]) {
-						if (increment) {
-							break;
-						} else {
-							if (Keisu.data[index][dim] != 0) {
-								break;
-							}
-						}
+		if (numGame % onePack == 0) {
+			// 試したいパラメータ設定を作る
+			List<double[]> params = new ArrayList<double[]>();
+			if (true) {
+				if (true) {
+					double usualCell = 3.5;
+					double attackCell = 2.5;
+					// for (double rateLevel : new double[] { 1, 1.1, 1.2, 1.3, 1.4 }) {
+					// for (double rateLevel : new double[] { 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3 }) {
+					for (double rateLevel : new double[] { 7, 8, 9, 10 }) {
+						double[] param = new double[] { rateLevel, usualCell, attackCell, 1000 };
+						params.add(param);
 					}
 				}
-
-				if (increment) {
-					Keisu.data[index][dim] += stepSize * Math.abs(nd.sample());
-				} else {
-					Keisu.data[index][dim] -= stepSize * Math.abs(nd.sample());
-					if (Keisu.data[index][dim] < 0) Keisu.data[index][dim] = 0;
-				}
 			}
 
-			oafparam = new OAFParameter(Keisu);
+			// 結果を出力
+			double numTotal = numWin + numTie + numLose;
+			String line = String.format("GlobalParameter: Statistics, params=(%f, %f, %f, %f), (total/win/lose/tie)=(%f/%f/%f/%f)", param[0], param[1], param[2], param[3], numTotal, numWin, numLose,
+					numTie);
+			System.out.println(line);
 
-			System.out.println("今の起点OAFParameter");
-			System.out.println(oafparamCenter.Keisu);
-			System.out.println("次に試すOAFParameter");
-			System.out.println(oafparam.Keisu);
-			System.out.println("差分");
-			System.out.println(oafparam.Keisu.minus(oafparamCenter.Keisu));
-			System.out.println("平均のOAFParameter");
-			System.out.println(KeisuGlobal);
+			// 次のパラメータを設定する。
+			int index = numGame / onePack;
+			double[] param = params.get(index % params.size());
 
-			oafparameters[me - 10] = oafparam;
+			// パラメータ設定
+			GlobalParameter.param = param;
+			GlobalParameter.rateLevel = param[0];
+			GlobalParameter.usualMoveThreshold = Math.log(param[1]);
+			GlobalParameter.attackThreshold = Math.log(param[2]);
+
+			// 戦績リセット
+			numWin = 0;
+			numLose = 0;
+			numTie = 0;
 		}
+
+		numGame++;
 	}
 }

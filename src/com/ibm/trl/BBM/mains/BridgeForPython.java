@@ -59,6 +59,7 @@ public class BridgeForPython {
 		MyMatrix enemies = buffer2Matrix(enemies_list_buffer);
 
 		try {
+			// System.out.println("aa");
 			Agent[] agents = agentsMap.get(pid);
 			return agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
 		} catch (Exception e) {

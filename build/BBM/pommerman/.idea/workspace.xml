@@ -14,11 +14,20 @@
       <file leaf-file-name="takahasi_test.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/takahasi_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="200">
+            <state relative-caret-position="15">
               <caret line="17" column="8" selection-start-line="17" selection-start-column="8" selection-end-line="17" selection-end-column="8" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="requirements.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/requirements.txt">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="454">
+              <caret line="46" column="114" lean-forward="true" selection-start-line="46" selection-start-column="114" selection-end-line="46" selection-end-column="114" />
             </state>
           </provider>
         </entry>
@@ -35,8 +44,8 @@
       <file leaf-file-name="forward_model.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/forward_model.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2100">
-              <caret line="146" column="19" selection-start-line="146" selection-start-column="8" selection-end-line="146" selection-end-column="19" />
+            <state relative-caret-position="282">
+              <caret line="375" column="25" selection-start-line="375" selection-start-column="25" selection-end-line="375" selection-end-column="25" />
             </state>
           </provider>
         </entry>
@@ -76,8 +85,8 @@
       <file leaf-file-name="tt_agent.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tt_agent.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2104">
-              <caret line="175" lean-forward="true" selection-start-line="175" selection-end-line="175" />
+            <state relative-caret-position="957">
+              <caret line="175" selection-start-line="175" selection-end-line="175" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -88,18 +97,6 @@
       <file leaf-file-name="utility.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/utility.py">
           <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file leaf-file-name="run_my_agent.py" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/run_my_agent.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="15">
-              <caret line="8" selection-start-line="8" selection-end-line="8" />
-              <folding>
-                <element signature="e#0#46#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
         </entry>
       </file>
     </leaf>
@@ -117,20 +114,22 @@
         <option value="$PROJECT_DIR$/../../../../../Python/venv2/src/pommerman/pommerman/forward_model.py" />
         <option value="$PROJECT_DIR$/agents/__init__.py" />
         <option value="$PROJECT_DIR$/takahasi_test.py" />
+        <option value="$PROJECT_DIR$/forward_model.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="418" />
-    <option name="y" value="54" />
-    <option name="width" value="2131" />
-    <option name="height" value="1558" />
+    <option name="x" value="454" />
+    <option name="y" value="22" />
+    <option name="width" value="2138" />
+    <option name="height" value="1743" />
   </component>
   <component name="ProjectView">
     <navigator proportions="" version="1">
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -147,7 +146,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -213,13 +211,13 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="418" y="54" width="2131" height="1558" extended-state="0" />
+    <frame x="454" y="22" width="2138" height="1743" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16611919" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.16557531" />
       <window_info anchor="bottom" id="TODO" order="6" />
-      <window_info anchor="bottom" id="Event Log" order="7" sideWeight="0.504458" side_tool="true" visible="true" weight="0.29514825" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.495542" visible="true" weight="0.29514825" />
+      <window_info active="true" anchor="bottom" id="Event Log" order="7" sideWeight="0.505145" side_tool="true" visible="true" weight="0.37866986" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49485502" visible="true" weight="0.37866986" />
       <window_info anchor="bottom" id="Version Control" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Python Console" order="7" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -464,13 +462,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/requirements.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1140">
-          <caret line="76" column="6" selection-start-line="76" selection-start-column="6" selection-end-line="76" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/../../../../../Python/venv2/src/pommerman/pommerman/forward_model.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="545">
@@ -595,24 +586,31 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/forward_model.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2100">
-          <caret line="146" column="19" selection-start-line="146" selection-start-column="8" selection-end-line="146" selection-end-column="19" />
+        <state relative-caret-position="282">
+          <caret line="375" column="25" selection-start-line="375" selection-start-column="25" selection-end-line="375" selection-end-column="25" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/tt_agent.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2104">
-          <caret line="175" lean-forward="true" selection-start-line="175" selection-end-line="175" />
+        <state relative-caret-position="957">
+          <caret line="175" selection-start-line="175" selection-end-line="175" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/requirements.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="454">
+          <caret line="46" column="114" lean-forward="true" selection-start-line="46" selection-start-column="114" selection-end-line="46" selection-end-column="114" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/takahasi_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
+        <state relative-caret-position="15">
           <caret line="17" column="8" selection-start-line="17" selection-start-column="8" selection-end-line="17" selection-end-column="8" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />

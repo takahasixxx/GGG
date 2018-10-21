@@ -14,7 +14,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class ForwardModel {
 
-	static final int numField = GlobalParameter.numField;
+	private static final int numField = GlobalParameter.numField;
 
 	static public class Pack implements Serializable {
 		private static final long serialVersionUID = -8052436421835761684L;
@@ -29,6 +29,71 @@ public class ForwardModel {
 			this.abs = abs;
 			this.sh = sh;
 		}
+
+		public Pack(Pack pack) {
+			this.board = new MyMatrix(pack.board);
+			this.flameLife = new MyMatrix(pack.flameLife);
+			this.abs = new Ability[4];
+			for (int ai = 0; ai < 4; ai++) {
+				abs[ai] = new Ability(pack.abs[ai]);
+			}
+			this.sh = new StatusHolder(pack.sh);
+		}
+
+		public void removeAgent(int agentID) {
+			AgentEEE aaa = sh.getAgent(agentID);
+			if (aaa == null) return;
+			BombEEE bbb = sh.getBomb(aaa.x, aaa.y);
+			if (bbb == null) {
+				board.data[aaa.x][aaa.y] = Constant.Passage;
+			} else {
+				board.data[aaa.x][aaa.y] = Constant.Bomb;
+			}
+			sh.removeAgent(agentID);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj instanceof Pack == false) return false;
+			Pack pack = (Pack) obj;
+
+			for (int ai = 0; ai < 4; ai++) {
+				if (abs[ai].equals(pack.abs[ai]) == false) return false;
+			}
+
+			if (sh.equals(pack.sh) == false) return false;
+
+			try {
+				if (board.minus(pack.board).normF() > 0) return false;
+				if (flameLife.minus(pack.flameLife).normF() > 0) return false;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return false;
+			}
+
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			MyMatrix life = new MyMatrix(numField, numField);
+			MyMatrix power = new MyMatrix(numField, numField);
+			for (BombEEE bbb : sh.getBombEntry()) {
+				life.data[bbb.x][bbb.y] = bbb.life;
+				power.data[bbb.x][bbb.y] = bbb.power;
+			}
+			String text = "";
+			text += "===================================\n";
+			text += "===================================\n";
+			text += BBMUtility.printBoard2_str(board, board, life, power);
+			text += "===================================\n";
+			text += "===================================\n";
+			return text;
+		}
+	}
+
+	public Pack Step(Pack pack, int[] actions) throws Exception {
+		return Step(pack.board, pack.flameLife, pack.abs, pack.sh, actions);
 	}
 
 	public Pack Step(MyMatrix boardNow, MyMatrix flameLifeNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
@@ -528,7 +593,7 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		// 次ステップの状態を作る。
 		/////////////////////////////////////////////////////////////////////////////////////
-		StatusHolder shNext = new StatusHolder(numField);
+		StatusHolder shNext = new StatusHolder();
 		for (int ai = 0; ai < 4; ai++) {
 			Ability abNext = absNext[ai];
 			if (abNext.isAlive == false) continue;
