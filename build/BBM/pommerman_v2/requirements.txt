@@ -44,7 +44,7 @@ pexpect==4.5.0
 pickleshare==0.7.4
 Pillow==5.1.0
 pluggy==0.6.0
--e git+https://github.com/MultiAgentLearning/playground.git@2bc695ebed110c519e767e3eece29052a72d5b5e#egg=pommerman
+-e git+https://github.com/MultiAgentLearning/playground.git@2680755e16682790f29df5992654e7e72a333bed#egg=pommerman
 prompt-toolkit==1.0.15
 protobuf==3.5.2.post1
 ptyprocess==0.5.2

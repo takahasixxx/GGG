@@ -5,9 +5,10 @@ import sys
 import argparse
 
 import numpy as np
-from tt_agent import MyAgent
+
 
 from src.agents.master_agent import MasterAgent as MyAgentO
+from tt_agent import MyAgent as MyAgentT
 
 
 verbose = False
@@ -18,12 +19,12 @@ def main(render=False, interactive=False):
     agent_list = [
         #agents.SimpleAgent(),
         MyAgentO(),
-        MyAgent(),
+        MyAgentT(),
         #agents.SimpleAgent(),
         #agents.SimpleAgent(),
         #TimeExpandedAgent(),
         MyAgentO(),
-        MyAgent(),
+        MyAgentT(),
         #MyAgent(),
         #MyAgent(),
         #SimpleAgentDebugged(),

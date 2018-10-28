@@ -11,11 +11,11 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="takahasi_test.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="takahasi_test.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/takahasi_test.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="570">
-              <caret line="38" column="20" lean-forward="true" selection-start-line="38" selection-start-column="20" selection-end-line="38" selection-end-column="20" />
+            <state relative-caret-position="308">
+              <caret line="39" column="11" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="11" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -23,11 +23,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="tt_agent.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="tt_agent.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/tt_agent.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-2743">
-              <caret line="24" column="25" selection-start-line="24" selection-start-column="6" selection-end-line="24" selection-end-column="25" />
+            <state relative-caret-position="408">
+              <caret line="24" column="29" lean-forward="true" selection-start-line="24" selection-start-column="29" selection-end-line="24" selection-end-column="29" />
               <folding>
                 <element signature="e#0#16#0" expanded="true" />
               </folding>
@@ -227,20 +227,27 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/takahasi_test.py">
+    <entry file="file://$PROJECT_DIR$/../../../../../Python/pommerman_v2/src/pommerman/pommerman/agents/simple_agent.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="570">
-          <caret line="38" column="20" lean-forward="true" selection-start-line="38" selection-start-column="20" selection-end-line="38" selection-end-column="20" />
+        <state relative-caret-position="-3940">
+          <caret line="11" column="6" selection-start-line="11" selection-start-column="6" selection-end-line="11" selection-end-column="6" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tt_agent.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="408">
+          <caret line="24" column="29" lean-forward="true" selection-start-line="24" selection-start-column="29" selection-end-line="24" selection-end-column="29" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tt_agent.py">
+    <entry file="file://$PROJECT_DIR$/takahasi_test.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-2743">
-          <caret line="24" column="25" selection-start-line="24" selection-start-column="6" selection-end-line="24" selection-end-column="25" />
+        <state relative-caret-position="308">
+          <caret line="39" column="11" selection-start-line="39" selection-start-column="4" selection-end-line="39" selection-end-column="11" />
           <folding>
             <element signature="e#0#16#0" expanded="true" />
           </folding>
