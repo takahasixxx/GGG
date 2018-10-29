@@ -55,8 +55,6 @@ def main(render=False, interactive=False):
             if interactive:
                 sys.stdin.readline()
 
-        for agent in agent_list:
-            agent.episode_end(reward[agent.agent_id])
         #rewards.append(reward)
         print('Episode {} finished'.format(episode), reward)
 

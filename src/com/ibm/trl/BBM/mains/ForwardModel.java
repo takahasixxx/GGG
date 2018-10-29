@@ -113,13 +113,6 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		// FlameCenterの時刻を進める。
 		/////////////////////////////////////////////////////////////////////////////////////
-		// List<FlameCenterEEE> flameCenterNext = new ArrayList<FlameCenterEEE>();
-		// for (FlameCenterEEE fffNow : shNow.getFlameCenterEntry()) {
-		// if (fffNow.life == 1) continue;
-		// FlameCenterEEE fffNext = new FlameCenterEEE(fffNow);
-		// fffNext.life--;
-		// flameCenterNext.add(fffNext);
-		// }
 
 		MyMatrix flameLifeNext = new MyMatrix(flameLifeNow);
 		for (int x = 0; x < numField; x++) {
@@ -129,10 +122,6 @@ public class ForwardModel {
 				}
 			}
 		}
-		// 残っているFrameCenterからMyFlameを作って、boardのFlameで残っている部分があったら。Passageを表示する。
-		// for (FlameCenterEEE fffNext : flameCenterNext) {
-		// BBMUtility.PrintFlame(boardNext, myFlameNext, fffNext.x, fffNext.y, fffNext.power, 1);
-		// }
 
 		// 古いFlameCenterをレンダリングすると、フレーム終端が木だったのかが分からない。BoardNowとMyFlameNextの共通部分が今残っているFlameになる。その処理をする。
 		for (int x = 0; x < numField; x++) {
@@ -159,13 +148,15 @@ public class ForwardModel {
 		AgentEEE[] agentsNow = new AgentEEE[4];
 		AgentEEE[] agentsNext = new AgentEEE[4];
 		List<BombEEE> added = new ArrayList<BombEEE>();
-		for (AgentEEE eee : shNow.getAgentEntry()) {
-			int agentID = eee.agentID;
+		for (AgentEEE aaaNow : shNow.getAgentEntry()) {
+			int agentID = aaaNow.agentID;
 			int agentIndex = agentID - 10;
 			int action = actions[agentIndex];
 
-			int x2 = eee.x;
-			int y2 = eee.y;
+			boardNext.data[aaaNow.x][aaaNow.y] = Constant.Passage;
+
+			int x2 = aaaNow.x;
+			int y2 = aaaNow.y;
 			if (action == 0) {
 			} else if (action == 1) {
 				x2 -= 1;
@@ -179,24 +170,24 @@ public class ForwardModel {
 				if (bombExistingMap[x2][y2] == false) {
 					if (absNext[agentIndex].numBombHold > 0) {
 						// 爆弾を追加。
-						added.add(new BombEEE(eee.x, eee.y, agentID, 10, 0, absNext[agentIndex].strength));
+						added.add(new BombEEE(aaaNow.x, aaaNow.y, agentID, 10, 0, absNext[agentIndex].strength));
 						absNext[agentIndex].numBombHold--;
 					}
 				}
 			}
 			if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) {
-				x2 = eee.x;
-				y2 = eee.y;
+				x2 = aaaNow.x;
+				y2 = aaaNow.y;
 			} else {
 				int type = (int) boardNext.data[x2][y2];
 				if (Constant.isWall(type)) {
-					x2 = eee.x;
-					y2 = eee.y;
+					x2 = aaaNow.x;
+					y2 = aaaNow.y;
 				}
 			}
 
-			agentsNow[agentIndex] = eee;
-			agentsNext[agentIndex] = new AgentEEE(x2, y2, eee.agentID);
+			agentsNow[agentIndex] = aaaNow;
+			agentsNext[agentIndex] = new AgentEEE(x2, y2, aaaNow.agentID);
 		}
 
 		BombEEE[] bombsNow;
@@ -209,12 +200,15 @@ public class ForwardModel {
 			bombsNext = new BombEEE[numBomb];
 
 			int index = 0;
-			for (BombEEE bombNow : eees) {
-				bombsNow[index] = bombNow;
-				int life = bombNow.life;
-				int dir = bombNow.dir;
-				int x2 = bombNow.x;
-				int y2 = bombNow.y;
+			for (BombEEE bbbNow : eees) {
+
+				boardNext.data[bbbNow.x][bbbNow.y] = Constant.Passage;
+
+				bombsNow[index] = bbbNow;
+				int life = bbbNow.life;
+				int dir = bbbNow.dir;
+				int x2 = bbbNow.x;
+				int y2 = bbbNow.y;
 				if (dir == 1) {
 					x2--;
 				} else if (dir == 2) {
@@ -225,16 +219,16 @@ public class ForwardModel {
 					y2++;
 				}
 				if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) {
-					x2 = bombNow.x;
-					y2 = bombNow.y;
+					x2 = bbbNow.x;
+					y2 = bbbNow.y;
 				} else {
 					int type = (int) boardNext.data[x2][y2];
 					if (Constant.isWall(type) || Constant.isItem(type)) {
-						x2 = bombNow.x;
-						y2 = bombNow.y;
+						x2 = bbbNow.x;
+						y2 = bbbNow.y;
 					}
 				}
-				bombsNext[index] = new BombEEE(x2, y2, bombNow.owner, life - 1, dir, bombNow.power);
+				bombsNext[index] = new BombEEE(x2, y2, bbbNow.owner, life - 1, dir, bbbNow.power);
 				index++;
 			}
 		}
@@ -336,13 +330,13 @@ public class ForwardModel {
 		MyMatrix occupancyAgent = new MyMatrix(numField, numField);
 		MyMatrix occupancyBomb = new MyMatrix(numField, numField);
 		{
-			for (EEE eee : agentsNext) {
-				if (eee == null) continue;
-				occupancyAgent.data[eee.x][eee.y]++;
+			for (EEE aaaNext : agentsNext) {
+				if (aaaNext == null) continue;
+				occupancyAgent.data[aaaNext.x][aaaNext.y]++;
 			}
 
-			for (EEE eee : bombsNext) {
-				occupancyBomb.data[eee.x][eee.y]++;
+			for (EEE bbbNext : bombsNext) {
+				occupancyBomb.data[bbbNext.x][bbbNext.y]++;
 			}
 
 			while (true) {
@@ -351,25 +345,25 @@ public class ForwardModel {
 				for (int ai = 0; ai < 4; ai++) {
 					if (absNow[ai].isAlive == false) continue;
 					if (agentsNow[ai] == null) continue;
-					EEE eeeNow = agentsNow[ai];
-					EEE eeeNext = agentsNext[ai];
-					if (eeeNext.isSamePosition(eeeNow)) continue;
-					if (occupancyAgent.data[eeeNext.x][eeeNext.y] > 1 || occupancyBomb.data[eeeNext.x][eeeNext.y] > 1) {
-						eeeNext.x = eeeNow.x;
-						eeeNext.y = eeeNow.y;
-						occupancyAgent.data[eeeNext.x][eeeNext.y]++;
+					EEE aaaNow = agentsNow[ai];
+					EEE aaaNext = agentsNext[ai];
+					if (aaaNext.isSamePosition(aaaNow)) continue;
+					if (occupancyAgent.data[aaaNext.x][aaaNext.y] > 1 || occupancyBomb.data[aaaNext.x][aaaNext.y] > 1) {
+						aaaNext.x = aaaNow.x;
+						aaaNext.y = aaaNow.y;
+						occupancyAgent.data[aaaNext.x][aaaNext.y]++;
 						isChanged = true;
 					}
 				}
 
 				for (int bi = 0; bi < numBomb; bi++) {
-					EEE eeeNow = bombsNow[bi];
-					EEE eeeNext = bombsNext[bi];
-					if (eeeNext.x == eeeNow.x && eeeNext.y == eeeNow.y) continue;
-					if (occupancyAgent.data[eeeNext.x][eeeNext.y] > 1 || occupancyBomb.data[eeeNext.x][eeeNext.y] > 1) {
-						eeeNext.x = eeeNow.x;
-						eeeNext.y = eeeNow.y;
-						occupancyBomb.data[eeeNext.x][eeeNext.y]++;
+					EEE bbbNow = bombsNow[bi];
+					EEE bbbNext = bombsNext[bi];
+					if (bbbNext.x == bbbNow.x && bbbNext.y == bbbNow.y) continue;
+					if (occupancyAgent.data[bbbNext.x][bbbNext.y] > 1 || occupancyBomb.data[bbbNext.x][bbbNext.y] > 1) {
+						bbbNext.x = bbbNow.x;
+						bbbNext.y = bbbNow.y;
+						occupancyBomb.data[bbbNext.x][bbbNext.y]++;
 						isChanged = true;
 					}
 				}
@@ -383,9 +377,15 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		AgentEEE[] agentsNext2 = new AgentEEE[4];
 		BombEEE[] bombsNext2 = new BombEEE[numBomb];
-		int[] bomb_kicked_by = new int[numBomb];
+
+		int[] kicked_bomb_indexed_by_agent = new int[4];
+		for (int ai = 0; ai < 4; ai++) {
+			kicked_bomb_indexed_by_agent[ai] = -1;
+		}
+
+		int[] agent_indexed_by_kicked_bomb = new int[numBomb];
 		for (int bi = 0; bi < numBomb; bi++) {
-			bomb_kicked_by[bi] = -1;
+			agent_indexed_by_kicked_bomb[bi] = -1;
 		}
 
 		for (int bi = 0; bi < numBomb; bi++) {
@@ -460,28 +460,31 @@ public class ForwardModel {
 
 			// 爆弾がキックできるときは、キックする。できないときは、停止する。
 			if (kickable) {
+				occupancyBomb.data[bbbNext.x][bbbNext.y] = 0;
 				bombsNext2[bi] = new BombEEE(x2, y2, bbbNext.owner, bbbNext.life, dir, bbbNext.power);
-				bomb_kicked_by[bi] = agentIndex;
+				agent_indexed_by_kicked_bomb[bi] = agentIndex;
+				kicked_bomb_indexed_by_agent[agentIndex] = bi;
 			} else {
-				bombsNext2[bi] = new BombEEE(bbbNow.x, bbbNow.y, bbbNext.owner, bbbNext.life, 0, bbbNext.power);
+				bombsNext2[bi] = new BombEEE(bbbNow.x, bbbNow.y, bbbNext.owner, bbbNext.life, bbbNext.dir, bbbNext.power);
 				agentsNext2[agentIndex] = new AgentEEE(aaaNow.x, aaaNow.y, aaaNext.agentID);
 			}
 		}
 
 		boolean isChanged = false;
+
 		for (int bi = 0; bi < numBomb; bi++) {
-			BombEEE bbb = bombsNext2[bi];
-			if (bbb == null) continue;
-			bombsNext[bi] = bbb;
-			occupancyBomb.data[bbb.x][bbb.y]++;
+			BombEEE bbbNext2 = bombsNext2[bi];
+			if (bbbNext2 == null) continue;
+			bombsNext[bi] = bbbNext2;
+			occupancyBomb.data[bbbNext2.x][bbbNext2.y]++;
 			isChanged = true;
 		}
 
 		for (int ai = 0; ai < 4; ai++) {
-			AgentEEE aaa = agentsNext2[ai];
-			if (aaa == null) continue;
-			agentsNext[ai] = aaa;
-			occupancyAgent.data[aaa.x][aaa.y]++;
+			AgentEEE aaaNext2 = agentsNext2[ai];
+			if (aaaNext2 == null) continue;
+			agentsNext[ai] = aaaNext2;
+			occupancyAgent.data[aaaNext2.x][aaaNext2.y]++;
 			isChanged = true;
 		}
 
@@ -496,6 +499,16 @@ public class ForwardModel {
 				EEE aaaNow = agentsNow[ai];
 				EEE aaaNext = agentsNext[ai];
 				if (aaaNow.isSamePosition(aaaNext) == false && (occupancyAgent.data[aaaNext.x][aaaNext.y] > 1 || occupancyBomb.data[aaaNext.x][aaaNext.y] > 0)) {
+					int bi = kicked_bomb_indexed_by_agent[ai];
+					if (bi != -1) {
+						BombEEE bbbNow = bombsNow[bi];
+						BombEEE bbbNext = bombsNext[bi];
+						bbbNext.x = bbbNow.x;
+						bbbNext.y = bbbNow.y;
+						occupancyBomb.data[bbbNow.x][bbbNow.y]++;
+						agent_indexed_by_kicked_bomb[bi] = -1;
+						kicked_bomb_indexed_by_agent[ai] = -1;
+					}
 					aaaNext.x = aaaNow.x;
 					aaaNext.y = aaaNow.y;
 					occupancyAgent.data[aaaNext.x][aaaNext.y]++;
@@ -507,24 +520,34 @@ public class ForwardModel {
 				BombEEE bbbNow = bombsNow[bi];
 				BombEEE bbbNext = bombsNext[bi];
 
-				if (bbbNow.isSamePosition(bbbNext) && bomb_kicked_by[bi] == -1) continue;
+				int ai = agent_indexed_by_kicked_bomb[bi];
 
-				if (occupancyAgent.data[bbbNext.x][bbbNext.y] > 1 || occupancyBomb.data[bbbNext.x][bbbNext.y] > 1) {
+				if (bbbNow.isSamePosition(bbbNext) && ai == -1) continue;
+
+				if (occupancyAgent.data[bbbNext.x][bbbNext.y] > 0 || occupancyBomb.data[bbbNext.x][bbbNext.y] > 1) {
 					bbbNext.x = bbbNow.x;
 					bbbNext.y = bbbNow.y;
 					bbbNext.dir = 0;
 					occupancyBomb.data[bbbNext.x][bbbNext.y]++;
-					int agentIndex = bomb_kicked_by[bi];
-					if (agentIndex != -1) {
-						EEE aaaNext = agentsNext[agentIndex];
-						EEE aaaNow = agentsNow[agentIndex];
+					if (ai != -1) {
+						EEE aaaNext = agentsNext[ai];
+						EEE aaaNow = agentsNow[ai];
 						aaaNext.x = aaaNow.x;
 						aaaNext.y = aaaNow.y;
 						occupancyAgent.data[aaaNext.x][aaaNext.y]++;
-						bomb_kicked_by[bi] = -1;
+						kicked_bomb_indexed_by_agent[ai] = -1;
+						agent_indexed_by_kicked_bomb[bi] = -1;
 					}
 					isChanged = true;
 				}
+			}
+		}
+
+		for (int bi = 0; bi < numBomb; bi++) {
+			BombEEE bbbNow = bombsNow[bi];
+			BombEEE bbbNext = bombsNext[bi];
+			if (bbbNow.isSamePosition(bbbNext) && agent_indexed_by_kicked_bomb[bi] == -1) {
+				bbbNext.dir = 0;
 			}
 		}
 
@@ -534,8 +557,8 @@ public class ForwardModel {
 		for (int ai = 0; ai < 4; ai++) {
 			if (absNow[ai].isAlive == false) continue;
 			if (agentsNow[ai] == null) continue;
-			EEE eeeNext = agentsNext[ai];
-			int type = (int) boardNow.data[eeeNext.x][eeeNext.y];
+			EEE aaaNext = agentsNext[ai];
+			int type = (int) boardNow.data[aaaNext.x][aaaNext.y];
 			if (type == Constant.ExtraBomb) {
 				absNext[ai].numBombHold++;
 				absNext[ai].numMaxBomb++;
@@ -549,32 +572,52 @@ public class ForwardModel {
 		/////////////////////////////////////////////////////////////////////////////////////
 		// Flameの処理
 		/////////////////////////////////////////////////////////////////////////////////////
+
+		boolean[][] explodedMap = new boolean[numField][numField];
+		boolean hasNewExplosions = false;
+
 		for (int bi = 0; bi < numBomb; bi++) {
 			BombEEE bbbNext = bombsNext[bi];
 			if (bbbNext.life == 0) {
-				if (bbbNext.owner != -1) absNext[bbbNext.owner - 10].numBombHold++;
-				// FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
-				// flameCenterNext.add(fff);
-				bombsNext[bi] = null;
-				BBMUtility.PrintFlame(boardNext, flameLifeNext, bbbNext.x, bbbNext.y, bbbNext.power, 3);
-			}
-		}
-
-		while (true) {
-			boolean hasNewExplosions = false;
-			for (int bi = 0; bi < numBomb; bi++) {
-				BombEEE bbbNext = bombsNext[bi];
-				if (bbbNext == null) continue;
-				if (flameLifeNext.data[bbbNext.x][bbbNext.y] > 0) {
-					if (bbbNext.owner != -1) absNext[bbbNext.owner - 10].numBombHold++;
-					// FlameCenterEEE fff = new FlameCenterEEE(bbbNext.x, bbbNext.y, 3, bbbNext.power);
-					// flameCenterNext.add(fff);
-					bombsNext[bi] = null;
-					BBMUtility.PrintFlame(boardNext, flameLifeNext, bbbNext.x, bbbNext.y, bbbNext.power, 3);
+				hasNewExplosions = true;
+			} else {
+				int type = (int) boardNext.data[bbbNext.x][bbbNext.y];
+				if (type == Constant.Flames) {
+					bbbNext.life = 0;
 					hasNewExplosions = true;
 				}
 			}
-			if (hasNewExplosions == false) break;
+		}
+
+		while (hasNewExplosions) {
+			hasNewExplosions = false;
+
+			for (int bi = 0; bi < numBomb; bi++) {
+				BombEEE bbbNext = bombsNext[bi];
+				if (bbbNext == null) continue;
+				if (bbbNext.life > 0) continue;
+				if (bbbNext.owner != -1) absNext[bbbNext.owner - 10].numBombHold++;
+				BBMUtility.PrintFlame(boardNext, explodedMap, bbbNext.x, bbbNext.y, bbbNext.power);
+				bombsNext[bi] = null;
+			}
+
+			for (int bi = 0; bi < numBomb; bi++) {
+				BombEEE bbbNext = bombsNext[bi];
+				if (bbbNext == null) continue;
+				if (explodedMap[bbbNext.x][bbbNext.y] == true) {
+					bbbNext.life = 0;
+					hasNewExplosions = true;
+				}
+			}
+		}
+
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				if (explodedMap[x][y] == true) {
+					flameLifeNext.data[x][y] = 3;
+					boardNext.data[x][y] = Constant.Flames;
+				}
+			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -594,53 +637,21 @@ public class ForwardModel {
 		// 次ステップの状態を作る。
 		/////////////////////////////////////////////////////////////////////////////////////
 		StatusHolder shNext = new StatusHolder();
+
+		for (int i = 0; i < numBomb; i++) {
+			BombEEE bbbNext = bombsNext[i];
+			if (bbbNext == null) continue;
+			shNext.setBomb(bbbNext.x, bbbNext.y, bbbNext.owner, bbbNext.life, bbbNext.dir, bbbNext.power);
+			boardNext.data[bbbNext.x][bbbNext.y] = Constant.Bomb;
+		}
+
 		for (int ai = 0; ai < 4; ai++) {
 			Ability abNext = absNext[ai];
 			if (abNext.isAlive == false) continue;
 			if (agentsNow[ai] == null) continue;
 			AgentEEE aaaNext = agentsNext[ai];
 			shNext.setAgent(aaaNext.x, aaaNext.y, aaaNext.agentID);
-		}
-
-		for (int i = 0; i < numBomb; i++) {
-			BombEEE bbbNext = bombsNext[i];
-			if (bbbNext == null) continue;
-			shNext.setBomb(bbbNext.x, bbbNext.y, bbbNext.owner, bbbNext.life, bbbNext.dir, bbbNext.power);
-		}
-
-		// for (FlameCenterEEE fffNext : flameCenterNext) {
-		// shNext.setFlameCenter(fffNext.x, fffNext.y, fffNext.life, fffNext.power);
-		// }
-
-		for (int x = 0; x < numField; x++) {
-			for (int y = 0; y < numField; y++) {
-				int type = (int) boardNext.data[x][y];
-				if (Constant.isAgent(type) || type == Constant.Bomb || type == Constant.Flames) {
-					boardNext.data[x][y] = Constant.Passage;
-				}
-			}
-		}
-
-		for (int i = 0; i < numBomb; i++) {
-			BombEEE bbbNext = bombsNext[i];
-			if (bbbNext != null) {
-				boardNext.data[bbbNext.x][bbbNext.y] = Constant.Bomb;
-			}
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			if (absNext[ai].isAlive == false) continue;
-			if (agentsNow[ai] == null) continue;
-			AgentEEE aaa = agentsNext[ai];
-			boardNext.data[aaa.x][aaa.y] = ai + 10;
-		}
-
-		for (int x = 0; x < numField; x++) {
-			for (int y = 0; y < numField; y++) {
-				if (flameLifeNext.data[x][y] > 0) {
-					boardNext.data[x][y] = Constant.Flames;
-				}
-			}
+			boardNext.data[aaaNext.x][aaaNext.y] = aaaNext.agentID;
 		}
 
 		// TODO ログ

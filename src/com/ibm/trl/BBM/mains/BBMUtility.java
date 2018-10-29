@@ -1021,6 +1021,40 @@ public class BBMUtility {
 		}
 	}
 
+	static public void PrintFlame(MyMatrix boardPre, boolean[][] myFlame, int x, int y, int power) {
+		int numField = boardPre.numd;
+
+		myFlame[x][y] = true;
+
+		for (int dir = 0; dir < 4; dir++) {
+			for (int w = 1; w < power; w++) {
+				int xSeek = x;
+				int ySeek = y;
+				if (dir == 0) {
+					xSeek = x - w;
+				} else if (dir == 1) {
+					xSeek = x + w;
+				} else if (dir == 2) {
+					ySeek = y - w;
+				} else if (dir == 3) {
+					ySeek = y + w;
+				}
+				if (xSeek < 0 || xSeek >= numField) break;
+				if (ySeek < 0 || ySeek >= numField) break;
+
+				int typePre = (int) boardPre.data[xSeek][ySeek];
+
+				// 前ステップがRidgeだったら、この手前でFlameが止まるのでループ終了
+				if (typePre == Constant.Rigid) break;
+
+				myFlame[xSeek][ySeek] = true;
+
+				// 前ステップがWoodだったら、このセルを終端としてFlameが止まるのでループ終了
+				if (typePre == Constant.Wood) break;
+			}
+		}
+	}
+
 	static double add_log(double a, double b) {
 		if (a == Double.NEGATIVE_INFINITY && b == Double.NEGATIVE_INFINITY) return Double.NEGATIVE_INFINITY;
 		if (a > b) {

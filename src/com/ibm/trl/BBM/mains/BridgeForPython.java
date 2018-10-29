@@ -41,7 +41,7 @@ public class BridgeForPython {
 
 	public void episode_end(int pid, int me, int reward) {
 		try {
-			System.out.println("episode_end, " + me + ", reward = " + reward);
+			System.out.println("episode_end, " + me + ", reward = " + reward + ", pid=" + pid);
 			Agent[] agents = agentsMap.get(pid);
 			agents[me - 10].episode_end(reward);
 			agents[me - 10] = new Agent(me);

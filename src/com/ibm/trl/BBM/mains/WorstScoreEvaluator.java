@@ -16,17 +16,18 @@ import ibm.ANACONDA.Core.MyMatrix;
 public class WorstScoreEvaluator {
 
 	static final int LOGIC_ALL = 0;
-	static final int LOGIC_MOVEONLY = 1;
-	static final int LOGIC_STOPORBOMB = 2;
-	static final int LOGIC_STOP = 3;
-	static final int LOGIC_STOPORBOMB_IF_NONEIGHBOR = 4;
-	static final int LOGIC_STOP_IF_NONEIGHBOR = 5;
+	static final int LOGIC_MOVEONLY_IF_FAR = 1;
+	static final int LOGIC_MOVEONLY = 2;
+	static final int LOGIC_STOP_IF_FAR = 3;
+	static final int LOGIC_STOP = 4;
 
 	static final Random rand = new Random();
 	static final int numThread = GlobalParameter.numThread;
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
 	static final ForwardModel fm = new ForwardModel();
+
+	static final int numMaxCase = 200000000;
 
 	class OperationSet {
 		Pack packNow;
@@ -59,14 +60,49 @@ public class WorstScoreEvaluator {
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
 		if (true) {
 			for (Pack pack : packList) {
-				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack);
+				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_ALL);
+				opsetList.addAll(opsetList2);
+			}
+			System.out.println("opsetList.size()=" + opsetList.size());
+		}
+
+		if (opsetList.size() > numMaxCase) {
+			opsetList.clear();
+			for (Pack pack : packList) {
+				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY_IF_FAR);
+				opsetList.addAll(opsetList2);
+			}
+			System.out.println("opsetList.size()=" + opsetList.size());
+		}
+
+		if (opsetList.size() > numMaxCase) {
+			opsetList.clear();
+			for (Pack pack : packList) {
+				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
+				opsetList.addAll(opsetList2);
+			}
+			System.out.println("opsetList.size()=" + opsetList.size());
+		}
+
+		if (opsetList.size() > numMaxCase) {
+			opsetList.clear();
+			for (Pack pack : packList) {
+				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+				opsetList.addAll(opsetList2);
+			}
+			System.out.println("opsetList.size()=" + opsetList.size());
+		}
+
+		if (opsetList.size() > numMaxCase) {
+			opsetList.clear();
+			for (Pack pack : packList) {
+				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
 				opsetList.addAll(opsetList2);
 			}
 			System.out.println("opsetList.size()=" + opsetList.size());
 		}
 
 		// リストアップした初期条件でシミュレーションを実施する。
-
 		// action * action * ai * (ave, min, max, num)
 		double[][][][] scores = new double[6][6][4][4];
 		for (int a = 0; a < 6; a++) {
@@ -274,23 +310,109 @@ public class WorstScoreEvaluator {
 		}
 	}
 
-	private List<OperationSet[]> collectOperationSet(int me, int friend, Pack packNow) throws Exception {
+	private List<OperationSet[]> collectOperationSet(int me, int friend, Pack packNow, int logic) throws Exception {
+
+		double disFar = 3;
 
 		boolean[][] actionExecuteFlag = new boolean[4][7];
 		int[][] instructionSet = new int[4][7];
 		for (int ai = 0; ai < 4; ai++) {
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) {
-				actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
-				instructionSet[ai] = new int[] { WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE, -1, -1, -1, -1, -1, -1 };
-			} else if (ai == me - 10) {
-				actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
-				instructionSet[ai] = new int[] { WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD,
-						WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, -1 };
-			} else {
-				actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
-				instructionSet[ai] = new int[] { WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD,
-						WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, WorstScoreEvaluatorSingle.INSTRUCTION_BOARD, -1 };
+			for (int i = 0; i < 7; i++) {
+				instructionSet[ai][i] = WorstScoreEvaluatorSingle.INSTRUCTION_BOARD;
+			}
+		}
+		if (logic == LOGIC_ALL) {
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+				} else if (ai == me - 10) {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				} else {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				}
+			}
+		} else if (logic == LOGIC_MOVEONLY_IF_FAR) {
+			boolean[] far = new boolean[4];
+			AgentEEE agentMe = packNow.sh.getAgent(me);
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				AgentEEE agent = packNow.sh.getAgent(ai + 10);
+				if (agent == null) continue;
+				double dis = Math.abs(agentMe.x - agent.x) + Math.abs(agentMe.y - agent.y);
+				if (dis > disFar) {
+					far[ai] = true;
+				} else {
+					far[ai] = false;
+				}
+			}
+
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+				} else if (ai == me - 10) {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				} else {
+					if (far[ai]) {
+						actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, false, false };
+					} else {
+						actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+					}
+				}
+			}
+		} else if (logic == LOGIC_MOVEONLY) {
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+				} else if (ai == me - 10) {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				} else {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, false, false };
+				}
+			}
+		} else if (logic == LOGIC_STOP_IF_FAR) {
+			boolean[] far = new boolean[4];
+			AgentEEE agentMe = packNow.sh.getAgent(me);
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				AgentEEE agent = packNow.sh.getAgent(ai + 10);
+				if (agent == null) continue;
+				double dis = Math.abs(agentMe.x - agent.x) + Math.abs(agentMe.y - agent.y);
+				if (dis > disFar) {
+					far[ai] = true;
+				} else {
+					far[ai] = false;
+				}
+			}
+
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+				} else if (ai == me - 10) {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				} else {
+					if (far[ai]) {
+						actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+						instructionSet[ai] = new int[] { WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE, -1, -1, -1, -1, -1, -1 };
+					} else {
+						actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, false, false };
+					}
+				}
+			}
+		} else if (logic == LOGIC_STOP) {
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+				} else if (ai == me - 10) {
+					actionExecuteFlag[ai] = new boolean[] { true, true, true, true, true, true, false };
+				} else {
+					actionExecuteFlag[ai] = new boolean[] { true, false, false, false, false, false, false };
+					instructionSet[ai] = new int[] { WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE, -1, -1, -1, -1, -1, -1 };
+				}
 			}
 		}
 
