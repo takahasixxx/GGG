@@ -27,7 +27,7 @@ public class WorstScoreEvaluator {
 	static final boolean verbose = GlobalParameter.verbose;
 	static final ForwardModel fm = new ForwardModel();
 
-	static final int numMaxCase = 200000000;
+	static final int numMaxCase = 200;
 
 	class OperationSet {
 		Pack packNow;
@@ -312,7 +312,7 @@ public class WorstScoreEvaluator {
 
 	private List<OperationSet[]> collectOperationSet(int me, int friend, Pack packNow, int logic) throws Exception {
 
-		double disFar = 3;
+		double disFar = 2;
 
 		boolean[][] actionExecuteFlag = new boolean[4][7];
 		int[][] instructionSet = new int[4][7];

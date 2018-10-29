@@ -2,6 +2,9 @@ package com.ibm.trl.BBM.mains;
 
 import java.util.TreeMap;
 
+import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.ForwardModel.Pack;
+
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class BridgeForPython {
@@ -65,6 +68,127 @@ public class BridgeForPython {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;
+		}
+	}
+
+	int counter = 0;
+	Pack packNow = null;
+	int[] actions = new int[4];
+	ForwardModel fm = new ForwardModel();
+
+	public void check_env(int flag, byte[] b1, byte[] b2, byte[] b3, byte[] b4, byte[] b5, byte[] b6, byte[] b7) {
+		System.out.println("check_env");
+		MyMatrix board = buffer2Matrix(b1);
+		MyMatrix life = buffer2Matrix(b2);
+		MyMatrix power = buffer2Matrix(b3);
+		MyMatrix owner = buffer2Matrix(b4);
+		MyMatrix dir = buffer2Matrix(b5);
+		MyMatrix flame = buffer2Matrix(b6);
+		MyMatrix info = buffer2Matrix(b7);
+		counter++;
+
+		Ability[] abs = new Ability[4];
+		for (int ai = 0; ai < 4; ai++) {
+			abs[ai] = new Ability();
+			abs[ai].isAlive = info.data[ai][0] == 1;
+			abs[ai].numBombHold = (int) info.data[ai][3];
+			abs[ai].numMaxBomb = 100;
+			abs[ai].strength = (int) info.data[ai][4];
+			abs[ai].strength_fix = (int) info.data[ai][4];
+			abs[ai].kick = info.data[ai][5] == 1;
+		}
+
+		StatusHolder sh = new StatusHolder();
+		for (int ai = 0; ai < 4; ai++) {
+			if (info.data[ai][0] == 0) continue;
+			int x = (int) info.data[ai][1];
+			int y = (int) info.data[ai][2];
+			sh.setAgent(x, y, ai + 10);
+		}
+
+		for (int x = 0; x < 11; x++) {
+			for (int y = 0; y < 11; y++) {
+				int lll = (int) life.data[x][y];
+				if (lll == 0) continue;
+				int ppp = (int) power.data[x][y];
+				int ooo = (int) owner.data[x][y];
+				int ddd = (int) dir.data[x][y];
+				sh.setBomb(x, y, ooo, lll, ddd, ppp);
+			}
+		}
+
+		Pack pack = new Pack(board, flame, abs, sh);
+
+		if (flag == 0) {
+			packNow = pack;
+		} else if (flag == 1) {
+			try {
+				Pack packNextAns = pack;
+				Pack packNext = fm.Step(packNow, actions);
+
+				// アイテム取得時の変化が表現できずに違いがでるため。とりあえず。
+				// packNext.abs = packNextAns.abs;
+
+				for (int ai = 0; ai < 4; ai++) {
+					packNext.abs[ai].numMaxBomb = 100;
+					if (packNext.abs[ai].strength > 4) packNext.abs[ai].strength = 4;
+				}
+
+				for (int x = 0; x < 11; x++) {
+					for (int y = 0; y < 11; y++) {
+						int type = (int) packNext.board.data[x][y];
+						if (Constant.isItem(type)) {
+							packNext.board.data[x][y] = Constant.Passage;
+						}
+					}
+				}
+
+				for (int x = 0; x < 11; x++) {
+					for (int y = 0; y < 11; y++) {
+						int type = (int) packNextAns.board.data[x][y];
+						if (Constant.isItem(type)) {
+							packNextAns.board.data[x][y] = Constant.Passage;
+						}
+					}
+				}
+
+				if (packNext.equals(packNextAns) == false) {
+
+					boolean fff = packNext.equals(packNextAns);
+					System.out.println(fff);
+
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("packNow");
+					System.out.println(packNow.toString());
+					System.out.println("=============================================================");
+					System.out.println("packNextAns");
+					System.out.println(packNextAns.toString());
+					System.out.println("=============================================================");
+					System.out.println("packNext");
+					System.out.println(packNext.toString());
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+					System.out.println("=============================================================");
+
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	public void check_actions(byte[] b1) {
+		System.out.println("check_env");
+		MyMatrix actions = buffer2Matrix(b1);
+		for (int ai = 0; ai < 4; ai++) {
+			this.actions[ai] = (int) actions.data[ai][0];
 		}
 	}
 }
