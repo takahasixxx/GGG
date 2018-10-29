@@ -2,4 +2,5 @@
 /bin
 /data
 /build/BBM/BBM.jar
-__pychache__
+__pycache__
+.idea
