@@ -140,6 +140,13 @@ def main(render=False, interactive=False):
         MyAgentT(),
     ]
 
+    agent_list = [
+        MyAgentT(),
+        MyAgentT(),
+        MyAgentT(),
+        MyAgentT(),
+    ]
+
 
 
     # Environment of FFA competition

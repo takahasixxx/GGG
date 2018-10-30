@@ -654,23 +654,6 @@ public class ForwardModel {
 			boardNext.data[aaaNext.x][aaaNext.y] = aaaNext.agentID;
 		}
 
-		// TODO ÉçÉO
-		if (false) {
-			MyMatrix lifeNext = new MyMatrix(numField, numField);
-			MyMatrix powerNext = new MyMatrix(numField, numField);
-			for (int i = 0; i < numBomb; i++) {
-				BombEEE bbbNext = bombsNext[i];
-				if (bbbNext == null) continue;
-				lifeNext.data[bbbNext.x][bbbNext.y] = bbbNext.life;
-				powerNext.data[bbbNext.x][bbbNext.y] = bbbNext.power;
-			}
-
-			System.out.println("==========================================");
-			System.out.println("==========================================");
-			System.out.println("board picture");
-			BBMUtility.printBoard2(boardNext, boardNext, lifeNext, powerNext);
-		}
-
 		return new Pack(boardNext, flameLifeNext, absNext, shNext);
 	}
 }

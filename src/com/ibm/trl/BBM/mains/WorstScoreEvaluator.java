@@ -27,7 +27,7 @@ public class WorstScoreEvaluator {
 	static final boolean verbose = GlobalParameter.verbose;
 	static final ForwardModel fm = new ForwardModel();
 
-	static final int numMaxCase = 200;
+	static final int numMaxCase = 200000000;
 
 	class OperationSet {
 		Pack packNow;
@@ -116,7 +116,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// シングルスレッドバージョン
-		if (false) {
+		if (true) {
 			WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
 			for (OperationSet[] opset : opsetList) {
 
@@ -169,7 +169,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// マルチスレッドバージョン
-		if (true) {
+		if (false) {
 			List<Future<?>> list = new ArrayList<Future<?>>();
 			for (OperationSet[] opset : opsetList) {
 				ScoreComputingTask ggg = new ScoreComputingTask(me, friend, opset, scores);

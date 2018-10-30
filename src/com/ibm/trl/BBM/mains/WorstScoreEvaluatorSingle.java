@@ -75,10 +75,10 @@ public class WorstScoreEvaluatorSingle {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// 仲間エージェントの動き。最初の位置から動かない。
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix[][] stepMaps_stop = new MyMatrix[numt][4];
+		MyMatrix[][] stepMaps_stay = new MyMatrix[numt][4];
 		for (int ai = 0; ai < 4; ai++) {
 			for (int t = 0; t < numt; t++) {
-				stepMaps_stop[t][ai] = new MyMatrix(numField, numField, numt);
+				stepMaps_stay[t][ai] = new MyMatrix(numField, numField, numt);
 			}
 		}
 
@@ -92,17 +92,17 @@ public class WorstScoreEvaluatorSingle {
 					agentLast = packNow.sh.getAgent(ai + 10);
 				}
 				if (agentLast == null) continue;
-				stepMaps_stop[t][ai].data[agentLast.x][agentLast.y] = 0;
+				stepMaps_stay[t][ai].data[agentLast.x][agentLast.y] = 0;
 			}
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// 敵エージェントの動き
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix[][] stepMaps = new MyMatrix[numt][4];
+		MyMatrix[][] stepMaps_move = new MyMatrix[numt][4];
 		for (int ai = 0; ai < 4; ai++) {
 			for (int t = 0; t < numt; t++) {
-				stepMaps[t][ai] = new MyMatrix(numField, numField, numt);
+				stepMaps_move[t][ai] = new MyMatrix(numField, numField, numt);
 			}
 		}
 
@@ -110,7 +110,7 @@ public class WorstScoreEvaluatorSingle {
 			Pack packNow = packsNA[0];
 			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
 			if (agentNow == null) continue;
-			stepMaps[0][ai].data[agentNow.x][agentNow.y] = 0;
+			stepMaps_move[0][ai].data[agentNow.x][agentNow.y] = 0;
 		}
 
 		for (int ai = 0; ai < 4; ai++) {
@@ -121,7 +121,7 @@ public class WorstScoreEvaluatorSingle {
 
 				for (int x = 0; x < numField; x++) {
 					for (int y = 0; y < numField; y++) {
-						double stepNow = stepMaps[t][ai].data[x][y];
+						double stepNow = stepMaps_move[t][ai].data[x][y];
 						if (stepNow == numt) continue;
 
 						// 遷移先の数を数える。
@@ -155,10 +155,16 @@ public class WorstScoreEvaluatorSingle {
 							int x2 = x + dx;
 							int y2 = y + dy;
 							if (able[dir] == false) continue;
-							// double stepNext = stepNow + 1;
-							double stepNext = t + 1;
-							if (stepNext < stepMaps[t + 1][ai].data[x2][y2]) {
-								stepMaps[t + 1][ai].data[x2][y2] = stepNext;
+							// TODO どっちがいいのだろうか？
+							double stepNext;
+							if (dir == 0) {
+								stepNext = stepNow;
+							} else {
+								stepNext = stepNow + 1;
+							}
+							// double stepNext = t + 1;
+							if (stepNext < stepMaps_move[t + 1][ai].data[x2][y2]) {
+								stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
 							}
 						}
 					}
@@ -167,8 +173,8 @@ public class WorstScoreEvaluatorSingle {
 				if (instruction != INSTRUCTION_BOARD) {
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
-							if (stepMaps[t][ai].data[x][y] < stepMaps[t + 1][ai].data[x][y]) {
-								stepMaps[t + 1][ai].data[x][y] = stepMaps[t][ai].data[x][y];
+							if (stepMaps_move[t][ai].data[x][y] < stepMaps_move[t + 1][ai].data[x][y]) {
+								stepMaps_move[t + 1][ai].data[x][y] = stepMaps_move[t][ai].data[x][y];
 							}
 						}
 					}
@@ -178,7 +184,7 @@ public class WorstScoreEvaluatorSingle {
 					for (int y = 0; y < numField; y++) {
 						int type = (int) packNext.board.data[x][y];
 						if (type == Constant.Flames) {
-							stepMaps[t + 1][ai].data[x][y] = numt;
+							stepMaps_move[t + 1][ai].data[x][y] = numt;
 						}
 					}
 				}
@@ -265,27 +271,27 @@ public class WorstScoreEvaluatorSingle {
 								if (ai2 == ai) continue;
 
 								// TODO 友達の計算の仕方をもう少し賢くする。
-								MyMatrix stepMapNext = stepMaps[t + 1][ai2];
-								MyMatrix stepMapNow = stepMaps[t][ai2];
+								MyMatrix stepMapNext = stepMaps_move[t + 1][ai2];
+								MyMatrix stepMapNow = stepMaps_move[t][ai2];
 								if (ai == 0) {
 									if (ai2 == 2) {
-										stepMapNext = stepMaps_stop[t + 1][ai2];
-										stepMapNow = stepMaps_stop[t][ai2];
+										stepMapNext = stepMaps_stay[t + 1][ai2];
+										stepMapNow = stepMaps_stay[t][ai2];
 									}
 								} else if (ai == 1) {
 									if (ai2 == 3) {
-										stepMapNext = stepMaps_stop[t + 1][ai2];
-										stepMapNow = stepMaps_stop[t][ai2];
+										stepMapNext = stepMaps_stay[t + 1][ai2];
+										stepMapNow = stepMaps_stay[t][ai2];
 									}
 								} else if (ai == 2) {
 									if (ai2 == 0) {
-										stepMapNext = stepMaps_stop[t + 1][ai2];
-										stepMapNow = stepMaps_stop[t][ai2];
+										stepMapNext = stepMaps_stay[t + 1][ai2];
+										stepMapNow = stepMaps_stay[t][ai2];
 									}
 								} else if (ai == 3) {
 									if (ai2 == 1) {
-										stepMapNext = stepMaps_stop[t + 1][ai2];
-										stepMapNow = stepMaps_stop[t][ai2];
+										stepMapNext = stepMaps_stay[t + 1][ai2];
+										stepMapNow = stepMaps_stay[t][ai2];
 									}
 								}
 								double stepNext = stepMapNext.data[x2][y2];
@@ -294,11 +300,11 @@ public class WorstScoreEvaluatorSingle {
 										nearestStepNext = stepNext;
 									}
 								} else {
-									double stepSure1 = stepMapNow.data[x2][y2];
-									double stepSure2 = stepMapNext.data[x][y];
-									if (stepSure1 != numt && stepSure2 != numt) {
-										if (stepSure2 < nearestStepNext) {
-											nearestStepNext = stepSure2;
+									double stepCross1 = stepMapNow.data[x2][y2];
+									double stepCross2 = stepMapNext.data[x][y];
+									if (stepCross1 != numt && stepCross2 != numt) {
+										if (stepCross2 < nearestStepNext) {
+											nearestStepNext = Math.min(stepCross1, stepCross2);
 										}
 									}
 								}

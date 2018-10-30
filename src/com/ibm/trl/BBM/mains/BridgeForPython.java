@@ -44,7 +44,8 @@ public class BridgeForPython {
 
 	public void episode_end(int pid, int me, int reward) {
 		try {
-			System.out.println("episode_end, " + me + ", reward = " + reward + ", pid=" + pid);
+			double time = 1.0 * timeTotal / numcall;
+			System.out.println("episode_end, " + me + ", reward = " + reward + ", pid=" + pid + ", timeAverage=" + time + ", timeMax=" + timeMax);
 			Agent[] agents = agentsMap.get(pid);
 			agents[me - 10].episode_end(reward);
 			agents[me - 10] = new Agent(me);
@@ -53,18 +54,29 @@ public class BridgeForPython {
 		}
 	}
 
+	static long timeMax = 0;
+	static long timeTotal = 0;
+	static int numcall = 0;
+
 	public int act(int pid, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer, byte[] alive_buffer,
 			byte[] enemies_list_buffer) {
-		MyMatrix board = buffer2Matrix(board_buffer);
-		MyMatrix bomb_blast_strength = buffer2Matrix(bomb_blast_strength_buffer);
-		MyMatrix bomb_life = buffer2Matrix(bomb_life_buffer);
-		MyMatrix alive = buffer2Matrix(alive_buffer);
-		MyMatrix enemies = buffer2Matrix(enemies_list_buffer);
 
 		try {
-			// System.out.println("aa");
+			long timeStart = System.currentTimeMillis();
+			MyMatrix board = buffer2Matrix(board_buffer);
+			MyMatrix bomb_blast_strength = buffer2Matrix(bomb_blast_strength_buffer);
+			MyMatrix bomb_life = buffer2Matrix(bomb_life_buffer);
+			MyMatrix alive = buffer2Matrix(alive_buffer);
+			MyMatrix enemies = buffer2Matrix(enemies_list_buffer);
 			Agent[] agents = agentsMap.get(pid);
-			return agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+			int action = agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+			long timeEnd = System.currentTimeMillis();
+			long timeDel = timeEnd - timeStart;
+			timeTotal += timeDel;
+			numcall++;
+			if (numcall > 100 && timeDel > timeMax) timeMax = timeDel;
+			System.out.println(timeDel);
+			return action;
 		} catch (Exception e) {
 			e.printStackTrace();
 			return 0;
