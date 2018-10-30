@@ -83,16 +83,52 @@ public class WorstScoreEvaluatorSingle {
 		}
 
 		for (int ai = 0; ai < 4; ai++) {
-			Pack packStart = packsNA[0];
-			AgentEEE agentLast = packStart.sh.getAgent(ai + 10);
-			for (int t = 0; t < numt; t++) {
+			Pack packNow = packsNA[0];
+			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+			if (agentNow == null) continue;
+			stepMaps_stay[0][ai].data[agentNow.x][agentNow.y] = 0;
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			for (int t = 0; t < numt - 1; t++) {
 				int instruction = instructions[t][ai];
+				Pack packNow = packsNA[t];
+				Pack packNext = packsNA[t + 1];
+
 				if (instruction == INSTRUCTION_BOARD) {
-					Pack packNow = packsNA[t];
-					agentLast = packNow.sh.getAgent(ai + 10);
+					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
+					if (agentNow == null || agentNext == null) continue;
+					int x = agentNow.x;
+					int y = agentNow.y;
+					double stepNow = stepMaps_stay[t][ai].data[x][y];
+					int x2 = agentNext.x;
+					int y2 = agentNext.y;
+
+					if (true) {
+						double stepNext;
+						if (x == x2 && y == y2) {
+							stepNext = stepNow;
+						} else {
+							// TODO どっちがいいのだろうか？
+							// stepNext = stepNow + 1;
+							stepNext = t + 1;
+						}
+						stepMaps_stay[t + 1][ai].data[x2][y2] = stepNext;
+					}
+				} else {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double stepNow = stepMaps_stay[t][ai].data[x][y];
+							if (stepNow == numt) continue;
+
+							if (true) {
+								double stepNext = stepNow;
+								stepMaps_stay[t + 1][ai].data[x][y] = stepNext;
+							}
+						}
+					}
 				}
-				if (agentLast == null) continue;
-				stepMaps_stay[t][ai].data[agentLast.x][agentLast.y] = 0;
 			}
 		}
 
@@ -119,72 +155,92 @@ public class WorstScoreEvaluatorSingle {
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
 
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						double stepNow = stepMaps_move[t][ai].data[x][y];
-						if (stepNow == numt) continue;
+				if (instruction == INSTRUCTION_BOARD) {
+					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
+					if (agentNow == null || agentNext == null) continue;
+					int x = agentNow.x;
+					int y = agentNow.y;
+					double stepNow = stepMaps_move[t][ai].data[x][y];
+					int x2 = agentNext.x;
+					int y2 = agentNext.y;
 
-						// 遷移先の数を数える。
-						boolean[] able = new boolean[5];
-						for (int[] vec : GlobalParameter.onehopList) {
-							int dir = vec[0];
-							int dx = vec[1];
-							int dy = vec[2];
-							int x2 = x + dx;
-							int y2 = y + dy;
-							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-							if (instruction == INSTRUCTION_BOARD) {
-								AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
-								if (agentNext == null) continue;
-								if (x2 != agentNext.x || y2 != agentNext.y) continue;
-							} else if (instruction == INSTRUCTION_STAY) {
-								if (dx != 0 || dy != 0) continue;
-							} else if (instruction == INSTRUCTION_ALLMOVE) {
-							}
-							int type = (int) packNext.board.data[x2][y2];
-							if (Constant.isWall(type)) continue;
-							if (dir != 0 && type == Constant.Bomb) continue;
-							if (type == Constant.Flames) continue;
-							able[dir] = true;
-						}
-
-						for (int[] vec : GlobalParameter.onehopList) {
-							int dir = vec[0];
-							int dx = vec[1];
-							int dy = vec[2];
-							int x2 = x + dx;
-							int y2 = y + dy;
-							if (able[dir] == false) continue;
+					if (true) {
+						double stepNext;
+						if (x == x2 && y == y2) {
+							stepNext = stepNow;
+						} else {
 							// TODO どっちがいいのだろうか？
-							double stepNext;
-							if (dir == 0) {
-								stepNext = stepNow;
-							} else {
-								stepNext = stepNow + 1;
-							}
-							// double stepNext = t + 1;
-							if (stepNext < stepMaps_move[t + 1][ai].data[x2][y2]) {
-								stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
-							}
+							// stepNext = stepNow + 1;
+							stepNext = t + 1;
 						}
+						stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
 					}
-				}
-
-				if (instruction != INSTRUCTION_BOARD) {
+				} else if (instruction == INSTRUCTION_STAY) {
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
-							if (stepMaps_move[t][ai].data[x][y] < stepMaps_move[t + 1][ai].data[x][y]) {
-								stepMaps_move[t + 1][ai].data[x][y] = stepMaps_move[t][ai].data[x][y];
+							double stepNow = stepMaps_move[t][ai].data[x][y];
+							if (stepNow == numt) continue;
+
+							if (true) {
+								double stepNext = stepNow;
+								stepMaps_move[t + 1][ai].data[x][y] = stepNext;
 							}
 						}
 					}
-				}
+				} else if (instruction == INSTRUCTION_ALLMOVE) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double stepNow = stepMaps_move[t][ai].data[x][y];
+							if (stepNow == numt) continue;
 
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						int type = (int) packNext.board.data[x][y];
-						if (type == Constant.Flames) {
-							stepMaps_move[t + 1][ai].data[x][y] = numt;
+							// 遷移先の数を数える。
+							boolean[] able = new boolean[5];
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+								int type = (int) packNext.board.data[x2][y2];
+								if (Constant.isWall(type)) continue;
+								if (dir != 0 && type == Constant.Bomb) continue;
+								if (type == Constant.Flames) continue;
+								able[dir] = true;
+							}
+
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (able[dir] == false) continue;
+
+								if (true) {
+									double stepNext;
+									if (dir == 0) {
+										stepNext = stepNow;
+									} else {
+										// TODO どっちがいいのだろうか？
+										// stepNext = stepNow + 1;
+										stepNext = t + 1;
+									}
+									if (stepNext < stepMaps_move[t + 1][ai].data[x2][y2]) {
+										stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
+									}
+								}
+							}
+						}
+					}
+
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								stepMaps_move[t + 1][ai].data[x][y] = numt;
+							}
 						}
 					}
 				}
@@ -196,13 +252,6 @@ public class WorstScoreEvaluatorSingle {
 		// 全行動の経路のスコアを計算してみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		// TODO
-		if (false) {
-			System.out.println("=================================");
-			System.out.println(packsOrg[0]);
-			System.out.println(packsOrg[1]);
-		}
 
 		double[][] scores = new double[4][2];
 		for (int ai = 0; ai < 4; ai++) {

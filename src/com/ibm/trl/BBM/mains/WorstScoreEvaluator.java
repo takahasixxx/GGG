@@ -55,7 +55,8 @@ public class WorstScoreEvaluator {
 
 		List<Pack> packList = new ArrayList<Pack>();
 		LinkedList<BombEEE> bbbs = new LinkedList<BombEEE>();
-		collectPackInitStates(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
+		// collectPackInitStates(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
+		collectPackInitStates_ALLSTOP(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
 
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
 		if (true) {
@@ -116,7 +117,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// シングルスレッドバージョン
-		if (true) {
+		if (false) {
 			WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
 			for (OperationSet[] opset : opsetList) {
 
@@ -169,7 +170,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// マルチスレッドバージョン
-		if (false) {
+		if (true) {
 			List<Future<?>> list = new ArrayList<Future<?>>();
 			for (OperationSet[] opset : opsetList) {
 				ScoreComputingTask ggg = new ScoreComputingTask(me, friend, opset, scores);
@@ -299,6 +300,67 @@ public class WorstScoreEvaluator {
 			packList.add(packNow);
 		} else {
 			BombTracker.Node node = nodes.get(index);
+			for (int dir = 0; dir < 5; dir++) {
+				if (node.dirs[dir]) {
+					BombEEE bbb = new BombEEE(node.x, node.y, -1, node.life, dir, node.power);
+					bbbs.addLast(bbb);
+					collectPackInitStates(index + 1, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
+					bbbs.removeLast();
+				}
+			}
+		}
+	}
+
+	private void collectPackInitStates_ALLSTOP(int index, int me, int maxPower, Ability[] abs, MapInformation map, List<BombTracker.Node> nodes, MyMatrix flameLife, LinkedList<BombEEE> bbbs,
+			List<Pack> packList) throws Exception {
+		if (index == nodes.size()) {
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//
+			// 基本データを作る。
+			//
+			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			Pack packNow;
+			if (true) {
+				Ability[] abs2 = new Ability[4];
+				for (int ai = 0; ai < 4; ai++) {
+					abs2[ai] = new Ability(abs[ai]);
+					if (ai + 10 == me) continue;
+					abs2[ai].kick = true;
+					abs2[ai].numMaxBomb = 3;
+					abs2[ai].numBombHold = 3;
+					if (abs2[ai].strength_fix == -1) {
+						abs2[ai].strength = maxPower;
+					} else {
+						abs2[ai].strength = abs2[ai].strength_fix;
+					}
+				}
+
+				StatusHolder sh = new StatusHolder();
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = map.getType(x, y);
+						if (Constant.isAgent(type)) {
+							sh.setAgent(x, y, type);
+						}
+					}
+				}
+
+				for (BombEEE bbb : bbbs) {
+					sh.setBomb(bbb.x, bbb.y, -1, bbb.life, bbb.dir, bbb.power);
+				}
+
+				packNow = new Pack(map.board, flameLife, abs2, sh);
+			}
+
+			packList.add(packNow);
+		} else {
+			BombTracker.Node node = nodes.get(index);
+			// 停止状態があったら、移動状態は考慮しない。
+			if (node.dirs[0]) {
+				for (int i = 1; i < 5; i++) {
+					node.dirs[i] = false;
+				}
+			}
 			for (int dir = 0; dir < 5; dir++) {
 				if (node.dirs[dir]) {
 					BombEEE bbb = new BombEEE(node.x, node.y, -1, node.life, dir, node.power);
