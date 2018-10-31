@@ -98,7 +98,7 @@ public class GlobalParameter {
 			}
 		}
 
-		int onePack = 400;
+		int onePack = 100;
 
 		if (numGame % onePack == 0) {
 			// ‚µ‚½‚¢ƒpƒ‰ƒ[ƒ^İ’è‚ğì‚é
@@ -109,8 +109,8 @@ public class GlobalParameter {
 					double attackCell = 2.5;
 					// for (double rateLevel : new double[] { 1, 1.1, 1.2, 1.3, 1.4 }) {
 					// for (double rateLevel : new double[] { 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3 }) {
-					for (double rateLevel : new double[] { 2, 3, 4, 5, 6, 7, 8, 9, 10 }) {
-						// for (double rateLevel : new double[] { 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3 }) {
+					// for (double rateLevel : new double[] { 2, 3, 4, 5, 6, 7, 8, 9, 10 }) {
+					for (double rateLevel : new double[] { 1.2, 1.4, 1.6, 1.8, 2, 2.2, 2.4, 2.6, 2.8, 3 }) {
 						double[] param = new double[] { rateLevel, usualCell, attackCell, 1000 };
 						params.add(param);
 					}

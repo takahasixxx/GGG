@@ -134,16 +134,16 @@ def main(render=False, interactive=False):
     ]
 
     agent_list = [
-        MyAgentO(),
         MyAgentT(),
-        MyAgentO(),
+        MyAgentT(),
+        MyAgentT(),
         MyAgentT(),
     ]
 
     agent_list = [
+        MyAgentO(),
         MyAgentT(),
-        MyAgentT(),
-        MyAgentT(),
+        MyAgentO(),
         MyAgentT(),
     ]
 
