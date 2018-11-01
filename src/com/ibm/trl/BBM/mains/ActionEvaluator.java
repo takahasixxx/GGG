@@ -366,55 +366,23 @@ public class ActionEvaluator {
 
 			if (aiTarget != -1) {
 				ForwardModel fm = new ForwardModel();
-				if (numVisibleTeam == 2) {
-					int amin = -1;
-					int bmin = -1;
-					for (int a = 0; a < 6; a++) {
-						for (int b = 0; b < 6; b++) {
-							double scoreMe = worstScores[a][b][me - 10][1];
-							double scoreFriend = worstScores[a][b][friend - 10][1];
-							double numMe = worstScores[a][b][me - 10][3];
-							double numFriend = worstScores[a][b][friend - 10][3];
-							if (numMe == 0) continue;
-							if (numFriend == 0) continue;
-							if (scoreMe < attackThreshold) continue;
-							if (scoreFriend < attackThreshold) continue;
-							int[] actions = new int[4];
-							actions[me - 10] = a;
-							actions[friend - 10] = b;
-							Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
-							int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
-							if (temp < killScoreMin) {
-								killScoreMin = temp;
-								amin = a;
-								bmin = b;
-							}
-						}
+				int amin = -1;
+				for (int a = 0; a < 6; a++) {
+					double scoreMe = safetyScoreWorst[me - 10][a];
+					if (scoreMe < attackThreshold) continue;
+					int[] actions = new int[4];
+					actions[me - 10] = a;
+					Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
+					int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
+					if (temp < killScoreMin) {
+						killScoreMin = temp;
+						amin = a;
 					}
-					if (amin != -1 && bmin != -1) {
-						actionFinal = amin;
-						reason = "より詰める。";
-						System.out.println("より詰める。！！！" + actionFinal);
-					}
-				} else if (numVisibleTeam == 1) {
-					int amin = -1;
-					for (int a = 0; a < 6; a++) {
-						double score = safetyScoreWorst[me - 10][a];
-						if (score < attackThreshold) continue;
-						int[] actions = new int[4];
-						actions[me - 10] = a;
-						Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
-						int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
-						if (temp < killScoreMin) {
-							killScoreMin = temp;
-							amin = a;
-						}
-					}
-					if (amin != -1) {
-						actionFinal = amin;
-						reason = "より詰める。";
-						System.out.println("より詰める。！！！" + actionFinal);
-					}
+				}
+				if (amin != -1) {
+					actionFinal = amin;
+					reason = "より詰める。";
+					System.out.println("より詰める。！！！" + actionFinal);
 				}
 			}
 		}
@@ -424,6 +392,49 @@ public class ActionEvaluator {
 		// 自分の安全を確保した状態で、相手を危険にできるケースを探す。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// 単独一手先
+		if (numBrakableWood == 0 && actionFinal == -1) {
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+				double min = Double.POSITIVE_INFINITY;
+				double max = Double.NEGATIVE_INFINITY;
+				for (int a = 0; a < 6; a++) {
+					double scoreMe = safetyScoreWorst[me - 10][a];
+					double scoreEnemy = safetyScoreAverage[ai][a];
+					if (Double.isNaN(scoreEnemy)) continue;
+					if (scoreMe < attackThreshold) continue;
+					if (scoreMe < scoreEnemy) continue;
+					if (scoreEnemy < min) {
+						min = scoreEnemy;
+					}
+					if (scoreEnemy > max) {
+						max = scoreEnemy;
+					}
+				}
+
+				// 自分のアクションが何ら影響を与えなければ飛ばす。
+				if (min == max) continue;
+
+				if (min != Double.POSITIVE_INFINITY) {
+					ArrayList<Integer> set = new ArrayList<Integer>();
+					for (int a = 0; a < 6; a++) {
+						double scoreMe = safetyScoreWorst[me - 10][a];
+						double scoreEnemy = safetyScoreAverage[ai][a];
+						if (Double.isNaN(scoreEnemy)) continue;
+						if (scoreMe < attackThreshold) continue;
+						if (scoreMe < scoreEnemy) continue;
+						if (scoreEnemy == min) {
+							set.add(a);
+						}
+					}
+					int index = rand.nextInt(set.size());
+					actionFinal = set.get(index);
+					reason = "攻撃する。1手先。";
+				}
+			}
+		}
 
 		// 単独二手先
 		// if (false) {

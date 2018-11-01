@@ -27,7 +27,7 @@ public class WorstScoreEvaluator {
 	static final boolean verbose = GlobalParameter.verbose;
 	static final ForwardModel fm = new ForwardModel();
 
-	static final int numMaxCase = 200000000;
+	static final int numMaxCase = 120;
 
 	class OperationSet {
 		Pack packNow;
@@ -57,50 +57,85 @@ public class WorstScoreEvaluator {
 		LinkedList<BombEEE> bbbs = new LinkedList<BombEEE>();
 		// collectPackInitStates(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
 		collectPackInitStates_ALLSTOP(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
+		System.out.println("packList.size()=" + packList.size());
+
+		int numVisibleAgent = 0;
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				int type = map.getType(x, y);
+				if (Constant.isAgent(type)) numVisibleAgent++;
+			}
+		}
 
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
-		if (true) {
+		if (numVisibleAgent <= 3) {
 			for (Pack pack : packList) {
 				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_ALL);
 				opsetList.addAll(opsetList2);
 			}
 			System.out.println("opsetList.size()=" + opsetList.size());
-		}
 
-		if (opsetList.size() > numMaxCase) {
-			opsetList.clear();
-			for (Pack pack : packList) {
-				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY_IF_FAR);
-				opsetList.addAll(opsetList2);
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
 			}
-			System.out.println("opsetList.size()=" + opsetList.size());
-		}
 
-		if (opsetList.size() > numMaxCase) {
-			opsetList.clear();
-			for (Pack pack : packList) {
-				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
-				opsetList.addAll(opsetList2);
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
 			}
-			System.out.println("opsetList.size()=" + opsetList.size());
-		}
 
-		if (opsetList.size() > numMaxCase) {
-			opsetList.clear();
+		} else {
 			for (Pack pack : packList) {
 				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
 				opsetList.addAll(opsetList2);
 			}
 			System.out.println("opsetList.size()=" + opsetList.size());
+
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
+			}
 		}
 
-		if (opsetList.size() > numMaxCase) {
-			opsetList.clear();
-			for (Pack pack : packList) {
-				List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
-				opsetList.addAll(opsetList2);
+		if (false) {
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY_IF_FAR);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
 			}
-			System.out.println("opsetList.size()=" + opsetList.size());
+
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
+			}
+			if (opsetList.size() > numMaxCase) {
+				opsetList.clear();
+				for (Pack pack : packList) {
+					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+					opsetList.addAll(opsetList2);
+				}
+				System.out.println("opsetList.size()=" + opsetList.size());
+			}
 		}
 
 		// リストアップした初期条件でシミュレーションを実施する。
@@ -117,7 +152,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// シングルスレッドバージョン
-		if (false) {
+		if (true) {
 			WorstScoreEvaluatorSingle wses = new WorstScoreEvaluatorSingle();
 			for (OperationSet[] opset : opsetList) {
 
@@ -140,7 +175,19 @@ public class WorstScoreEvaluator {
 					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
-				double[][] score_temp = wses.Do3(packs, instructions);
+				// double[][] score_temp = wses.Do3(packs, instructions);
+				double[][] score_temp = wses.Do3_HighSpeed(packs, instructions);
+
+				// TODO
+				if (false) {
+					double[][] temp2 = wses.Do3_HighSpeed(packs, instructions);
+					for (int ai = 0; ai < 4; ai++) {
+						if (score_temp[ai][1] == 0) continue;
+						if (score_temp[ai][0] != temp2[ai][0]) {
+							System.out.println("ereorror");
+						}
+					}
+				}
 				for (int[] actions : opset[0].actionsList) {
 					int firstAction = actions[me - 10];
 					int secondAction = 0;
@@ -170,7 +217,7 @@ public class WorstScoreEvaluator {
 		}
 
 		// マルチスレッドバージョン
-		if (true) {
+		if (false) {
 			List<Future<?>> list = new ArrayList<Future<?>>();
 			for (OperationSet[] opset : opsetList) {
 				ScoreComputingTask ggg = new ScoreComputingTask(me, friend, opset, scores);
@@ -223,6 +270,11 @@ public class WorstScoreEvaluator {
 				}
 
 				double[][] score_temp = wses.Do3(packs, instructions);
+				// TODO test
+				if (false) {
+					WorstScoreEvaluatorSingle2 wses2 = new WorstScoreEvaluatorSingle2();
+					score_temp = wses2.Do3(me, packs, instructions);
+				}
 				synchronized (scores) {
 					for (int[] actions : opset[0].actionsList) {
 						int firstAction = actions[me - 10];
@@ -495,7 +547,9 @@ public class WorstScoreEvaluator {
 							OperationSet[] find = null;
 							for (OperationSet[] opsets : opsetList) {
 								Pack packTarget = opsets[0].packNext;
-								if (packNext.equals(packTarget) == true) {
+								// TODO 同じ盤面かどうかのチェックを簡略化する。
+								if (packNext.sh.equals(packTarget.sh) == true) {
+									// if (packNext.equals(packTarget) == true) {
 									find = opsets;
 									break;
 								}

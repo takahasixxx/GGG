@@ -75,7 +75,7 @@ public class BridgeForPython {
 			timeTotal += timeDel;
 			numcall++;
 			if (numcall > 100 && timeDel > timeMax) timeMax = timeDel;
-			System.out.println(timeDel);
+			System.out.println("timeDel = " + timeDel);
 			return action;
 		} catch (Exception e) {
 			e.printStackTrace();

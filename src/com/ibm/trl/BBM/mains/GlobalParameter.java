@@ -83,7 +83,7 @@ public class GlobalParameter {
 
 	static public void FinishOneEpisode(int me, int numFrame, int reward, double numItemGet) throws Exception {
 		if (me == 11) {
-			lastFrame = numField;
+			lastFrame = numFrame;
 			return;
 		}
 
@@ -104,7 +104,7 @@ public class GlobalParameter {
 			// ‚µ‚½‚¢ƒpƒ‰ƒ[ƒ^İ’è‚ğì‚é
 			List<double[]> params = new ArrayList<double[]>();
 			if (true) {
-				if (true) {
+				if (false) {
 					double usualCell = 3.5;
 					double attackCell = 2.5;
 					// for (double rateLevel : new double[] { 1, 1.1, 1.2, 1.3, 1.4 }) {
@@ -116,8 +116,8 @@ public class GlobalParameter {
 					}
 				}
 
-				if (false) {
-					double rateLevel = 8;
+				if (true) {
+					double rateLevel = 1.6;
 					double usualCell = 3.5;
 					double attackCell = 2.5;
 					double[] param = new double[] { rateLevel, usualCell, attackCell, 1000 };
