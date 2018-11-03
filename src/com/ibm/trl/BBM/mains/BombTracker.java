@@ -11,8 +11,8 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class BombTracker {
 
-	static boolean verbose = GlobalParameter.verbose;
-	static int numField = GlobalParameter.numField;
+	static final boolean verbose = GlobalParameter.verbose;
+	static final int numField = GlobalParameter.numField;
 
 	static public class Node {
 		public int x;

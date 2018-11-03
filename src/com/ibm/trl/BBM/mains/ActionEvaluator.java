@@ -666,6 +666,10 @@ public class ActionEvaluator {
 								actionSelected = findMostSafetyAction(safetyScoreAverage[me - 10], safetyScoreAverage[friend - 10], -1);
 								if (actionSelected == -1) {
 									actionSelected = findMostSafetyAction(safetyScoreAverage[me - 10], null, -1);
+									if (actionSelected == -1) {
+										actionSelected = rand.nextInt(6);
+										System.out.println("完全に死ぬ。");
+									}
 								}
 							}
 						}
@@ -673,7 +677,7 @@ public class ActionEvaluator {
 				}
 			}
 			actionFinal = actionSelected;
-			reason = "もっとも安全なアクションを選ぶ";
+			reason = "もっとも安全なアクションを選ぶ。";
 		}
 
 		String line = String.format("%s, action=%d", reason, actionFinal);

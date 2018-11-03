@@ -24,11 +24,11 @@ public class WorstScoreEvaluator {
 	static final int numThread = GlobalParameter.numThread;
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
-	static final ForwardModel fm = new ForwardModel();
 
-	static final int numMaxCase = 120;
-	// static final int numMaxCase = 120000000;
+	// static final int numMaxCase = 120;
+	static final int numMaxCase = 120000000;
 
+	ForwardModel fm = new ForwardModel();
 	ModelParameter param;
 	WorstScoreEvaluatorSingle wses;
 
@@ -76,8 +76,8 @@ public class WorstScoreEvaluator {
 		}
 
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
-		// if (true) {
-		if (numVisibleAgent <= 3) {
+		if (true) {
+			// if (numVisibleAgent <= 3) {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
@@ -217,7 +217,7 @@ public class WorstScoreEvaluator {
 					for (int ai = 0; ai < 4; ai++) {
 						for (int i = 0; i < 2; i++) {
 							if (temp1[ai][i] != temp2[ai][i]) {
-								System.out.println("ERRORRRRRRRRRRRRRRRRR!!!!!!!!!!!!!!!!!!!!!");
+								System.out.println("ERRORRRRRRRRRRRRRRR!!!!!!!!!!!!!!!!!!!!!");
 								System.exit(0);
 							}
 						}

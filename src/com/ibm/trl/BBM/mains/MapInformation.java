@@ -4,7 +4,7 @@ import ibm.ANACONDA.Core.MyMatrix;
 
 public class MapInformation {
 
-	static int numField = GlobalParameter.numField;
+	static final int numField = GlobalParameter.numField;
 
 	public MyMatrix board;
 	public MyMatrix power;

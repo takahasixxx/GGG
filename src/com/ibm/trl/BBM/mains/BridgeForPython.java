@@ -19,13 +19,12 @@ public class BridgeForPython {
 	class Game {
 		int gameID = -1;
 		ModelParameter param;
-		Agent[] agents;
+		Agent[] agents = new Agent[4];
 		int[] rewards = null;
 
-		public Game(int gameID, ModelParameter param, Agent[] agents) throws Exception {
+		public Game(int gameID, ModelParameter param) throws Exception {
 			this.gameID = gameID;
 			this.param = param;
-			this.agents = agents;
 		}
 	}
 
@@ -55,19 +54,22 @@ public class BridgeForPython {
 	 * 
 	 *************************************************************************************************/
 
-	int onePack = 100;
+	int onePack = 400;
 
 	public void start_game(int pid) {
 		try {
-			System.out.println("start_game, pid=" + pid);
+			System.out.println("BridgeForPython, start_game, pid=" + pid);
 
 			List<ModelParameter> params = new ArrayList<ModelParameter>();
 			if (true) {
 				double usualCell = 3.5;
 				double attackCell = 2.5;
-				for (double rateLevel : new double[] { 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0 }) {
-					// for (double rateLevel : new double[] { 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0 }) {
-					for (double gainOffset : new double[] { 1.2, 1.4, 1.6, 1.8, 2.0 }) {
+				// for (double rateLevel : new double[] { 1.5 }) {
+				for (double rateLevel : new double[] { 1.25 }) {
+					// for (double rateLevel : new double[] { 1.2, 1.4 }) {
+					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
+					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
+					for (double gainOffset : new double[] { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8 }) {
 
 						ModelParameter param = new ModelParameter();
 						param.rateLevel = rateLevel;
@@ -82,12 +84,7 @@ public class BridgeForPython {
 			synchronized (gameMap) {
 				ModelParameter param = params.get(gameCounter / onePack % params.size());
 
-				Agent[] agents = new Agent[4];
-				for (int ai = 0; ai < 4; ai++) {
-					agents[ai] = new Agent(ai + 10, param);
-				}
-
-				Game game = new Game(gameCounter, param, agents);
+				Game game = new Game(gameCounter, param);
 				gameMap.put(pid, game);
 				gameCounter++;
 			}
@@ -100,7 +97,11 @@ public class BridgeForPython {
 
 	public void finish_game(int pid, int r1, int r2, int r3, int r4) {
 		try {
-			System.out.println("finish_game, pid=" + pid);
+			System.out.println("BridgeForPython, finish_game, pid=" + pid);
+
+			if (r1 == 1) {
+				System.out.println("make");
+			}
 
 			// 結果を過去ログに移す。
 			Game game;
@@ -143,9 +144,7 @@ public class BridgeForPython {
 
 				String line = String.format("finish_game, shot=%d, %s, (total/win/lose/tie) = (%3d, %3d, %3d, %3d) = (%f, %f, %f, %f)", i, param.toString(), total, win, lose, tie, totalRate, winRate,
 						loseRate, tieRate);
-				synchronized (gameMap) {
-					System.out.println(line);
-				}
+				System.out.println(line);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -166,24 +165,28 @@ public class BridgeForPython {
 	 * 
 	 * 
 	 *************************************************************************************************/
-	public void init_agent(int pid, int me) {
+	public void init_agent(int pid, int caller_id, int me) {
 		try {
-			System.out.println("init_agent, pid=" + pid + ", agent_id=" + me);
+			System.out.println("BridgeForPython, init_agent, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 
-	public void episode_end(int pid, int me, int reward) {
+	public void episode_end(int pid, int caller_id, int me, int reward) {
 		try {
-			double timeAverage = 1.0 * timeTotal / numcall;
-			System.out.println("episode_end, pid=" + pid + ", agent_id=" + me + ", reward = " + reward + ", timeAverage=" + timeAverage + ", timeMax=" + timeMax);
+			System.out.println("BridgeForPython, episode_end, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me + ", reward = " + reward);
 
-			Game game;
+			double timeAverage = 1.0 * timeTotal / numcall;
+			System.out.println("episode_end, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me + ", timeAverage=" + timeAverage + ", timeMax=" + timeMax);
+
+			Agent agent;
 			synchronized (gameMap) {
-				game = gameMap.get(pid);
+				Game game = gameMap.get(pid);
+				agent = game.agents[me - 10];
 			}
-			game.agents[me - 10].episode_end(reward);
+
+			agent.episode_end(reward);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -195,9 +198,11 @@ public class BridgeForPython {
 	static long timeTotal = 0;
 	static int numcall = 0;
 
-	public int act(int pid, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer, byte[] alive_buffer,
-			byte[] enemies_list_buffer) {
+	public int act(int pid, int caller_id, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer,
+			byte[] alive_buffer, byte[] enemies_list_buffer) {
 		try {
+			System.out.println("BridgeForPython, act start, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
+
 			long timeStart = System.currentTimeMillis();
 
 			MyMatrix board = buffer2Matrix(board_buffer);
@@ -206,11 +211,17 @@ public class BridgeForPython {
 			MyMatrix alive = buffer2Matrix(alive_buffer);
 			MyMatrix enemies = buffer2Matrix(enemies_list_buffer);
 
-			Game game;
+			Agent agent;
 			synchronized (gameMap) {
-				game = gameMap.get(pid);
+				Game game = gameMap.get(pid);
+				agent = game.agents[me - 10];
+				if (agent == null) {
+					agent = new Agent(me, game.param);
+					game.agents[me - 10] = agent;
+				}
 			}
-			int action = game.agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+
+			int action = agent.act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
 
 			long timeEnd = System.currentTimeMillis();
 			long timeDel = timeEnd - timeStart;
@@ -218,6 +229,7 @@ public class BridgeForPython {
 			numcall++;
 			if (numcall > 100 && timeDel > timeMax) timeMax = timeDel;
 			System.out.println("timeDel = " + timeDel);
+			System.out.println("BridgeForPython, act end__, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
 			return action;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -228,11 +240,73 @@ public class BridgeForPython {
 
 	/************************************************************************************************
 	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
 	 *
 	 * 
 	 * 
 	 * 
 	 * ForwardModelのデバッグ用
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
 	 * 
 	 * 
 	 * 

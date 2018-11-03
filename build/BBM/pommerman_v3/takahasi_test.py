@@ -1,18 +1,16 @@
 import pommerman
 from pommerman import agents
 
-import sys
-import argparse
-import copy
-import array
-import numpy as np
 import os
+import sys
+import array
+import argparse
+import numpy as np
+from multiprocessing import Pool
 
 from pommerman.constants import Action
-
 from src.agents.master_agent import MasterAgent as MyAgentO
 from tt_agent import MyAgent as MyAgentT
-
 from py4j.java_gateway import JavaGateway
 
 
@@ -21,8 +19,6 @@ forwardModelDebug = False
 
 
 
-gateway = JavaGateway()
-addition_app = gateway.entry_point
 
 
 
@@ -108,43 +104,61 @@ def send_env(env, flag):
     b5 = pack_into_buffer(dirMat)
     b6 = pack_into_buffer(flameMat)
     b7 = pack_into_buffer(info)
+
+    gateway = JavaGateway()
+    addition_app = gateway.entry_point
     addition_app.check_env(flag, b1, b2, b3, b4, b5, b6, b7)
 
 
 def send_action(actions):
     b1 = pack_into_buffer2(actions)
+
+    gateway = JavaGateway()
+    addition_app = gateway.entry_point
     addition_app.check_actions(b1)
 
 
 
 
+def battle(process_number):
+
+    # プロセスIDを取得しておく。
+    pid = os.getpid()
+
+
+    print("battle start, process_number={}, pid={}".format(process_number, pid))
 
 
 
 
+    # Javaへの接続を
+    gateway = JavaGateway()
+    addition_app = gateway.entry_point
 
 
 
 
-def main(render=False, interactive=False):
+    # ゲーム開始を伝える。
+    addition_app.start_game(pid)
+
+
+
 
     # List of four agents
-
     if False:
         agent_list = [
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
+            MyAgentT(),
+            MyAgentT(),
+            MyAgentT(),
+            MyAgentT(),
         ]
 
         agent_list = [
-            MyAgentT(),
-            MyAgentT(),
-            MyAgentT(),
-            MyAgentT(),
+            agents.SimpleAgent(),
+            agents.SimpleAgent(),
+            agents.SimpleAgent(),
+            agents.SimpleAgent(),
         ]
-
 
     agent_list = [
         MyAgentO(),
@@ -154,60 +168,40 @@ def main(render=False, interactive=False):
     ]
 
 
-
-    # Environment of FFA competition
-    #env = pommerman.make('PommeFFACompetition-v0', agent_list)
     env = pommerman.make('PommeTeamCompetition-v0', agent_list)
+    state = env.reset()
+    step = 0
+    done = False
+    while not done:
+        step += 1
+        actions = env.act(state)
+        state, reward, done, info = env.step(actions)
+        print("pid={} step={} actions={}".format(pid, step, actions))
 
-    pid = os.getpid()
-
-    # Run
-    rewards = list()
-    for episode in range(10000000):
-
-        addition_app.start_game(pid)
-
-        state = env.reset()
-        step = 0
-        done = False
-        while not done:
-
-            if verbose:
-                print("Step: ", step)
-
-            step += 1
-            if render:
-                env.render()
-            actions = env.act(state)
-
-            if verbose:
-                print(actions[-1])
+    # 結果を出力する。
+    print("battle finished, process_number={}, pid={}, reward={}".format(process_number, pid, reward))
 
 
-            if forwardModelDebug:
-                send_env(env, 0)
-                send_action(actions)
+    # ゲーム終了を伝える。
+    addition_app.finish_game(pid, reward[0], reward[1], reward[2], reward[3])
 
-            # compute step()
-            state, reward, done, info = env.step(actions)
-
-            print("step={} actions={}".format(step, actions))
-
-            if forwardModelDebug:
-                send_env(env, 1)
-
-
-            if interactive:
-                sys.stdin.readline()
-
-        #rewards.append(reward)
-        print('Episode {} finished'.format(episode), reward)
-        addition_app.finish_game(pid, reward[0], reward[1], reward[2], reward[3])
-
-    rewards = np.array(rewards)
-    print(np.mean(rewards, axis=0))
-
+    # 不要なハンドルを閉じる。
     env.close()
+
+
+
+
+def battle_repeat(process_number):
+    for i in range(10000):
+        battle(process_number)
+
+
+
+
+def battle_repeat_mp():
+    pool = Pool(48)
+    pool.map(battle_repeat, range(100))
+    pool.close()
 
 
 
@@ -228,4 +222,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     #random.seed(0)
-    main(render=args.render, interactive=args.interactive)
+
+    #battle_repeat(0)
+    battle_repeat_mp()
+

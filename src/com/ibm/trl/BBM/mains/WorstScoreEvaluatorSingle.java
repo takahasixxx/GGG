@@ -17,8 +17,8 @@ public class WorstScoreEvaluatorSingle {
 
 	static final Random rand = new Random();
 	static final int numField = GlobalParameter.numField;
-	static final ForwardModel fm = new ForwardModel();
 
+	ForwardModel fm = new ForwardModel();
 	ModelParameter param;
 
 	public WorstScoreEvaluatorSingle(ModelParameter param) {
@@ -102,6 +102,10 @@ public class WorstScoreEvaluatorSingle {
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
 
+				if (t >= 1) {
+					instruction = INSTRUCTION_STAY;
+				}
+
 				if (instruction == INSTRUCTION_BOARD) {
 					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
 					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
@@ -123,7 +127,7 @@ public class WorstScoreEvaluatorSingle {
 						}
 						stepMaps_stay[t + 1][ai].data[x2][y2] = stepNext;
 					}
-				} else {
+				} else if (instruction == INSTRUCTION_STAY) {
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
 							double stepNow = stepMaps_stay[t][ai].data[x][y];
@@ -132,6 +136,61 @@ public class WorstScoreEvaluatorSingle {
 							if (true) {
 								double stepNext = stepNow;
 								stepMaps_stay[t + 1][ai].data[x][y] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_ALLMOVE) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double stepNow = stepMaps_stay[t][ai].data[x][y];
+							if (stepNow == numt) continue;
+
+							// ëJà⁄êÊÇÃêîÇêîÇ¶ÇÈÅB
+							boolean[] able = new boolean[5];
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+								int type = (int) packNext.board.data[x2][y2];
+								if (Constant.isWall(type)) continue;
+								if (dir != 0 && type == Constant.Bomb) continue;
+								if (type == Constant.Flames) continue;
+								able[dir] = true;
+							}
+
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (able[dir] == false) continue;
+
+								if (true) {
+									double stepNext;
+									if (dir == 0) {
+										stepNext = stepNow;
+									} else {
+										// TODO Ç«Ç¡ÇøÇ™Ç¢Ç¢ÇÃÇæÇÎÇ§Ç©ÅH
+										// stepNext = stepNow + 1;
+										stepNext = t + 1;
+									}
+									if (stepNext < stepMaps_stay[t + 1][ai].data[x2][y2]) {
+										stepMaps_stay[t + 1][ai].data[x2][y2] = stepNext;
+									}
+								}
+							}
+						}
+					}
+
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								stepMaps_stay[t + 1][ai].data[x][y] = numt;
 							}
 						}
 					}
@@ -502,6 +561,10 @@ public class WorstScoreEvaluatorSingle {
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
 
+				if (t >= 1) {
+					instruction = INSTRUCTION_STAY;
+				}
+
 				if (instruction == INSTRUCTION_BOARD) {
 					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
 					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
@@ -525,7 +588,7 @@ public class WorstScoreEvaluatorSingle {
 						int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
 						stepMaps_stay[index2] = stepNext;
 					}
-				} else {
+				} else if (instruction == INSTRUCTION_STAY) {
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
 							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
@@ -536,6 +599,64 @@ public class WorstScoreEvaluatorSingle {
 								double stepNext = stepNow;
 								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
 								stepMaps_stay[index2] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_ALLMOVE) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+							double stepNow = stepMaps_stay[index];
+							if (stepNow == numt) continue;
+
+							// ëJà⁄êÊÇÃêîÇêîÇ¶ÇÈÅB
+							boolean[] able = new boolean[5];
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+								int type = (int) packNext.board.data[x2][y2];
+								if (Constant.isWall(type)) continue;
+								if (dir != 0 && type == Constant.Bomb) continue;
+								if (type == Constant.Flames) continue;
+								able[dir] = true;
+							}
+
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (able[dir] == false) continue;
+
+								if (true) {
+									double stepNext;
+									if (dir == 0) {
+										stepNext = stepNow;
+									} else {
+										// TODO Ç«Ç¡ÇøÇ™Ç¢Ç¢ÇÃÇæÇÎÇ§Ç©ÅH
+										// stepNext = stepNow + 1;
+										stepNext = t + 1;
+									}
+									int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
+
+									if (stepNext < stepMaps_stay[index2]) {
+										stepMaps_stay[index2] = stepNext;
+									}
+								}
+							}
+						}
+					}
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
+								stepMaps_stay[index2] = numt;
 							}
 						}
 					}
