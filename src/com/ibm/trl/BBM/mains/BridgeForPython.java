@@ -1,17 +1,32 @@
 package com.ibm.trl.BBM.mains;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.TreeMap;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 
 import ibm.ANACONDA.Core.MyMatrix;
 
 public class BridgeForPython {
 
-	TreeMap<Integer, Agent[]> agentsMap = new TreeMap<Integer, Agent[]>();
+	static TreeMap<Integer, Game> gameMap = new TreeMap<Integer, Game>();
+	static int gameCounter = 0;
+	static Game[] gamesFinished = new Game[100000];
 
-	public BridgeForPython() throws Exception {
+	class Game {
+		int gameID = -1;
+		ModelParameter param;
+		Agent[] agents;
+		int[] rewards = null;
+
+		public Game(int gameID, ModelParameter param, Agent[] agents) throws Exception {
+			this.gameID = gameID;
+			this.param = param;
+			this.agents = agents;
+		}
 	}
 
 	private MyMatrix buffer2Matrix(byte[] buffer) {
@@ -26,17 +41,134 @@ public class BridgeForPython {
 		return ret;
 	}
 
+	/************************************************************************************************
+	 * 
+	 *
+	 * 
+	 * 
+	 * 
+	 * 勝敗管理関連。 パラメータグリッドサーチ関連
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 *************************************************************************************************/
+
+	int onePack = 100;
+
+	public void start_game(int pid) {
+		try {
+			System.out.println("start_game, pid=" + pid);
+
+			List<ModelParameter> params = new ArrayList<ModelParameter>();
+			if (true) {
+				double usualCell = 3.5;
+				double attackCell = 2.5;
+				for (double rateLevel : new double[] { 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0 }) {
+					// for (double rateLevel : new double[] { 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0 }) {
+					for (double gainOffset : new double[] { 1.2, 1.4, 1.6, 1.8, 2.0 }) {
+
+						ModelParameter param = new ModelParameter();
+						param.rateLevel = rateLevel;
+						param.gainOffset = gainOffset;
+						param.usualThreshold = Math.log(usualCell);
+						param.attackThreshold = Math.log(attackCell);
+						params.add(param);
+					}
+				}
+			}
+
+			synchronized (gameMap) {
+				ModelParameter param = params.get(gameCounter / onePack % params.size());
+
+				Agent[] agents = new Agent[4];
+				for (int ai = 0; ai < 4; ai++) {
+					agents[ai] = new Agent(ai + 10, param);
+				}
+
+				Game game = new Game(gameCounter, param, agents);
+				gameMap.put(pid, game);
+				gameCounter++;
+			}
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+	}
+
+	public void finish_game(int pid, int r1, int r2, int r3, int r4) {
+		try {
+			System.out.println("finish_game, pid=" + pid);
+
+			// 結果を過去ログに移す。
+			Game game;
+			synchronized (gameMap) {
+				game = gameMap.get(pid);
+				gameMap.remove(pid);
+			}
+
+			game.agents = null;
+			game.rewards = new int[] { r1, r2, r3, r4 };
+			gamesFinished[game.gameID] = game;
+
+			// onePackひとかたまりで、全部埋まっていたら、そこの性能を出力する。
+			for (int i = 0; i * onePack < gamesFinished.length; i++) {
+				int win = 0;
+				int lose = 0;
+				int tie = 0;
+				ModelParameter param = null;
+				for (int p = 0; p < onePack; p++) {
+					int index = i * onePack + p;
+					if (index >= gamesFinished.length) break;
+					if (gamesFinished[index] == null) continue;
+					param = gamesFinished[index].param;
+					int[] rewards = gamesFinished[index].rewards;
+					if (rewards[0] == 1) {
+						lose++;
+					} else if (rewards[1] == 1) {
+						win++;
+					} else if (rewards[0] == -1 && rewards[1] == -1) {
+						tie++;
+					}
+				}
+				int total = win + lose + tie;
+				if (total == 0) continue;
+
+				double totalRate = 1.0 * total / total;
+				double winRate = 1.0 * win / total;
+				double loseRate = 1.0 * lose / total;
+				double tieRate = 1.0 * tie / total;
+
+				String line = String.format("finish_game, shot=%d, %s, (total/win/lose/tie) = (%3d, %3d, %3d, %3d) = (%f, %f, %f, %f)", i, param.toString(), total, win, lose, tie, totalRate, winRate,
+						loseRate, tieRate);
+				synchronized (gameMap) {
+					System.out.println(line);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(0);
+		}
+	}
+
+	/************************************************************************************************
+	 * 
+	 *
+	 * 
+	 * 
+	 * 
+	 * Pythonのエージェントオブジェクトと紐付いている関数群
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 *************************************************************************************************/
 	public void init_agent(int pid, int me) {
 		try {
-			System.out.println("init_agent, " + me);
-			Agent[] agents = agentsMap.get(pid);
-			if (agents == null) {
-				agents = new Agent[4];
-				for (int i = 0; i < 4; i++) {
-					agents[i] = new Agent(i + 10);
-				}
-				agentsMap.put(pid, agents);
-			}
+			System.out.println("init_agent, pid=" + pid + ", agent_id=" + me);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -44,13 +176,18 @@ public class BridgeForPython {
 
 	public void episode_end(int pid, int me, int reward) {
 		try {
-			double time = 1.0 * timeTotal / numcall;
-			System.out.println("episode_end, " + me + ", reward = " + reward + ", pid=" + pid + ", timeAverage=" + time + ", timeMax=" + timeMax);
-			Agent[] agents = agentsMap.get(pid);
-			agents[me - 10].episode_end(reward);
-			agents[me - 10] = new Agent(me);
+			double timeAverage = 1.0 * timeTotal / numcall;
+			System.out.println("episode_end, pid=" + pid + ", agent_id=" + me + ", reward = " + reward + ", timeAverage=" + timeAverage + ", timeMax=" + timeMax);
+
+			Game game;
+			synchronized (gameMap) {
+				game = gameMap.get(pid);
+			}
+			game.agents[me - 10].episode_end(reward);
+
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 
@@ -60,16 +197,21 @@ public class BridgeForPython {
 
 	public int act(int pid, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer, byte[] alive_buffer,
 			byte[] enemies_list_buffer) {
-
 		try {
 			long timeStart = System.currentTimeMillis();
+
 			MyMatrix board = buffer2Matrix(board_buffer);
 			MyMatrix bomb_blast_strength = buffer2Matrix(bomb_blast_strength_buffer);
 			MyMatrix bomb_life = buffer2Matrix(bomb_life_buffer);
 			MyMatrix alive = buffer2Matrix(alive_buffer);
 			MyMatrix enemies = buffer2Matrix(enemies_list_buffer);
-			Agent[] agents = agentsMap.get(pid);
-			int action = agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+
+			Game game;
+			synchronized (gameMap) {
+				game = gameMap.get(pid);
+			}
+			int action = game.agents[me - 10].act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+
 			long timeEnd = System.currentTimeMillis();
 			long timeDel = timeEnd - timeStart;
 			timeTotal += timeDel;
@@ -79,16 +221,31 @@ public class BridgeForPython {
 			return action;
 		} catch (Exception e) {
 			e.printStackTrace();
-			return 0;
+			System.exit(0);
 		}
+		return 0;
 	}
+
+	/************************************************************************************************
+	 * 
+	 *
+	 * 
+	 * 
+	 * 
+	 * ForwardModelのデバッグ用
+	 * 
+	 * 
+	 * 
+	 * 
+	 * 
+	 *************************************************************************************************/
 
 	int counter = 0;
 	Pack packNow = null;
 	int[] actions = new int[4];
 	ForwardModel fm = new ForwardModel();
 
-	public void check_env(int flag, byte[] b1, byte[] b2, byte[] b3, byte[] b4, byte[] b5, byte[] b6, byte[] b7) {
+	public int check_env(int flag, byte[] b1, byte[] b2, byte[] b3, byte[] b4, byte[] b5, byte[] b6, byte[] b7) {
 		System.out.println("check_env");
 		MyMatrix board = buffer2Matrix(b1);
 		MyMatrix life = buffer2Matrix(b2);
@@ -194,13 +351,15 @@ public class BridgeForPython {
 				e.printStackTrace();
 			}
 		}
+		return 0;
 	}
 
-	public void check_actions(byte[] b1) {
+	public int check_actions(byte[] b1) {
 		System.out.println("check_env");
 		MyMatrix actions = buffer2Matrix(b1);
 		for (int ai = 0; ai < 4; ai++) {
 			this.actions[ai] = (int) actions.data[ai][0];
 		}
+		return 0;
 	}
 }

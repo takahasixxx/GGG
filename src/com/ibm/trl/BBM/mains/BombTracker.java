@@ -51,7 +51,7 @@ public class BombTracker {
 		}
 	}
 
-	static ResultBT computeBombMap(List<MapInformation> mapsOrg, List<MapInformation> exmapsOrg) throws Exception {
+	static ResultBT computeBombMap(int maxPower, List<MapInformation> mapsOrg, List<MapInformation> exmapsOrg) throws Exception {
 		List<MapInformation> maps = new ArrayList<MapInformation>();
 		maps.addAll(mapsOrg);
 		Collections.reverse(maps);
@@ -202,7 +202,9 @@ public class BombTracker {
 
 				if (changed == false) {
 					// 矛盾チェックしてみる。
-					boolean mujun = false;
+					boolean[][] add = new boolean[numField][numField];
+					boolean mujunRemove = false;
+					boolean mujunAdd = false;
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
 							int type = mapNow.getType(x, y);
@@ -212,8 +214,7 @@ public class BombTracker {
 							if (flames.data[x][y] > 0) {
 								if (type != Constant.Flames) {
 									flames.data[x][y] = 0;
-									mujun = true;
-									break;
+									mujunRemove = true;
 								}
 							}
 
@@ -221,11 +222,39 @@ public class BombTracker {
 							if (type == Constant.Flames) {
 								if (flames.data[x][y] == 0) {
 									flames.data[x][y] = 3;
+									mujunAdd = true;
+									add[x][y] = true;
 								}
 							}
 						}
 					}
 					// System.out.println("t=" + t + ", 矛盾＝" + mujun);
+
+					// MapではFlameなのに、独自ロジックではFlamesじゃない場合、追加したFlamesと接続しているFlamesは、Lifeが３になっているかもしれない。
+					if (mujunAdd) {
+						for (int x = 0; x < numField; x++) {
+							for (int y = 0; y < numField; y++) {
+								if (add[x][y]) {
+									for (int[] vec : GlobalParameter.onehopList) {
+										int dir = vec[0];
+										int dx = vec[1];
+										int dy = vec[2];
+										if (dir == 0) continue;
+										for (int w = 0; w <= maxPower; w++) {
+											int x2 = x + dx * w;
+											int y2 = y + dy * w;
+											if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+
+											int type = mapNow.getType(x2, y2);
+											if (type != Constant.Fog) break;
+
+											flames.data[x2][y2] = 3;
+										}
+									}
+								}
+							}
+						}
+					}
 					break;
 				}
 			}

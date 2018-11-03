@@ -1,0 +1,9 @@
+*.pyc
+*-checkpoint.ipynb
+*#
+*~
+*.index
+*.meta
+*.csv
+*.json
+*.npy

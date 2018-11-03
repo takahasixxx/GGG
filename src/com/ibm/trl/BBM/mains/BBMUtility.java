@@ -969,9 +969,9 @@ public class BBMUtility {
 
 				int type_org = (int) board_org.data[x][y];
 				if (type_org == Constant.Fog) {
-					print1 = "\u001b[30;47m" + print1 + "\u001b[00m";
-					print2 = "\u001b[30;47m" + print2 + "\u001b[00m";
-					print3 = "\u001b[30;47m" + print3 + "\u001b[00m";
+					// print1 = "\u001b[30;47m" + print1 + "\u001b[00m";
+					// print2 = "\u001b[30;47m" + print2 + "\u001b[00m";
+					// print3 = "\u001b[30;47m" + print3 + "\u001b[00m";
 				}
 
 				line1 += print1;

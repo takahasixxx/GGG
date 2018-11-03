@@ -7,6 +7,7 @@ import java.util.Random;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
@@ -20,16 +21,15 @@ public class ActionEvaluator {
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
 
+	ModelParameter param;
+
 	int[] actionLog = new int[1000];
 	int actionLogIndex = 0;
 	int mugenLoopRecoveryKikan = 0;
 
-	// double usualMoveThreshold= Math.log(3.5);
-	// double attackThreshold = Math.log(2.5);
-	double usualMoveThreshold = GlobalParameter.usualMoveThreshold;
-	double attackThreshold = GlobalParameter.attackThreshold;
+	public ActionEvaluator(ModelParameter param) {
+		this.param = param;
 
-	public ActionEvaluator() {
 		for (int i = 0; i < actionLog.length; i++) {
 			actionLog[i] = rand.nextInt();
 		}
@@ -41,8 +41,8 @@ public class ActionEvaluator {
 	public int ComputeOptimalAction(int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife, MyMatrix lastLook,
 			double[][][][] worstScores) throws Exception {
 
-		// usualMoveThreshold = Math.log(3.5);
-		// attackThreshold = Math.log(2.5);
+		double usualMoveThreshold = param.usualThreshold;
+		double attackThreshold = param.attackThreshold;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -687,6 +687,8 @@ public class ActionEvaluator {
 
 	private int findMostSafetyAction(double[] scoresMe, double[] scoresFriend, int actionNG) {
 
+		double usualMoveThreshold = param.usualThreshold;
+
 		boolean friendDependency = false;
 		if (scoresFriend != null) {
 			double max = Double.NEGATIVE_INFINITY;
@@ -710,7 +712,7 @@ public class ActionEvaluator {
 					double scoreFriend = scoresFriend[action];
 					if (scoreFriend == Double.NEGATIVE_INFINITY) continue;
 				}
-				if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
+				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe > max) {
 					max = scoreMe;
 				}
@@ -725,7 +727,7 @@ public class ActionEvaluator {
 					double scoreFriend = scoresFriend[action];
 					if (scoreFriend == Double.NEGATIVE_INFINITY) continue;
 				}
-				if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
+				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe == max) {
 					set.add(action);
 				}

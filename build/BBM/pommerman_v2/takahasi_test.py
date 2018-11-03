@@ -6,6 +6,7 @@ import argparse
 import copy
 import array
 import numpy as np
+import os
 
 from pommerman.constants import Action
 
@@ -153,10 +154,16 @@ def main(render=False, interactive=False):
     #env = pommerman.make('PommeFFACompetition-v0', agent_list)
     env = pommerman.make('PommeTeamCompetition-v0', agent_list)
 
+    pid = os.getpid()
+
 
     # Run
     rewards = list()
     for episode in range(10000000):
+
+        res = addition_app.start_game(pid)
+        print(res)
+
         state = env.reset()
         done = False
         step = 0
@@ -188,6 +195,8 @@ def main(render=False, interactive=False):
 
         #rewards.append(reward)
         print('Episode {} finished'.format(episode), reward)
+        res = addition_app.finish_game(pid, reward[0], reward[1], reward[2], reward[3])
+        print(res)
 
     rewards = np.array(rewards)
     print(np.mean(rewards, axis=0))

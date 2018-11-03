@@ -17,6 +17,14 @@ public class Agent {
 	static final int numField = GlobalParameter.numField;
 	static final int numPast = 20;
 
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	ModelParameter param;
+	WorstScoreEvaluator worstScoreEvaluator;
+	ActionEvaluator actionEvaluator;
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	int me;
 	int friend;
 	int frame = 0;
@@ -28,15 +36,18 @@ public class Agent {
 	int numItemGet = 0;
 	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	WorstScoreEvaluator worstScoreEvaluator = new WorstScoreEvaluator();
-	ActionEvaluator actionEvaluator = new ActionEvaluator();
+	static public class ModelParameter {
+		double rateLevel = 1.8;
+		double gainOffset = 1.2;
+		double usualThreshold = 3.5;
+		double attackThreshold = 2.5;
 
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
-	///////////////////////////////////////////////////////////////////////////////////////////////////////////
+		@Override
+		public String toString() {
+			String line = String.format("rateLevel=%f, gainOffsetr=%f, usualThreshold=%f, attackThreshold=%f", rateLevel, gainOffset, usualThreshold, attackThreshold);
+			return line;
+		}
+	}
 
 	static public class Ability implements Serializable {
 		private static final long serialVersionUID = 372642396371084459L;
@@ -69,8 +80,10 @@ public class Agent {
 			if (this.isAlive == a.isAlive) {
 				if (this.numMaxBomb == a.numMaxBomb) {
 					if (this.strength == a.strength) {
-						if (this.kick == a.kick) {
-							if (this.numBombHold == a.numBombHold) { return true; }
+						if (this.strength_fix == a.strength_fix) {
+							if (this.kick == a.kick) {
+								if (this.numBombHold == a.numBombHold) { return true; }
+							}
 						}
 					}
 				}
@@ -79,7 +92,11 @@ public class Agent {
 		}
 	}
 
-	Agent(int me) throws Exception {
+	Agent(int me, ModelParameter param) throws Exception {
+		this.param = param;
+		worstScoreEvaluator = new WorstScoreEvaluator(param);
+		actionEvaluator = new ActionEvaluator(param);
+
 		this.me = me;
 
 		for (int ai = 0; ai < 4; ai++) {
@@ -106,20 +123,14 @@ public class Agent {
 				board_memo.data[numField - 2][x] = Constant.Wood;
 			}
 		}
+
 	}
 
 	public void episode_end(int reward) throws Exception {
 		System.out.println("episode_end, reward = " + reward + ", " + frame);
 
-		if (true) {
-			GlobalParameter.FinishOneEpisode(me, frame, reward, numItemGet);
-		}
-
-		if (reward == -1) {
-			System.out.println("aaa");
-		}
-
 		// 殺された場合、最後の20ステップの盤面遷移を出力する。
+		// if (true) {
 		if (reward == -1 && frame != 801) {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
@@ -172,11 +183,12 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
-			System.out.println("me=" + me);
-			// System.out.println("board picture");
-			// BBMUtility.printBoard2(board, board, bomb_life, bomb_blast_strength);
-			// System.out.println("=========================================================================================");
-			// System.out.println("=========================================================================================");
+			System.out.println("frame = " + frame);
+			System.out.println("me = " + me);
+			System.out.println("=========================================================================================");
+			System.out.println("board picture");
+			BBMUtility.printBoard2(board, board, bomb_life, bomb_blast_strength);
+			System.out.println("=========================================================================================");
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -407,7 +419,7 @@ public class Agent {
 			exmaps.add(exmap);
 			exmaps.addAll(exmapsOld);
 
-			ResultBT res = BombTracker.computeBombMap(maps, exmaps);
+			ResultBT res = BombTracker.computeBombMap(maxPower, maps, exmaps);
 			bombMap = res.bombMap;
 			flameLife = res.flames;
 		}
@@ -445,6 +457,53 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("power");
 			MatrixUtility.OutputMatrix(exmap.power);
+			System.out.println("=========================================================================================");
+			System.out.println("bomb direction");
+			for (int x = 0; x < numField; x++) {
+				String a1 = "";
+				String a2 = "";
+				String a3 = "";
+				for (int y = 0; y < numField; y++) {
+					Node node = bombMap[x][y];
+					if (node == null) {
+						a1 += " /   \\ ";
+						a2 += " | + | ";
+						a3 += " \\   / ";
+					} else {
+						String line1 = "   ";
+						String line2 = "";
+						String line3 = "   ";
+						if (node.dirs[1]) {
+							line1 = " O ";
+						}
+						if (node.dirs[2]) {
+							line3 = " O ";
+						}
+						if (node.dirs[3]) {
+							line2 += "O";
+						} else {
+							line2 += " ";
+						}
+						if (node.dirs[0]) {
+							line2 += "O";
+						} else {
+							line2 += "+";
+						}
+						if (node.dirs[4]) {
+							line2 += "O";
+						} else {
+							line2 += " ";
+						}
+
+						a1 += " /" + line1 + "\\ ";
+						a2 += " |" + line2 + "| ";
+						a3 += " \\" + line3 + "/ ";
+					}
+				}
+				System.out.println(a1);
+				System.out.println(a2);
+				System.out.println(a3);
+			}
 			System.out.println("=========================================================================================");
 			System.out.println("flame life");
 			MatrixUtility.OutputMatrix(flameLife);

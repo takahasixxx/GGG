@@ -3,6 +3,7 @@ package com.ibm.trl.BBM.mains;
 import java.util.Arrays;
 import java.util.Random;
 
+import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 
@@ -18,8 +19,11 @@ public class WorstScoreEvaluatorSingle {
 	static final int numField = GlobalParameter.numField;
 	static final ForwardModel fm = new ForwardModel();
 
-	// double rateLevel = 1.6;
-	double rateLevel = GlobalParameter.rateLevel;
+	ModelParameter param;
+
+	public WorstScoreEvaluatorSingle(ModelParameter param) {
+		this.param = param;
+	}
 
 	public double[][] Do3(Pack[] packsOrg, int[][] instructions) throws Exception {
 
@@ -30,6 +34,8 @@ public class WorstScoreEvaluatorSingle {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		int numt = instructions.length;
+		double rateLevel = param.rateLevel;
+		double gainOffset = param.gainOffset;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -371,7 +377,7 @@ public class WorstScoreEvaluatorSingle {
 			if (true) {
 				int t = numt - 1;
 				MyMatrix mat = hitNearestStep[t];
-				int[] gain = new int[numt + 1];
+				double[] gain = new double[numt + 1];
 				for (int x = 0; x < numField; x++) {
 					for (int y = 0; y < numField; y++) {
 						if (mat.data[x][y] < 0) continue;
@@ -381,7 +387,7 @@ public class WorstScoreEvaluatorSingle {
 				}
 
 				for (int s = 0; s < numt; s++) {
-					gain[s]--;
+					gain[s] = gain[s] - gainOffset;
 					if (gain[s] < 0) gain[s] = 0;
 				}
 
@@ -428,6 +434,8 @@ public class WorstScoreEvaluatorSingle {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		int numt = instructions.length;
+		double rateLevel = param.rateLevel;
+		double gainOffset = param.gainOffset;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -786,8 +794,12 @@ public class WorstScoreEvaluatorSingle {
 
 		// k¬’f–ÊÏ
 		for (int ai = 0; ai < 4; ai++) {
+			Pack packNow = packsNA[0];
+			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+			if (agentNow == null) continue;
+
 			int t = numt - 1;
-			int[] gain = new int[numt + 1];
+			double[] gain = new double[numt + 1];
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
 					int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
@@ -798,7 +810,7 @@ public class WorstScoreEvaluatorSingle {
 			}
 
 			for (int s = 0; s < numt; s++) {
-				gain[s]--;
+				gain[s] = gain[s] - gainOffset;
 				if (gain[s] < 0) gain[s] = 0;
 			}
 
