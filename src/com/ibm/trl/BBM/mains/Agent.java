@@ -37,14 +37,16 @@ public class Agent {
 	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
 
 	static public class ModelParameter {
-		double rateLevel = 1.8;
-		double gainOffset = 1.2;
+		int numFirstMoveStepsAsFriend = 2;
+		double rateLevel = 1.25;
+		double gainOffset = 1.0;
 		double usualThreshold = 3.5;
 		double attackThreshold = 2.5;
 
 		@Override
 		public String toString() {
-			String line = String.format("rateLevel=%f, gainOffsetr=%f, usualThreshold=%f, attackThreshold=%f", rateLevel, gainOffset, usualThreshold, attackThreshold);
+			String line = String.format("numFirstMoveStepsAsFriend=%d, rateLevel=%f, gainOffsetr=%f, usualThreshold=%f, attackThreshold=%f", numFirstMoveStepsAsFriend, rateLevel, gainOffset,
+					usualThreshold, attackThreshold);
 			return line;
 		}
 	}

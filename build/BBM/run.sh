@@ -18,6 +18,7 @@ sleep 5
 
 #start python client
 nohup nice -n 19 python -u pommerman_v3/takahasi_test.py &> log2.txt &
+#nohup nice -n 19 python -u pommerman_v3_pincer/takahasi_test.py &> log2.txt &
 
 
 tail -f log.txt | while IFS= read -r LINE; do printf '%s\n' "$LINE" | iconv -f UTF-8 -t SJIS | grep finish; done

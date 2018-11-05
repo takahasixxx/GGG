@@ -25,8 +25,8 @@ public class WorstScoreEvaluator {
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
 
-	// static final int numMaxCase = 120;
-	static final int numMaxCase = 120000000;
+	static final int numMaxCase = 120;
+	// static final int numMaxCase = 120000000;
 
 	ForwardModel fm = new ForwardModel();
 	ModelParameter param;
@@ -76,8 +76,8 @@ public class WorstScoreEvaluator {
 		}
 
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
-		if (true) {
-			// if (numVisibleAgent <= 3) {
+		// if (true) {
+		if (numVisibleAgent <= 3) {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {

@@ -34,6 +34,7 @@ public class WorstScoreEvaluatorSingle {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		int numt = instructions.length;
+		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
 		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
 
@@ -102,7 +103,7 @@ public class WorstScoreEvaluatorSingle {
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
 
-				if (t >= 1) {
+				if (t >= numFirstMoveStepsAsFriend) {
 					instruction = INSTRUCTION_STAY;
 				}
 
@@ -493,6 +494,7 @@ public class WorstScoreEvaluatorSingle {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		int numt = instructions.length;
+		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
 		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
 
@@ -561,7 +563,7 @@ public class WorstScoreEvaluatorSingle {
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
 
-				if (t >= 1) {
+				if (t >= numFirstMoveStepsAsFriend) {
 					instruction = INSTRUCTION_STAY;
 				}
 
