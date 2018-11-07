@@ -6,6 +6,7 @@ import java.util.Random;
 import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
+import com.ibm.trl.BBM.mains.StatusHolder.BombEEE;
 
 import ibm.ANACONDA.Core.MyMatrix;
 
@@ -369,8 +370,26 @@ public class WorstScoreEvaluatorSingle {
 							}
 							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;
-							if (dir != 0 && type == Constant.Bomb) continue;
 							if (type == Constant.Flames) continue;
+							if (dir != 0 && type == Constant.Bomb) continue;
+							// 爆弾とのクロス判定を入れておく。
+							if (dir != 0) {
+								BombEEE bbb1 = packNow.sh.getBomb(x2, y2);
+								BombEEE bbb2 = packNext.sh.getBomb(x, x);
+								if (bbb1 != null && bbb2 != null) {
+									if (bbb1.power == bbb2.power && bbb1.life - 1 == bbb2.life) {
+										if (dir == 1) {
+											if (bbb1.dir == 2) continue;
+										} else if (dir == 2) {
+											if (bbb1.dir == 1) continue;
+										} else if (dir == 3) {
+											if (bbb1.dir == 4) continue;
+										} else if (dir == 4) {
+											if (bbb1.dir == 3) continue;
+										}
+									}
+								}
+							}
 							able[dir] = true;
 						}
 
@@ -847,8 +866,26 @@ public class WorstScoreEvaluatorSingle {
 							}
 							int type = (int) packNext.board.data[x2][y2];
 							if (Constant.isWall(type)) continue;
-							if (dir != 0 && type == Constant.Bomb) continue;
 							if (type == Constant.Flames) continue;
+							if (dir != 0 && type == Constant.Bomb) continue;
+							// 爆弾とのクロス判定を入れておく。
+							if (dir != 0) {
+								BombEEE bbb1 = packNow.sh.getBomb(x2, y2);
+								BombEEE bbb2 = packNext.sh.getBomb(x, x);
+								if (bbb1 != null && bbb2 != null) {
+									if (bbb1.power == bbb2.power && bbb1.life - 1 == bbb2.life) {
+										if (dir == 1) {
+											if (bbb1.dir == 2) continue;
+										} else if (dir == 2) {
+											if (bbb1.dir == 1) continue;
+										} else if (dir == 3) {
+											if (bbb1.dir == 4) continue;
+										} else if (dir == 4) {
+											if (bbb1.dir == 3) continue;
+										}
+									}
+								}
+							}
 							able[dir] = true;
 						}
 
