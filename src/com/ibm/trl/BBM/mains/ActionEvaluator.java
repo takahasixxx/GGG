@@ -39,7 +39,7 @@ public class ActionEvaluator {
 	 * アクションを決定する。
 	 */
 	public int ComputeOptimalAction(int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife, MyMatrix lastLook,
-			double[][][][] worstScores) throws Exception {
+			double[][][] worstScores) throws Exception {
 
 		double usualMoveThreshold = param.usualThreshold;
 		double attackThreshold = param.attackThreshold;
@@ -123,51 +123,6 @@ public class ActionEvaluator {
 			}
 		}
 
-		// TODO worstScore出力
-		if (false) {
-			MyMatrix temp = new MyMatrix(6, 6, Double.NaN);
-
-			if (true) {
-				System.out.println("====================================");
-				System.out.println("最悪ケース");
-				System.out.println("====================================");
-				for (int ai = 0; ai < 4; ai++) {
-					for (int a = 0; a < 6; a++) {
-						for (int b = 0; b < 6; b++) {
-							if (worstScores[a][b][ai][3] == 0) {
-								temp.data[a][b] = Double.NaN;
-							} else {
-								temp.data[a][b] = worstScores[a][b][ai][1];
-							}
-						}
-					}
-					System.out.println("====================================");
-					System.out.println("ai=" + ai);
-					MatrixUtility.OutputMatrix(temp);
-				}
-			}
-
-			if (true) {
-				System.out.println("====================================");
-				System.out.println("平均");
-				System.out.println("====================================");
-				for (int ai = 0; ai < 4; ai++) {
-					for (int a = 0; a < 6; a++) {
-						for (int b = 0; b < 6; b++) {
-							if (worstScores[a][b][ai][3] == 0) {
-								temp.data[a][b] = Double.NaN;
-							} else {
-								temp.data[a][b] = worstScores[a][b][ai][0] - Math.log(worstScores[a][b][ai][3]);
-							}
-						}
-					}
-					System.out.println("====================================");
-					System.out.println("ai=" + ai);
-					MatrixUtility.OutputMatrix(temp);
-				}
-			}
-		}
-
 		// アクションが無限ループに入っているか検知する。
 		int actionNG = -1;
 		if (true) {
@@ -204,18 +159,13 @@ public class ActionEvaluator {
 		for (int ai = 0; ai < 4; ai++) {
 			// 最悪ケースの最悪ケースで見積もる。
 			for (int a = 0; a < 6; a++) {
-				double min = Double.POSITIVE_INFINITY;
-				double count = 0;
-				for (int b = 0; b < 6; b++) {
-					double num = worstScores[a][b][ai][3];
-					if (num == 0) continue;
-					min = Math.min(min, worstScores[a][b][ai][1]);
-					count += 1;
+				double num = worstScores[a][ai][3];
+				double sss = worstScores[a][ai][1];
+				if (num == 0) {
+					safetyScoreWorst[ai][a] = 0;
+				} else {
+					safetyScoreWorst[ai][a] = sss;
 				}
-				if (count == 0) {
-					min = Double.NEGATIVE_INFINITY;
-				}
-				safetyScoreWorst[ai][a] = min;
 			}
 		}
 
@@ -223,21 +173,13 @@ public class ActionEvaluator {
 		for (int ai = 0; ai < 4; ai++) {
 			// 平均の平均で見積もる。
 			for (int a = 0; a < 6; a++) {
-				double sum = Double.NEGATIVE_INFINITY;
-				double count = 0;
-				for (int b = 0; b < 6; b++) {
-					double num = worstScores[a][b][ai][3];
-					if (num == 0) continue;
-					sum = BBMUtility.add_log(sum, worstScores[a][b][ai][0]);
-					count += num;
-				}
-				double ave;
-				if (count == 0) {
-					ave = Double.NaN;
+				double num = worstScores[a][ai][3];
+				double sss = worstScores[a][ai][0] / num;
+				if (num == 0) {
+					safetyScoreAverage[ai][a] = Double.NaN;
 				} else {
-					ave = sum - Math.log(count);
+					safetyScoreAverage[ai][a] = sss;
 				}
-				safetyScoreAverage[ai][a] = ave;
 			}
 		}
 
@@ -273,7 +215,7 @@ public class ActionEvaluator {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
 
-				double max = Double.NEGATIVE_INFINITY;
+				double max = 0;
 				double min = Double.POSITIVE_INFINITY;
 				int amin = -1;
 				for (int a = 0; a < 6; a++) {
@@ -291,10 +233,10 @@ public class ActionEvaluator {
 				}
 
 				// ほっといても死ぬ。
-				if (max == Double.NEGATIVE_INFINITY) continue;
+				if (max == 0) continue;
 
 				// 自爆できる。
-				if (amin != -1 && min == Double.NEGATIVE_INFINITY) {
+				if (amin != -1 && min == 0) {
 					actionFinal = amin;
 					reason = "自爆します。(^o^)/";
 					System.out.println(reason);
@@ -399,7 +341,7 @@ public class ActionEvaluator {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
 				double min = Double.POSITIVE_INFINITY;
-				double max = Double.NEGATIVE_INFINITY;
+				double max = 0;
 				for (int a = 0; a < 6; a++) {
 					double scoreMe = safetyScoreWorst[me - 10][a];
 					double scoreEnemy = safetyScoreAverage[ai][a];
@@ -432,60 +374,6 @@ public class ActionEvaluator {
 					int index = rand.nextInt(set.size());
 					actionFinal = set.get(index);
 					reason = "攻撃する。1手先。";
-				}
-			}
-		}
-
-		// 単独二手先
-		// if (false) {
-		if (numBrakableWood == 0 && actionFinal == -1) {
-			for (int ai = 0; ai < 4; ai++) {
-				if (ai == me - 10) continue;
-				if (ai == friend - 10) continue;
-				double min = Double.POSITIVE_INFINITY;
-				double max = Double.NEGATIVE_INFINITY;
-				for (int a = 0; a < 6; a++) {
-					for (int b = 0; b < 6; b++) {
-						double numMe = worstScores[a][b][me - 10][3];
-						double numEnemy = worstScores[a][b][ai][3];
-						if (numMe == 0) continue;
-						if (numEnemy == 0) continue;
-						double scoreMe = worstScores[a][b][me - 10][1];
-						double scoreEnemy = worstScores[a][b][ai][0] - Math.log(numEnemy);
-						if (scoreMe < attackThreshold) continue;
-						if (scoreMe < scoreEnemy) continue;
-						if (scoreEnemy < min) {
-							min = scoreEnemy;
-						}
-						if (scoreEnemy > max) {
-							max = scoreEnemy;
-						}
-					}
-				}
-
-				// 自分のアクションが何ら影響を与えなければ飛ばす。
-				if (min == max) continue;
-
-				if (min != Double.POSITIVE_INFINITY) {
-					ArrayList<Integer> set = new ArrayList<Integer>();
-					for (int a = 0; a < 6; a++) {
-						for (int b = 0; b < 6; b++) {
-							double numMe = worstScores[a][b][me - 10][3];
-							double numEnemy = worstScores[a][b][ai][3];
-							if (numMe == 0) continue;
-							if (numEnemy == 0) continue;
-							double scoreMe = worstScores[a][b][me - 10][1];
-							double scoreEnemy = worstScores[a][b][ai][0] - Math.log(numEnemy);
-							if (scoreMe < attackThreshold) continue;
-							if (scoreMe < scoreEnemy) continue;
-							if (scoreEnemy == min) {
-								set.add(a);
-							}
-						}
-					}
-					int index = rand.nextInt(set.size());
-					actionFinal = set.get(index);
-					reason = "攻撃する。二手先。";
 				}
 			}
 		}
@@ -616,31 +504,6 @@ public class ActionEvaluator {
 			}
 		}
 
-		if (false) {
-			double frameOld = Double.POSITIVE_INFINITY;
-			int xOld = -1;
-			int yOld = -1;
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					double ddd = dis.data[x][y];
-					if (ddd == Double.MAX_VALUE) continue;
-					double fff = lastLook.data[x][y];
-					if (fff < frameOld) {
-						frameOld = fff;
-						xOld = x;
-						yOld = y;
-					}
-				}
-			}
-
-			double frameDelta = frame - frameOld;
-
-			if (frameDelta > 100 && xOld != -1 && yOld != -1) {
-				mugenLoopRecoveryKikan = 10;
-				actionNG = -1;
-			}
-		}
-
 		if (mugenLoopRecoveryKikan > 0) {
 			mugenLoopRecoveryKikan--;
 			actionFinal = -1;
@@ -691,11 +554,11 @@ public class ActionEvaluator {
 
 	private int findMostSafetyAction(double[] scoresMe, double[] scoresFriend, int actionNG) {
 
-		double usualMoveThreshold = param.usualThreshold;
+		// double usualMoveThreshold = param.usualThreshold;
 
 		boolean friendDependency = false;
 		if (scoresFriend != null) {
-			double max = Double.NEGATIVE_INFINITY;
+			double max = 0;
 			double min = Double.POSITIVE_INFINITY;
 			for (int action = 0; action < 6; action++) {
 				double s = scoresFriend[action];
@@ -708,20 +571,20 @@ public class ActionEvaluator {
 
 		int actionSelected = -1;
 		{
-			double max = Double.NEGATIVE_INFINITY;
+			double max = 0;
 			for (int action = 0; action < 6; action++) {
 				if (action == actionNG) continue;
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					if (scoreFriend == Double.NEGATIVE_INFINITY) continue;
+					if (scoreFriend == 0) continue;
 				}
 				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe > max) {
 					max = scoreMe;
 				}
 			}
-			if (max == Double.NEGATIVE_INFINITY) return -1;
+			if (max == 0) return -1;
 
 			List<Integer> set = new ArrayList<Integer>();
 			for (int action = 0; action < 6; action++) {
@@ -729,7 +592,7 @@ public class ActionEvaluator {
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					if (scoreFriend == Double.NEGATIVE_INFINITY) continue;
+					if (scoreFriend == 0) continue;
 				}
 				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe == max) {

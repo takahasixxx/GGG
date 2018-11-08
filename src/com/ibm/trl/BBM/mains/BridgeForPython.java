@@ -75,8 +75,8 @@ public class BridgeForPython {
 						ModelParameter param = new ModelParameter();
 						param.rateLevel = rateLevel;
 						param.gainOffset = gainOffset;
-						param.usualThreshold = Math.log(usualCell);
-						param.attackThreshold = Math.log(attackCell);
+						param.usualThreshold = usualCell;
+						param.attackThreshold = attackCell;
 						params.add(param);
 					}
 				}

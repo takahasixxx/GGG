@@ -320,11 +320,7 @@ public class WorstScoreEvaluatorSingle {
 		// 全行動の経路のスコアを計算してみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 		double[][] scores = new double[4][2];
-		for (int ai = 0; ai < 4; ai++) {
-			scores[ai][0] = Double.NEGATIVE_INFINITY;
-		}
 
 		for (int ai = 0; ai < 4; ai++) {
 
@@ -475,28 +471,7 @@ public class WorstScoreEvaluatorSingle {
 					total += Math.pow(rateLevel, s - numt) * gain[s];
 				}
 
-				double sss = Math.log(total);
-				scores[ai][0] = BBMUtility.add_log(scores[ai][0], sss);
-				scores[ai][1] += 1;
-			}
-
-			// 到達セル
-			if (false) {
-				// double rateLevel = 7;
-				double ratelog = Math.log(rateLevel);
-				int t = numt - 1;
-				MyMatrix mat = hitNearestStep[t];
-				double sss = Double.NEGATIVE_INFINITY;
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						double score = mat.data[x][y];
-						double temp = ratelog * (score - numt);
-						sss = BBMUtility.add_log(sss, temp);
-					}
-				}
-				// System.out.println(t + ", " + sss + ", " + Math.exp(sss));
-
-				scores[ai][0] = BBMUtility.add_log(scores[ai][0], sss);
+				scores[ai][0] += total;
 				scores[ai][1] += 1;
 			}
 		}
@@ -814,9 +789,6 @@ public class WorstScoreEvaluatorSingle {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		double[][] scores = new double[4][2];
-		for (int ai = 0; ai < 4; ai++) {
-			scores[ai][0] = Double.NEGATIVE_INFINITY;
-		}
 
 		double[] hitNearestStep = new double[4 * numt * numField * numField];
 		Arrays.fill(hitNearestStep, Double.NEGATIVE_INFINITY);
@@ -979,8 +951,7 @@ public class WorstScoreEvaluatorSingle {
 				total += Math.pow(rateLevel, s - numt) * gain[s];
 			}
 
-			double sss = Math.log(total);
-			scores[ai][0] = BBMUtility.add_log(scores[ai][0], sss);
+			scores[ai][0] += total;
 			scores[ai][1] += 1;
 		}
 

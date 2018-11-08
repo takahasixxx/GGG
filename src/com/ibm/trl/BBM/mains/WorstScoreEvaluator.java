@@ -51,7 +51,7 @@ public class WorstScoreEvaluator {
 		this.wses = new WorstScoreEvaluatorSingle(param);
 	}
 
-	public double[][][][] Do(int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
+	public double[][][] Do(int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
 		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -173,15 +173,12 @@ public class WorstScoreEvaluator {
 		}
 
 		// リストアップした初期条件でシミュレーションを実施する。
-		// action * action * ai * (ave, min, max, num)
-		double[][][][] scores = new double[6][6][4][4];
+		// action * ai * (ave, min, max, num)
+		double[][][] scores = new double[6][4][4];
 		for (int a = 0; a < 6; a++) {
-			for (int b = 0; b < 6; b++) {
-				for (int ai = 0; ai < 4; ai++) {
-					scores[a][b][ai][0] = Double.NEGATIVE_INFINITY;
-					scores[a][b][ai][1] = Double.POSITIVE_INFINITY;
-					scores[a][b][ai][2] = Double.NEGATIVE_INFINITY;
-				}
+			for (int ai = 0; ai < 4; ai++) {
+				scores[a][ai][1] = Double.POSITIVE_INFINITY;
+				scores[a][ai][2] = Double.NEGATIVE_INFINITY;
 			}
 		}
 
@@ -226,27 +223,26 @@ public class WorstScoreEvaluator {
 
 				for (int[] actions : opset[0].actionsList) {
 					int firstAction = actions[me - 10];
-					int secondAction = 0;
 					for (int ai = 0; ai < 4; ai++) {
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
 						if (num == 0) continue;
 
 						// スコア平均値
-						scores[firstAction][secondAction][ai][0] = BBMUtility.add_log(scores[firstAction][secondAction][ai][0], sss);
+						scores[firstAction][ai][0] += sss;
 
 						// スコア最小値
-						if (sss < scores[firstAction][secondAction][ai][1]) {
-							scores[firstAction][secondAction][ai][1] = sss;
+						if (sss < scores[firstAction][ai][1]) {
+							scores[firstAction][ai][1] = sss;
 						}
 
 						// スコア最大値
-						if (sss > scores[firstAction][secondAction][ai][2]) {
-							scores[firstAction][secondAction][ai][2] = sss;
+						if (sss > scores[firstAction][ai][2]) {
+							scores[firstAction][ai][2] = sss;
 						}
 
 						// 計測回数
-						scores[firstAction][secondAction][ai][3] += num;
+						scores[firstAction][ai][3] += num;
 					}
 				}
 			}
@@ -273,9 +269,9 @@ public class WorstScoreEvaluator {
 		int friend;
 		WorstScoreEvaluatorSingle wses;
 		OperationSet opset[];
-		double[][][][] scores;
+		double[][][] scores;
 
-		public ScoreComputingTask(int me, int friend, WorstScoreEvaluatorSingle wses, OperationSet[] opset, double[][][][] scores) {
+		public ScoreComputingTask(int me, int friend, WorstScoreEvaluatorSingle wses, OperationSet[] opset, double[][][] scores) {
 			this.me = me;
 			this.friend = friend;
 			this.wses = wses;
@@ -309,27 +305,26 @@ public class WorstScoreEvaluator {
 				synchronized (scores) {
 					for (int[] actions : opset[0].actionsList) {
 						int firstAction = actions[me - 10];
-						int secondAction = 0;
 						for (int ai = 0; ai < 4; ai++) {
 							double sss = score_temp[ai][0];
 							double num = score_temp[ai][1];
 							if (num == 0) continue;
 
 							// スコア平均値
-							scores[firstAction][secondAction][ai][0] = BBMUtility.add_log(scores[firstAction][secondAction][ai][0], sss);
+							scores[firstAction][ai][0] += sss;
 
 							// スコア最小値
-							if (sss < scores[firstAction][secondAction][ai][1]) {
-								scores[firstAction][secondAction][ai][1] = sss;
+							if (sss < scores[firstAction][ai][1]) {
+								scores[firstAction][ai][1] = sss;
 							}
 
 							// スコア最大値
-							if (sss > scores[firstAction][secondAction][ai][2]) {
-								scores[firstAction][secondAction][ai][2] = sss;
+							if (sss > scores[firstAction][ai][2]) {
+								scores[firstAction][ai][2] = sss;
 							}
 
 							// 計測回数
-							scores[firstAction][secondAction][ai][3] += num;
+							scores[firstAction][ai][3] += num;
 						}
 					}
 				}
