@@ -1,6 +1,5 @@
 .DS_Store
-/bin
-/data
-/build/BBM/BBM.jar
 __pycache__
 .idea
+/bin
+/data
