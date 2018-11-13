@@ -169,6 +169,16 @@ public class BridgeForPython {
 	public void init_agent(int pid, int caller_id, int me) {
 		try {
 			System.out.println("BridgeForPython, init_agent, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
+
+			synchronized (gameMap) {
+				Game game = gameMap.get(pid);
+				if (game == null) {
+					ModelParameter param = new ModelParameter();
+					game = new Game(gameCounter, param);
+					gameMap.put(pid, game);
+				}
+			}
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

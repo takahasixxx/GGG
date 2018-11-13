@@ -223,6 +223,6 @@ if __name__ == '__main__':
 
     #random.seed(0)
 
-    #battle_repeat(0)
-    battle_repeat_mp()
+    battle_repeat(0)
+    #battle_repeat_mp()
 
