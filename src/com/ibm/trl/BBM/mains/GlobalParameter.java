@@ -10,13 +10,10 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.commons.math3.distribution.NormalDistribution;
-
 public class GlobalParameter {
 	static final Random rand = new Random();
-	static final NormalDistribution nd = new NormalDistribution();
-	// static final public boolean verbose = true;
-	static final public boolean verbose = false;
+	static final public boolean verbose = true;
+	// static final public boolean verbose = false;
 
 	static public String PID;
 	static public int numThread = 1;
