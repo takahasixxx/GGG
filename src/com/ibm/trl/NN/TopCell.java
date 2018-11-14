@@ -1,3 +1,6 @@
+/********************************************
+ * (C) Copyright IBM Corp. 2018
+ ********************************************/
 package com.ibm.trl.NN;
 
 import java.util.ArrayList;

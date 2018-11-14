@@ -1,4 +1,8 @@
 #!/bin/sh
+#################################
+# (C) Copyright IBM Corp. 2018
+#################################
+
 
 source myenv/bin/activate
 

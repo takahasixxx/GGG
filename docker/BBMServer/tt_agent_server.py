@@ -1,3 +1,6 @@
+#################################
+# (C) Copyright IBM Corp. 2018
+#################################
 from pommerman import agents
 from pommerman.runner import DockerAgentRunner
 from tt_agent import MyAgent as MyAgentT

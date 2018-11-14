@@ -1,3 +1,6 @@
+/********************************************
+ * (C) Copyright IBM Corp. 2018
+ ********************************************/
 package ibm.ANACONDA.Core;
 
 public class MyEigenvalueDecomposition {

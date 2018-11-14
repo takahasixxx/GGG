@@ -1,3 +1,6 @@
+#################################
+# (C) Copyright IBM Corp. 2018
+#################################
 import pommerman
 from pommerman import agents
 
