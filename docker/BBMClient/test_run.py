@@ -18,6 +18,7 @@ def main():
         agents.SimpleAgent(),
         #agents.RandomAgent(),
         agents.DockerAgent("ccc", port=12345),
+        #agents.HttpAgent(port=12345, host="localhost"),
         #AgentTT(),
     ]
     # Make the "Free-For-All" environment using the agent list
@@ -37,3 +38,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+    

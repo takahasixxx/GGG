@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+#################################
+# (C) Copyright IBM Corp. 2018
+#################################
+-->
+<project basedir="." default="create_package" name="BBM docker jar">
+	<!--this file was created by Eclipse Runnable JAR Export Wizard-->
+	<!--ANT 1.7 is required-->
+
+
+	
+
+	<!-- パスの設定 -->
+	<property name="rootDirectory" value="../.." />
+	<property name="project.this" value="${rootDirectory}/GGG" />
+	<property name="packageDirectory" value="BBMServer" />
+	<property name="jarFilename" value="BBMServer.jar" />
+
+
+
+	<!--
+	==================================================
+	==================================================
+	JARを作る。
+	==================================================
+	==================================================
+	-->
+
+	<target name="create_package">
+		<javac destdir="${project.this}/bin" srcdir="${project.this}/src" includeantruntime="false" />
+		<jar destfile="${packageDirectory}/${jarFilename}">
+			<manifest>
+				<attribute name="Main-Class" value="com.ibm.trl.BBM.mains.Main" />
+				<attribute name="Class-Path" value="." />
+			</manifest>
+			<fileset dir="${project.this}/bin" />
+			<zipgroupfileset dir="${project.this}/lib" includes="*.jar" />
+		</jar>
+	</target>
+
+
+
+</project>
+

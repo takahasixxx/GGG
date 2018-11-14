@@ -3,3 +3,6 @@ __pycache__
 .idea
 /bin
 /data
+myenv
+log.txt
+log2.txt
