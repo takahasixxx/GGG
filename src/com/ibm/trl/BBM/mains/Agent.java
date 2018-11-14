@@ -571,6 +571,12 @@ public class Agent {
 			MatrixUtility.OutputMatrix(flameLife);
 		}
 
+		if (GlobalParameter.randomness) {
+			if (GlobalParameter.rand.nextInt(5) == 0) {
+				action = GlobalParameter.rand.nextInt(6);
+			}
+		}
+
 		return action;
 	}
 }

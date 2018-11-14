@@ -14,6 +14,7 @@ public class GlobalParameter {
 	static final Random rand = new Random();
 	// static final public boolean verbose = true;
 	static final public boolean verbose = false;
+	static final public boolean randomness = true;
 
 	static public String PID;
 	static public int numThread = 1;
