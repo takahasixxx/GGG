@@ -29,7 +29,6 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	int me;
-	int friend;
 	int frame = 0;
 	Ability[] abs = new Ability[4];
 	LinkedList<MapInformation> mapsOld = new LinkedList<MapInformation>();
@@ -40,7 +39,7 @@ public class Agent {
 	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
 
 	static public class ModelParameter {
-		int numFirstMoveStepsAsFriend = 2;
+		int numFirstMoveStepsAsFriend = 4;
 		double rateLevel = 1.25;
 		double gainOffset = 1.0;
 		double usualThreshold = 3.5;
@@ -135,8 +134,8 @@ public class Agent {
 		System.out.println("episode_end, reward = " + reward + ", " + frame);
 
 		// 殺された場合、最後の20ステップの盤面遷移を出力する。
-		// if (true) {
-		if (reward == -1 && frame != 801) {
+		if (false) {
+			// if (reward == -1 && frame != 801) {
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
@@ -171,10 +170,8 @@ public class Agent {
 		}
 	}
 
-	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies)
-			throws Exception {
-
-		// KillScoreEvaluator.learn();
+	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies, int friend,
+			boolean isCollapse) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -182,7 +179,6 @@ public class Agent {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (verbose) {
-			// Thread.sleep(1000);
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
@@ -196,13 +192,24 @@ public class Agent {
 			System.out.println("=========================================================================================");
 		}
 
+		// TODO 崩壊前後で止める。
+		if (false) {
+			int delta = 10;
+
+			for (int ttt : new int[] { 500, 575, 650, 725 }) {
+				int def = frame - ttt;
+				if (def >= -2 && def <= delta) {
+					System.out.println("aaa");
+					break;
+				}
+			}
+		}
+
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// 基本情報のアップデート
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		MapInformation map = new MapInformation(board, bomb_blast_strength, bomb_life);
 
 		if (mapsOld.size() == 0) {
 			for (int i = 0; i < numPast; i++) {
@@ -223,6 +230,45 @@ public class Agent {
 			}
 		}
 
+		// Collapseさせる。
+		if (isCollapse) {
+			int delta = 0;
+			int[][] ggg = new int[][] { { 0, 500 }, { 1, 575 }, { 2, 650 }, { 3, 725 } };
+			for (int[] g : ggg) {
+				int targetFrame = g[1];
+				if (frame == targetFrame + delta) {
+					int dis = g[0];
+					for (int p = 0; p < numField; p++) {
+						for (int hen = 0; hen < 4; hen++) {
+							int x = -1, y = -1;
+							if (hen == 0) {
+								x = dis;
+								y = p;
+							} else if (hen == 1) {
+								x = numField - 1 - dis;
+								y = p;
+							} else if (hen == 2) {
+								x = p;
+								y = dis;
+							} else if (hen == 3) {
+								x = p;
+								y = numField - 1 - dis;
+							}
+
+							int type = (int) board.data[x][y];
+							if (type == Constant.Flames) continue;
+							board.data[x][y] = Constant.Rigid;
+							if (Constant.isAgent(type)) {
+								abs[type - 10].isAlive = false;
+							}
+							bomb_blast_strength.data[x][y] = 0;
+							bomb_life.data[x][y] = 0;
+						}
+					}
+				}
+			}
+		}
+
 		// 友達を探す
 		// TODO ハードコードしなくてもどこかに情報あるはず。
 		if (true) {
@@ -236,6 +282,9 @@ public class Agent {
 				friend = 11;
 			}
 		}
+
+		// 情報をまとめたMapInformationオブジェクトを作る。
+		MapInformation map = new MapInformation(board, bomb_blast_strength, bomb_life);
 
 		// エージェントのアイテム取得状況を観測し、Abilityをトラッキングする。
 		// Fogの中でアイテム取得されるケースがあるので、自分以外はトラック漏れが多々ある。
@@ -264,13 +313,6 @@ public class Agent {
 		// 自分だけは爆弾保有数が観測できる。
 		abs[me - 10].numBombHold = ammo;
 
-		// TODO Abilityを出力してみる。
-		if (false) {
-			for (int ai = 0; ai < 4; ai++) {
-				System.out.print(ai + ", " + abs[ai]);
-			}
-		}
-
 		// 爆弾のmaxPowerを保存する。自分以外のエージェントのアイテム取得状況が完全観測できないので、maxPowerで最悪ケースを押さえるため。
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -296,7 +338,9 @@ public class Agent {
 					}
 				} else if (type == Constant.Rigid) {
 					board_memo.data[x][y] = Constant.Rigid;
-					board_memo.data[y][x] = Constant.Rigid;
+					if (frame < 500) {
+						board_memo.data[y][x] = Constant.Rigid;
+					}
 				} else if (type == Constant.Wood) {
 					board_memo.data[x][y] = Constant.Wood;
 					if (frame < 10) {
@@ -348,6 +392,8 @@ public class Agent {
 		MapInformation exmap;
 		{
 			MyMatrix board_ex = new MyMatrix(board);
+			MyMatrix power_ex = new MyMatrix(map.power);
+			MyMatrix life_ex = new MyMatrix(map.life);
 			for (int x = 0; x < numField; x++) {
 				for (int y = 0; y < numField; y++) {
 					if (board_ex.data[x][y] == Constant.Fog) {
@@ -355,7 +401,7 @@ public class Agent {
 					}
 				}
 			}
-			exmap = new MapInformation(board_ex, map.power, map.life);
+			exmap = new MapInformation(board_ex, power_ex, life_ex);
 
 			// TODO 出力してみる。
 			if (false) {
@@ -376,7 +422,7 @@ public class Agent {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// エージェントが爆弾を置く瞬間を発見できたら、Abilityのstrengthを更新する。
-		// TODO Woodが全て破壊されている状況であれば、Strength確定。
+		// Woodが全て破壊されている状況であれば、Strength確定。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (true) {
@@ -528,7 +574,7 @@ public class Agent {
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// double[][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
-			double[][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
+			double[][][] worstScores = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -546,7 +592,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, worstScores);
+			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, worstScores);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -571,10 +617,15 @@ public class Agent {
 			MatrixUtility.OutputMatrix(flameLife);
 		}
 
-		if (GlobalParameter.randomness) {
-			if (GlobalParameter.rand.nextInt(5) == 0) {
-				action = GlobalParameter.rand.nextInt(6);
-			}
+		// if (GlobalParameter.randomness) {
+		// if (GlobalParameter.rand.nextInt(5) == 0) {
+		// action = GlobalParameter.rand.nextInt(6);
+		// }
+		// }
+
+		if (me == 13) {
+			int temp = 0;
+			// Thread.sleep(1000);
 		}
 
 		return action;

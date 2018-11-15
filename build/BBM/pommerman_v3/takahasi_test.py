@@ -146,24 +146,9 @@ def battle(process_number):
 
 
 
-
     # List of four agents
-    if False:
-        agent_list = [
-            MyAgentT(),
-            MyAgentT(),
-            MyAgentT(),
-            MyAgentT(),
-        ]
-
-        agent_list = [
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
-            agents.SimpleAgent(),
-        ]
-
     agent_list = [
+        #agents.SimpleAgent(),
         MyAgentO(),
         MyAgentT(),
         MyAgentO(),
@@ -172,6 +157,8 @@ def battle(process_number):
 
 
     env = pommerman.make('PommeTeamCompetition-v0', agent_list)
+    #env = pommerman.make('PommeTeamCompetition-v1', agent_list)
+
     state = env.reset()
     step = 0
     done = False
@@ -226,6 +213,6 @@ if __name__ == '__main__':
 
     #random.seed(0)
 
-    battle_repeat(0)
-    #battle_repeat_mp()
+    #battle_repeat(0)
+    battle_repeat_mp()
 

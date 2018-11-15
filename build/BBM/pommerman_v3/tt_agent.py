@@ -81,6 +81,8 @@ class MyAgent(BaseAgent):
             return buffer
 
 
+        isCollapse = obs['game_env']=='pommerman.envs.v1:Pomme'
+
         # pick up all data from obs.
         position = obs['position']
         ammo = (int)(obs['ammo'])
@@ -116,7 +118,7 @@ class MyAgent(BaseAgent):
 
 
         # call Java function.
-        action = self._addition_app.act(self._pid, self._caller_id, self._me, x, y, ammo, blast_strength, can_kick, board_buffer, bomb_blast_strength_buffer, bomb_life_buffer, alive_buffer, enemies_list_buffer)
+        action = self._addition_app.act(self._pid, self._caller_id, self._me, x, y, ammo, blast_strength, can_kick, board_buffer, bomb_blast_strength_buffer, bomb_life_buffer, alive_buffer, enemies_list_buffer, teammate.value, isCollapse)
         return action
 
         ##########################################################################################################################################

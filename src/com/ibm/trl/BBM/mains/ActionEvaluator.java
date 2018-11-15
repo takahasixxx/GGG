@@ -41,8 +41,8 @@ public class ActionEvaluator {
 	/**
 	 * アクションを決定する。
 	 */
-	public int ComputeOptimalAction(int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife, MyMatrix lastLook,
-			double[][][] worstScores) throws Exception {
+	public int ComputeOptimalAction(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife,
+			MyMatrix lastLook, double[][][] worstScores) throws Exception {
 
 		double usualMoveThreshold = param.usualThreshold;
 		double attackThreshold = param.attackThreshold;
@@ -158,23 +158,10 @@ public class ActionEvaluator {
 		// safetyScoreを計算する。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double[][] safetyScoreWorst = new double[4][6];
-		for (int ai = 0; ai < 4; ai++) {
-			// 最悪ケースの最悪ケースで見積もる。
-			for (int a = 0; a < 6; a++) {
-				double num = worstScores[a][ai][3];
-				double sss = worstScores[a][ai][1];
-				if (num == 0) {
-					safetyScoreWorst[ai][a] = 0;
-				} else {
-					safetyScoreWorst[ai][a] = sss;
-				}
-			}
-		}
 
+		// 平均の平均で見積もる。
 		double[][] safetyScoreAverage = new double[4][6];
 		for (int ai = 0; ai < 4; ai++) {
-			// 平均の平均で見積もる。
 			for (int a = 0; a < 6; a++) {
 				double num = worstScores[a][ai][3];
 				double sss = worstScores[a][ai][0] / num;
@@ -182,6 +169,21 @@ public class ActionEvaluator {
 					safetyScoreAverage[ai][a] = Double.NaN;
 				} else {
 					safetyScoreAverage[ai][a] = sss;
+				}
+			}
+		}
+
+		// 最悪ケースの最悪ケースで見積もる。
+		double[][] safetyScoreWorst = new double[4][6];
+		for (int ai = 0; ai < 4; ai++) {
+			for (int a = 0; a < 6; a++) {
+				double num = worstScores[a][ai][3];
+				double sss = worstScores[a][ai][1];
+				if (num == 0) {
+					safetyScoreWorst[ai][a] = 0;
+				} else {
+					// safetyScoreWorst[ai][a] = sss + safetyScoreAverage[ai][a] * 1.0e-10;
+					safetyScoreWorst[ai][a] = sss;
 				}
 			}
 		}
@@ -317,7 +319,7 @@ public class ActionEvaluator {
 					if (scoreMe < attackThreshold) continue;
 					int[] actions = new int[4];
 					actions[me - 10] = a;
-					Pack packNext = fm.Step(packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
+					Pack packNext = fm.Step(collapse, frame, packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
 					int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
 					if (temp < killScoreMin) {
 						killScoreMin = temp;
@@ -520,18 +522,25 @@ public class ActionEvaluator {
 
 		if (actionFinal == -1) {
 			int actionSelected = findMostSafetyAction(safetyScoreWorst[me - 10], safetyScoreWorst[friend - 10], actionNG);
+			System.out.println("step1");
 			if (actionSelected == -1) {
 				actionSelected = findMostSafetyAction(safetyScoreWorst[me - 10], safetyScoreWorst[friend - 10], -1);
+				System.out.println("step2");
 				if (actionSelected == -1) {
 					actionSelected = findMostSafetyAction(safetyScoreWorst[me - 10], safetyScoreAverage[friend - 10], -1);
+					System.out.println("step3");
 					if (actionSelected == -1) {
 						actionSelected = findMostSafetyAction(safetyScoreWorst[me - 10], null, -1);
+						System.out.println("step4");
 						if (actionSelected == -1) {
 							actionSelected = findMostSafetyAction(safetyScoreAverage[me - 10], safetyScoreWorst[friend - 10], -1);
+							System.out.println("step5");
 							if (actionSelected == -1) {
 								actionSelected = findMostSafetyAction(safetyScoreAverage[me - 10], safetyScoreAverage[friend - 10], -1);
+								System.out.println("step6");
 								if (actionSelected == -1) {
 									actionSelected = findMostSafetyAction(safetyScoreAverage[me - 10], null, -1);
+									System.out.println("step7");
 									if (actionSelected == -1) {
 										actionSelected = rand.nextInt(6);
 										System.out.println("完全に死ぬ。");
@@ -557,7 +566,7 @@ public class ActionEvaluator {
 
 	private int findMostSafetyAction(double[] scoresMe, double[] scoresFriend, int actionNG) {
 
-		// double usualMoveThreshold = param.usualThreshold;
+		double usualMoveThreshold = param.usualThreshold;
 
 		boolean friendDependency = false;
 		if (scoresFriend != null) {
@@ -580,7 +589,8 @@ public class ActionEvaluator {
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					if (scoreFriend == 0) continue;
+					// if (scoreFriend == 0) continue;
+					if (scoreFriend < usualMoveThreshold) continue;
 				}
 				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe > max) {
@@ -595,7 +605,8 @@ public class ActionEvaluator {
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					if (scoreFriend == 0) continue;
+					// if (scoreFriend == 0) continue;
+					if (scoreFriend < usualMoveThreshold) continue;
 				}
 				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe == max) {

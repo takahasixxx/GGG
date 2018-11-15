@@ -1,0 +1,2 @@
+-e git+https://github.com/MultiAgentLearning/playground.git#egg=pommerman
+numpy==1.15.0

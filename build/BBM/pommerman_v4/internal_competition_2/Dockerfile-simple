@@ -1,0 +1,16 @@
+FROM python:3.6
+
+RUN apt update
+RUN apt install -y python-opengl
+Add ./requirements.txt /
+RUN pip install -r requirements.txt
+ADD ./src /src
+ADD ./internal_competition_2/src /competition/src 
+
+EXPOSE 10080
+ENV NAME Agent
+
+# Run
+WORKDIR /competition/src
+ENTRYPOINT ["python"]
+CMD ["run_simple_agent.py"]

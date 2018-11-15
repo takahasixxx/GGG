@@ -1,0 +1,16 @@
+# (C) Copyright IBM Corp. 2018
+FROM python:3.6
+
+RUN apt update
+RUN apt install -y python-opengl
+Add ./internal_competition_nips/requirements-nips.txt /
+RUN pip install -r requirements-nips.txt
+ADD ./internal_competition_nips/src /src
+
+EXPOSE 10080
+ENV NAME Agent
+
+# Run
+WORKDIR /src
+ENTRYPOINT ["python"]
+CMD ["run_osogami_agent.py"]

@@ -29,7 +29,7 @@ public class WorstScoreEvaluatorSingle {
 		this.param = param;
 	}
 
-	public double[][] Do3(Pack[] packsOrg, int[][] instructions) throws Exception {
+	public double[][] Do3(boolean collapse, int frame, Pack[] packsOrg, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -72,7 +72,7 @@ public class WorstScoreEvaluatorSingle {
 						}
 					}
 					int[] actions = new int[4];
-					Pack packNextNA = fm.Step(packPreNA, actions);
+					Pack packNextNA = fm.Step(collapse, frame + t - 1, packPreNA, actions);
 					packsNA[t] = packNextNA;
 				}
 			}
@@ -482,7 +482,7 @@ public class WorstScoreEvaluatorSingle {
 		return scores;
 	}
 
-	public double[][] Do3_HighSpeed(Pack[] packsOrg, int[][] instructions) throws Exception {
+	public double[][] Do3_HighSpeed(boolean collapse, int frame, Pack[] packsOrg, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -525,7 +525,7 @@ public class WorstScoreEvaluatorSingle {
 						}
 					}
 					int[] actions = new int[4];
-					Pack packNextNA = fm.Step(packPreNA, actions);
+					Pack packNextNA = fm.Step(collapse, frame + t - 1, packPreNA, actions);
 					packsNA[t] = packNextNA;
 				}
 			}

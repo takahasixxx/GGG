@@ -54,7 +54,7 @@ public class WorstScoreEvaluator {
 		this.wses = new WorstScoreEvaluatorSingle(param);
 	}
 
-	public double[][][] Do(int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
+	public double[][][] Do(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
 		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -84,7 +84,7 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_ALL);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_ALL);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -93,7 +93,7 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_MOVEONLY);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -102,27 +102,27 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_STOP_IF_FAR);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
 			}
 
-			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
-				opsetList.clear();
-				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
-					opsetList.addAll(opsetList2);
-				}
-				System.out.println("opsetList.size()=" + opsetList.size());
-			}
+			// if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
+			// opsetList.clear();
+			// for (Pack pack : packList) {
+			// List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_STOP);
+			// opsetList.addAll(opsetList2);
+			// }
+			// System.out.println("opsetList.size()=" + opsetList.size());
+			// }
 
 		} else {
 
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_MOVEONLY);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -131,27 +131,27 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_STOP_IF_FAR);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
 			}
 
-			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
-				opsetList.clear();
-				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP);
-					opsetList.addAll(opsetList2);
-				}
-				System.out.println("opsetList.size()=" + opsetList.size());
-			}
+			// if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
+			// opsetList.clear();
+			// for (Pack pack : packList) {
+			// List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_STOP);
+			// opsetList.addAll(opsetList2);
+			// }
+			// System.out.println("opsetList.size()=" + opsetList.size());
+			// }
 		}
 
 		if (false) {
 			if (opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY_IF_FAR);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_MOVEONLY_IF_FAR);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -160,7 +160,7 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_MOVEONLY);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_MOVEONLY);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -168,7 +168,7 @@ public class WorstScoreEvaluator {
 			if (opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
-					List<OperationSet[]> opsetList2 = collectOperationSet(me, friend, pack, LOGIC_STOP_IF_FAR);
+					List<OperationSet[]> opsetList2 = collectOperationSet(collapse, frame, me, friend, pack, LOGIC_STOP_IF_FAR);
 					opsetList.addAll(opsetList2);
 				}
 				System.out.println("opsetList.size()=" + opsetList.size());
@@ -208,12 +208,12 @@ public class WorstScoreEvaluator {
 					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
-				double[][] score_temp = wses.Do3_HighSpeed(packs, instructions);
+				double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, packs, instructions);
 
 				// TODO 通常版とハイスピード版の突合デバッグ用。
 				if (false) {
-					double[][] temp1 = wses.Do3(packs, instructions);
-					double[][] temp2 = wses.Do3_HighSpeed(packs, instructions);
+					double[][] temp1 = wses.Do3(collapse, frame, packs, instructions);
+					double[][] temp2 = wses.Do3_HighSpeed(collapse, frame, packs, instructions);
 					for (int ai = 0; ai < 4; ai++) {
 						for (int i = 0; i < 2; i++) {
 							if (temp1[ai][i] != temp2[ai][i]) {
@@ -255,7 +255,7 @@ public class WorstScoreEvaluator {
 		if (false) {
 			List<Future<?>> list = new ArrayList<Future<?>>();
 			for (OperationSet[] opset : opsetList) {
-				ScoreComputingTask ggg = new ScoreComputingTask(me, friend, wses, opset, scores);
+				ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, wses, opset, scores);
 				Future<?> future = GlobalParameter.executor.submit(ggg);
 				list.add(future);
 			}
@@ -268,13 +268,17 @@ public class WorstScoreEvaluator {
 	}
 
 	public static class ScoreComputingTask implements Runnable {
+		boolean collapse;
+		int frame;
 		int me;
 		int friend;
 		WorstScoreEvaluatorSingle wses;
 		OperationSet opset[];
 		double[][][] scores;
 
-		public ScoreComputingTask(int me, int friend, WorstScoreEvaluatorSingle wses, OperationSet[] opset, double[][][] scores) {
+		public ScoreComputingTask(boolean collapse, int frame, int me, int friend, WorstScoreEvaluatorSingle wses, OperationSet[] opset, double[][][] scores) {
+			this.collapse = collapse;
+			this.frame = frame;
 			this.me = me;
 			this.friend = friend;
 			this.wses = wses;
@@ -304,7 +308,7 @@ public class WorstScoreEvaluator {
 					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
-				double[][] score_temp = wses.Do3(packs, instructions);
+				double[][] score_temp = wses.Do3(collapse, frame, packs, instructions);
 				synchronized (scores) {
 					for (int[] actions : opset[0].actionsList) {
 						int firstAction = actions[me - 10];
@@ -453,7 +457,7 @@ public class WorstScoreEvaluator {
 		}
 	}
 
-	private List<OperationSet[]> collectOperationSet(int me, int friend, Pack packNow, int logic) throws Exception {
+	private List<OperationSet[]> collectOperationSet(boolean collapse, int frame, int me, int friend, Pack packNow, int logic) throws Exception {
 
 		double disFar = 2;
 
@@ -570,7 +574,7 @@ public class WorstScoreEvaluator {
 						if (actionExecuteFlag[3][d] == false) continue;
 
 						int[] actions = new int[] { a, b, c, d };
-						Pack packNext = fm.Step(packNow, actions);
+						Pack packNext = fm.Step(collapse, frame, packNow, actions);
 
 						if (true) {
 							OperationSet[] find = null;

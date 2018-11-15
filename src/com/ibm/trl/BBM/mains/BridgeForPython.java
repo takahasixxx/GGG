@@ -103,10 +103,6 @@ public class BridgeForPython {
 		try {
 			System.out.println("BridgeForPython, finish_game, pid=" + pid);
 
-			if (r1 == 1) {
-				System.out.println("make");
-			}
-
 			// 結果を過去ログに移す。
 			Game game;
 			synchronized (gameMap) {
@@ -154,6 +150,10 @@ public class BridgeForPython {
 			e.printStackTrace();
 			System.exit(0);
 		}
+	}
+
+	public void changed() {
+		System.out.println("changed");
 	}
 
 	/************************************************************************************************
@@ -213,7 +213,7 @@ public class BridgeForPython {
 	static int numcall = 0;
 
 	public int act(int pid, int caller_id, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer,
-			byte[] alive_buffer, byte[] enemies_list_buffer) {
+			byte[] alive_buffer, byte[] enemies_list_buffer, int friend, boolean isCollapse) {
 		try {
 			System.out.println("BridgeForPython, act start, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
 
@@ -235,7 +235,7 @@ public class BridgeForPython {
 				}
 			}
 
-			int action = agent.act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies);
+			int action = agent.act(x, y, ammo, blast_strength, can_kick, board, bomb_blast_strength, bomb_life, alive, enemies, friend, isCollapse);
 
 			long timeEnd = System.currentTimeMillis();
 			long timeDel = timeEnd - timeStart;
@@ -381,7 +381,8 @@ public class BridgeForPython {
 		} else if (flag == 1) {
 			try {
 				Pack packNextAns = pack;
-				Pack packNext = fm.Step(packNow, actions);
+				// TODO collapseをちゃんとやるか？
+				Pack packNext = fm.Step(false, 0, packNow, actions);
 
 				// アイテム取得時の変化が表現できずに違いがでるため。とりあえず。
 				// packNext.abs = packNextAns.abs;

@@ -95,11 +95,11 @@ public class ForwardModel {
 		}
 	}
 
-	public Pack Step(Pack pack, int[] actions) throws Exception {
-		return Step(pack.board, pack.flameLife, pack.abs, pack.sh, actions);
+	public Pack Step(boolean collapse, int frame, Pack pack, int[] actions) throws Exception {
+		return Step(collapse, frame, pack.board, pack.flameLife, pack.abs, pack.sh, actions);
 	}
 
-	public Pack Step(MyMatrix boardNow, MyMatrix flameLifeNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
+	public Pack Step(boolean collapse, int frame, MyMatrix boardNow, MyMatrix flameLifeNow, Ability absNow[], StatusHolder shNow, int[] actions) throws Exception {
 
 		MyMatrix boardNext = new MyMatrix(boardNow);
 
@@ -633,6 +633,69 @@ public class ForwardModel {
 			EEE aaaNext = agentsNext[ai];
 			if (flameLifeNext.data[aaaNext.x][aaaNext.y] > 0) {
 				abNext.isAlive = false;
+			}
+		}
+
+		/////////////////////////////////////////////////////////////////////////////////////
+		// 時刻がきたら崩壊させる。
+		/////////////////////////////////////////////////////////////////////////////////////
+		if (collapse) {
+			int delta = -1;
+			// int delta = 0;
+			int dis = -1;
+			if (frame == 500 + delta) {
+				dis = 0;
+			} else if (frame == 575 + delta) {
+				dis = 1;
+			} else if (frame == 650 + delta) {
+				dis = 2;
+			} else if (frame == 725 + delta) {
+				dis = 3;
+			}
+			if (dis != -1) {
+				for (int p = 0; p < numField; p++) {
+					for (int hen = 0; hen < 4; hen++) {
+						int x = -1, y = -1;
+						if (hen == 0) {
+							x = dis;
+							y = p;
+						} else if (hen == 1) {
+							x = numField - 1 - dis;
+							y = p;
+						} else if (hen == 2) {
+							x = p;
+							y = dis;
+						} else if (hen == 3) {
+							x = p;
+							y = numField - 1 - dis;
+						}
+						boardNext.data[x][y] = Constant.Rigid;
+						// TODO FlamesがCollapseに巻き込まれていたら消す。これは実施しないほうが実際のロジックになる？？
+						// flameLifeNext.data[x][y] = 0;
+					}
+				}
+
+				// エージェントがCollapseに巻き込まれていたら殺す。
+				for (int ai = 0; ai < 4; ai++) {
+					Ability abNext = absNext[ai];
+					if (abNext.isAlive == false) continue;
+					if (agentsNow[ai] == null) continue;
+					AgentEEE aaaNext = agentsNext[ai];
+					int type = (int) boardNext.data[aaaNext.x][aaaNext.y];
+					if (type == Constant.Rigid) {
+						abNext.isAlive = false;
+					}
+				}
+
+				// 爆弾がCollapseに巻き込まれていたら消す。
+				for (int i = 0; i < numBomb; i++) {
+					BombEEE bbbNext = bombsNext[i];
+					if (bbbNext == null) continue;
+					int type = (int) boardNext.data[bbbNext.x][bbbNext.y];
+					if (type == Constant.Rigid) {
+						bombsNext[i] = null;
+					}
+				}
 			}
 		}
 
