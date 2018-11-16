@@ -186,9 +186,9 @@ public class Agent {
 			System.out.println("=========================================================================================");
 			System.out.println("frame = " + frame);
 			System.out.println("me = " + me);
-			System.out.println("=========================================================================================");
-			System.out.println("board picture");
-			BBMUtility.printBoard2(board, board, bomb_life, bomb_blast_strength);
+			// System.out.println("=========================================================================================");
+			// System.out.println("board picture");
+			// BBMUtility.printBoard2(board, board, bomb_life, bomb_blast_strength);
 			System.out.println("=========================================================================================");
 		}
 
@@ -541,6 +541,7 @@ public class Agent {
 				System.out.println(a2);
 				System.out.println(a3);
 			}
+			System.out.println("=========================================================================================");
 			System.out.println("=========================================================================================");
 			System.out.println("flame life");
 			MatrixUtility.OutputMatrix(flameLife);

@@ -182,6 +182,7 @@ public class ActionEvaluator {
 				if (num == 0) {
 					safetyScoreWorst[ai][a] = 0;
 				} else {
+					// TODO
 					// safetyScoreWorst[ai][a] = sss + safetyScoreAverage[ai][a] * 1.0e-10;
 					safetyScoreWorst[ai][a] = sss;
 				}
@@ -198,6 +199,22 @@ public class ActionEvaluator {
 			System.out.println("==============================");
 			MatrixUtility.OutputMatrix(new MyMatrix(safetyScoreAverage));
 			System.out.println("==============================");
+		}
+
+		// TODO
+		if (numVisibleEnemy == 1) {
+			double min = Double.POSITIVE_INFINITY;
+			double max = Double.NEGATIVE_INFINITY;
+			for (int a = 0; a < 6; a++) {
+				double sss = safetyScoreWorst[me - 10][a];
+				if (sss > max) max = sss;
+				if (sss < min) min = sss;
+			}
+
+			if (max == min) {
+				System.out.println("sanashi");
+			}
+
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -570,7 +587,7 @@ public class ActionEvaluator {
 
 		boolean friendDependency = false;
 		if (scoresFriend != null) {
-			double max = 0;
+			double max = Double.NEGATIVE_INFINITY;
 			double min = Double.POSITIVE_INFINITY;
 			for (int action = 0; action < 6; action++) {
 				double s = scoresFriend[action];
@@ -583,7 +600,8 @@ public class ActionEvaluator {
 
 		int actionSelected = -1;
 		{
-			double max = 0;
+			double max = Double.NEGATIVE_INFINITY;
+			double min = Double.POSITIVE_INFINITY;
 			for (int action = 0; action < 6; action++) {
 				if (action == actionNG) continue;
 				double scoreMe = scoresMe[action];
@@ -593,11 +611,11 @@ public class ActionEvaluator {
 					if (scoreFriend < usualMoveThreshold) continue;
 				}
 				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
-				if (scoreMe > max) {
-					max = scoreMe;
-				}
+				if (scoreMe > max) max = scoreMe;
+				if (scoreMe < min) min = scoreMe;
+
 			}
-			if (max == 0) return -1;
+			if (max == min) return -1;
 
 			List<Integer> set = new ArrayList<Integer>();
 			for (int action = 0; action < 6; action++) {

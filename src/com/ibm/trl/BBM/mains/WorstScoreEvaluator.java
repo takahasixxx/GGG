@@ -28,8 +28,8 @@ public class WorstScoreEvaluator {
 	static final int numField = GlobalParameter.numField;
 	static final boolean verbose = GlobalParameter.verbose;
 
-	static final int numMaxCase = 120;
-	// static final int numMaxCase = 120000000;
+	// static final int numMaxCase = 120;
+	static final int numMaxCase = 120000000;
 
 	ForwardModel fm = new ForwardModel();
 	ModelParameter param;
@@ -79,8 +79,8 @@ public class WorstScoreEvaluator {
 		}
 
 		List<OperationSet[]> opsetList = new ArrayList<OperationSet[]>();
-		// if (true) {
-		if (numVisibleAgent <= 3) {
+		if (true) {
+			// if (numVisibleAgent <= 3) {
 			if (opsetList.size() == 0 || opsetList.size() > numMaxCase) {
 				opsetList.clear();
 				for (Pack pack : packList) {
@@ -187,6 +187,11 @@ public class WorstScoreEvaluator {
 
 		// シングルスレッドバージョン
 		if (true) {
+
+			//TODO
+			List<Double> hhh = new ArrayList<Double>();
+			List<int[]> ggg = new ArrayList<int[]>();
+
 			for (OperationSet[] opset : opsetList) {
 
 				int numt = 13;
@@ -225,6 +230,11 @@ public class WorstScoreEvaluator {
 				}
 
 				for (int[] actions : opset[0].actionsList) {
+
+					//TODO
+					ggg.add(actions);
+					hhh.add(score_temp[me - 10][0]);
+
 					int firstAction = actions[me - 10];
 					for (int ai = 0; ai < 4; ai++) {
 						double sss = score_temp[ai][0];
@@ -246,6 +256,20 @@ public class WorstScoreEvaluator {
 
 						// 計測回数
 						scores[firstAction][ai][3] += num;
+					}
+				}
+			}
+
+			// TODO 整理して出力してみる。
+			if (false) {
+				int num = hhh.size();
+				for (int a = 0; a < 6; a++) {
+					for (int i = 0; i < num; i++) {
+						int[] actions = ggg.get(i);
+						double sss = hhh.get(i);
+						if (actions[me - 10] != a) continue;
+						String line = String.format("%d,%d,%d,%d = %f", actions[0], actions[1], actions[2], actions[3], sss);
+						System.out.println(line);
 					}
 				}
 			}

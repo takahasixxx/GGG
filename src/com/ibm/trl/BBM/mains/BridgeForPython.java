@@ -67,8 +67,8 @@ public class BridgeForPython {
 			if (true) {
 				double usualCell = 3.5;
 				double attackCell = 2.5;
-				// for (double rateLevel : new double[] { 1.5 }) {
-				for (double rateLevel : new double[] { 1.25 }) {
+				for (double rateLevel : new double[] { 1.6 }) {
+					// for (double rateLevel : new double[] { 1.25 }) {
 					// for (double rateLevel : new double[] { 1.2, 1.4 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
