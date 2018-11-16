@@ -29,7 +29,7 @@ public class WorstScoreEvaluatorSingle {
 		this.param = param;
 	}
 
-	public double[][] Do3(boolean collapse, int frame, Pack[] packsOrg, int[][] instructions) throws Exception {
+	public double[][] Do3(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -41,6 +41,10 @@ public class WorstScoreEvaluatorSingle {
 		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
 		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
+
+		int[] teamNumber = new int[4];
+		teamNumber[me - 10] = 1;
+		teamNumber[friend - 10] = 1;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -404,30 +408,13 @@ public class WorstScoreEvaluatorSingle {
 							for (int ai2 = 0; ai2 < 4; ai2++) {
 								if (ai2 == ai) continue;
 
-								// TODO —F’B‚ÌŒvŽZ‚ÌŽd•û‚ð‚à‚¤­‚µŒ«‚­‚·‚éB
 								MyMatrix stepMapNext = stepMaps_move[t + 1][ai2];
 								MyMatrix stepMapNow = stepMaps_move[t][ai2];
-								if (ai == 0) {
-									if (ai2 == 2) {
-										stepMapNext = stepMaps_stay[t + 1][ai2];
-										stepMapNow = stepMaps_stay[t][ai2];
-									}
-								} else if (ai == 1) {
-									if (ai2 == 3) {
-										stepMapNext = stepMaps_stay[t + 1][ai2];
-										stepMapNow = stepMaps_stay[t][ai2];
-									}
-								} else if (ai == 2) {
-									if (ai2 == 0) {
-										stepMapNext = stepMaps_stay[t + 1][ai2];
-										stepMapNow = stepMaps_stay[t][ai2];
-									}
-								} else if (ai == 3) {
-									if (ai2 == 1) {
-										stepMapNext = stepMaps_stay[t + 1][ai2];
-										stepMapNow = stepMaps_stay[t][ai2];
-									}
+								if (teamNumber[ai] == teamNumber[ai2]) {
+									stepMapNext = stepMaps_stay[t + 1][ai2];
+									stepMapNow = stepMaps_stay[t][ai2];
 								}
+
 								double stepNext = stepMapNext.data[x2][y2];
 								if (stepNext != numt) {
 									if (stepNext < nearestStepNext) {
@@ -482,7 +469,7 @@ public class WorstScoreEvaluatorSingle {
 		return scores;
 	}
 
-	public double[][] Do3_HighSpeed(boolean collapse, int frame, Pack[] packsOrg, int[][] instructions) throws Exception {
+	public double[][] Do3_HighSpeed(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -494,6 +481,10 @@ public class WorstScoreEvaluatorSingle {
 		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
 		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
+
+		int[] teamNumber = new int[4];
+		teamNumber[me - 10] = 1;
+		teamNumber[friend - 10] = 1;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -882,23 +873,11 @@ public class WorstScoreEvaluatorSingle {
 								int index3 = ai2 * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
 								int index4 = ai2 * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
 
-								double[] stepMap = stepMaps_move;
-								if (ai == 0) {
-									if (ai2 == 2) {
-										stepMap = stepMaps_stay;
-									}
-								} else if (ai == 1) {
-									if (ai2 == 3) {
-										stepMap = stepMaps_stay;
-									}
-								} else if (ai == 2) {
-									if (ai2 == 0) {
-										stepMap = stepMaps_stay;
-									}
-								} else if (ai == 3) {
-									if (ai2 == 1) {
-										stepMap = stepMaps_stay;
-									}
+								double[] stepMap;
+								if (teamNumber[ai] == teamNumber[ai2]) {
+									stepMap = stepMaps_stay;
+								} else {
+									stepMap = stepMaps_move;
 								}
 
 								double stepNext = stepMap[index4];

@@ -208,12 +208,12 @@ public class WorstScoreEvaluator {
 					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
-				double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, packs, instructions);
+				double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, instructions);
 
 				// TODO 通常版とハイスピード版の突合デバッグ用。
-				if (false) {
-					double[][] temp1 = wses.Do3(collapse, frame, packs, instructions);
-					double[][] temp2 = wses.Do3_HighSpeed(collapse, frame, packs, instructions);
+				if (true) {
+					double[][] temp1 = wses.Do3(collapse, frame, me, friend, packs, instructions);
+					double[][] temp2 = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, instructions);
 					for (int ai = 0; ai < 4; ai++) {
 						for (int i = 0; i < 2; i++) {
 							if (temp1[ai][i] != temp2[ai][i]) {
@@ -308,7 +308,7 @@ public class WorstScoreEvaluator {
 					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
-				double[][] score_temp = wses.Do3(collapse, frame, packs, instructions);
+				double[][] score_temp = wses.Do3(collapse, frame, me, friend, packs, instructions);
 				synchronized (scores) {
 					for (int[] actions : opset[0].actionsList) {
 						int firstAction = actions[me - 10];

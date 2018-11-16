@@ -269,20 +269,6 @@ public class Agent {
 			}
 		}
 
-		// 友達を探す
-		// TODO ハードコードしなくてもどこかに情報あるはず。
-		if (true) {
-			if (me == 10) {
-				friend = 12;
-			} else if (me == 11) {
-				friend = 13;
-			} else if (me == 12) {
-				friend = 10;
-			} else if (me == 13) {
-				friend = 11;
-			}
-		}
-
 		// 情報をまとめたMapInformationオブジェクトを作る。
 		MapInformation map = new MapInformation(board, bomb_blast_strength, bomb_life);
 
