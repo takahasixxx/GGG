@@ -54,7 +54,34 @@ public class WorstScoreEvaluator {
 		this.wses = new WorstScoreEvaluatorSingle(param);
 	}
 
-	public double[][][] Do(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
+	static public class ScoreEntry {
+		double max = Double.NEGATIVE_INFINITY;
+		double min = Double.POSITIVE_INFINITY;
+		double sum = 0;
+		double num = 0;
+	}
+
+	static public class ScoreResult {
+		ScoreEntry[][] singleScore = new ScoreEntry[6][4];
+		ScoreEntry[][][] pairScore = new ScoreEntry[6][6][4];
+
+		public ScoreResult() {
+			for (int a = 0; a < 6; a++) {
+				for (int ai = 0; ai < 4; ai++) {
+					singleScore[a][ai] = new ScoreEntry();
+				}
+			}
+			for (int a = 0; a < 6; a++) {
+				for (int b = 0; b < 6; b++) {
+					for (int ai = 0; ai < 4; ai++) {
+						pairScore[a][b][ai] = new ScoreEntry();
+					}
+				}
+			}
+		}
+	}
+
+	public ScoreResult Do(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
 		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -177,18 +204,20 @@ public class WorstScoreEvaluator {
 
 		// リストアップした初期条件でシミュレーションを実施する。
 		// action * ai * (ave, min, max, num)
-		double[][][] scores = new double[6][4][4];
-		for (int a = 0; a < 6; a++) {
-			for (int ai = 0; ai < 4; ai++) {
-				scores[a][ai][1] = Double.POSITIVE_INFINITY;
-				scores[a][ai][2] = Double.NEGATIVE_INFINITY;
-			}
-		}
+		// double[][][] scores = new double[6][4][4];
+		// for (int a = 0; a < 6; a++) {
+		// for (int ai = 0; ai < 4; ai++) {
+		// scores[a][ai][1] = Double.POSITIVE_INFINITY;
+		// scores[a][ai][2] = Double.NEGATIVE_INFINITY;
+		// }
+		// }
+
+		ScoreResult sr = new ScoreResult();
 
 		// シングルスレッドバージョン
 		if (true) {
 
-			//TODO
+			// TODO
 			List<Double> hhh = new ArrayList<Double>();
 			List<int[]> ggg = new ArrayList<int[]>();
 
@@ -231,31 +260,54 @@ public class WorstScoreEvaluator {
 
 				for (int[] actions : opset[0].actionsList) {
 
-					//TODO
+					// TODO
 					ggg.add(actions);
 					hhh.add(score_temp[me - 10][0]);
 
-					int firstAction = actions[me - 10];
+					int actionMe = actions[me - 10];
+					int actionFriend = actions[friend - 10];
 					for (int ai = 0; ai < 4; ai++) {
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
 						if (num == 0) continue;
 
 						// スコア平均値
-						scores[firstAction][ai][0] += sss;
+						sr.singleScore[actionMe][ai].sum += sss;
 
 						// スコア最小値
-						if (sss < scores[firstAction][ai][1]) {
-							scores[firstAction][ai][1] = sss;
+						if (sss < sr.singleScore[actionMe][ai].min) {
+							sr.singleScore[actionMe][ai].min = sss;
 						}
 
 						// スコア最大値
-						if (sss > scores[firstAction][ai][2]) {
-							scores[firstAction][ai][2] = sss;
+						if (sss > sr.singleScore[actionMe][ai].max) {
+							sr.singleScore[actionMe][ai].max = sss;
 						}
 
 						// 計測回数
-						scores[firstAction][ai][3] += num;
+						sr.singleScore[actionMe][ai].num++;
+					}
+
+					for (int ai = 0; ai < 4; ai++) {
+						double sss = score_temp[ai][0];
+						double num = score_temp[ai][1];
+						if (num == 0) continue;
+
+						// スコア平均値
+						sr.pairScore[actionMe][actionFriend][ai].sum += sss;
+
+						// スコア最小値
+						if (sss < sr.pairScore[actionMe][actionFriend][ai].min) {
+							sr.pairScore[actionMe][actionFriend][ai].min = sss;
+						}
+
+						// スコア最大値
+						if (sss > sr.pairScore[actionMe][actionFriend][ai].max) {
+							sr.pairScore[actionMe][actionFriend][ai].max = sss;
+						}
+
+						// 計測回数
+						sr.pairScore[actionMe][actionFriend][ai].num++;
 					}
 				}
 			}
@@ -277,6 +329,7 @@ public class WorstScoreEvaluator {
 
 		// マルチスレッドバージョン
 		if (false) {
+			double[][][] scores = new double[6][4][4];
 			List<Future<?>> list = new ArrayList<Future<?>>();
 			for (OperationSet[] opset : opsetList) {
 				ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, wses, opset, scores);
@@ -288,7 +341,7 @@ public class WorstScoreEvaluator {
 			}
 		}
 
-		return scores;
+		return sr;
 	}
 
 	public static class ScoreComputingTask implements Runnable {

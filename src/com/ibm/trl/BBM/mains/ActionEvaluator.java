@@ -14,6 +14,7 @@ import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
+import com.ibm.trl.BBM.mains.WorstScoreEvaluator.ScoreResult;
 
 import ibm.ANACONDA.Core.MatrixUtility;
 import ibm.ANACONDA.Core.MyMatrix;
@@ -42,7 +43,7 @@ public class ActionEvaluator {
 	 * アクションを決定する。
 	 */
 	public int ComputeOptimalAction(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife,
-			MyMatrix lastLook, double[][][] worstScores) throws Exception {
+			MyMatrix lastLook, ScoreResult sr) throws Exception {
 
 		double usualMoveThreshold = param.usualThreshold;
 		double attackThreshold = param.attackThreshold;
@@ -163,8 +164,8 @@ public class ActionEvaluator {
 		double[][] safetyScoreAverage = new double[4][6];
 		for (int ai = 0; ai < 4; ai++) {
 			for (int a = 0; a < 6; a++) {
-				double num = worstScores[a][ai][3];
-				double sss = worstScores[a][ai][0] / num;
+				double num = sr.singleScore[a][ai].num;
+				double sss = sr.singleScore[a][ai].sum / num;
 				if (num == 0) {
 					safetyScoreAverage[ai][a] = Double.NaN;
 				} else {
@@ -177,8 +178,8 @@ public class ActionEvaluator {
 		double[][] safetyScoreWorst = new double[4][6];
 		for (int ai = 0; ai < 4; ai++) {
 			for (int a = 0; a < 6; a++) {
-				double num = worstScores[a][ai][3];
-				double sss = worstScores[a][ai][1];
+				double num = sr.singleScore[a][ai].num;
+				double sss = sr.singleScore[a][ai].min;
 				if (num == 0) {
 					safetyScoreWorst[ai][a] = 0;
 				} else {
@@ -357,8 +358,77 @@ public class ActionEvaluator {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+		// ペア
+		// if (numBrakableWood == 0 && actionFinal == -1 && numVisibleTeam == 2 && numVisibleEnemy > 0) {
+		if (actionFinal == -1 && numVisibleTeam == 2 && numVisibleEnemy > 0) {
+			for (int ai = 0; ai < 4; ai++) {
+				if (ai == me - 10) continue;
+				if (ai == friend - 10) continue;
+				double min = Double.POSITIVE_INFINITY;
+				double max = 0;
+				for (int a = 0; a < 6; a++) {
+					for (int b = 0; b < 6; b++) {
+						double num1 = sr.pairScore[a][b][me - 10].num;
+						double num2 = sr.pairScore[a][b][friend - 10].num;
+						double num3 = sr.pairScore[a][b][ai].num;
+						if (num1 == 0 || num2 == 0 || num3 == 0) continue;
+
+						double s1 = sr.pairScore[a][b][me - 10].min;
+						double s2 = sr.pairScore[a][b][friend - 10].min;
+						double s3 = sr.pairScore[a][b][ai].sum / num3;
+
+						if (s1 < attackThreshold || s2 < attackThreshold) continue;
+
+						if (s3 < min) min = s3;
+						if (s3 > max) max = s3;
+					}
+				}
+
+				// 自分のアクションが何ら影響を与えなければ飛ばす。
+				if (min == max) continue;
+
+				if (min != Double.POSITIVE_INFINITY) {
+
+					int besta = -1;
+					int bestb = -1;
+
+					ArrayList<Integer> set = new ArrayList<Integer>();
+					for (int a = 0; a < 6; a++) {
+						for (int b = 0; b < 6; b++) {
+							double num1 = sr.pairScore[a][b][me - 10].num;
+							double num2 = sr.pairScore[a][b][friend - 10].num;
+							double num3 = sr.pairScore[a][b][ai].num;
+							if (num1 == 0 || num2 == 0 || num3 == 0) continue;
+
+							double s1 = sr.pairScore[a][b][me - 10].min;
+							double s2 = sr.pairScore[a][b][friend - 10].min;
+							double s3 = sr.pairScore[a][b][ai].sum / num3;
+
+							if (s1 < attackThreshold || s2 < attackThreshold) continue;
+
+							if (s3 == min) {
+								set.add(a);
+								besta = a;
+								bestb = b;
+							}
+						}
+					}
+					int index = rand.nextInt(set.size());
+					actionFinal = set.get(index);
+					reason = "攻撃する。1手先。ペア。";
+
+					if (min < 0.1) {
+						System.out.println("chance?");
+					}
+
+					break;
+				}
+			}
+		}
+
 		// 単独一手先
-		if (numBrakableWood == 0 && actionFinal == -1) {
+		// if (numBrakableWood == 0 && actionFinal == -1 && numVisibleEnemy > 0) {
+		if (actionFinal == -1 && numVisibleEnemy > 0) {
 			for (int ai = 0; ai < 4; ai++) {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
@@ -536,6 +606,55 @@ public class ActionEvaluator {
 		// 上の選択肢で危険な状態に陥るなら、もっとも安全なアクションを取る。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		// ペア避け
+		if (actionFinal == -1 && numVisibleTeam == 2) {
+			double max = 0;
+			int maxa = -1;
+			int maxb = -1;
+			for (int a = 0; a < 6; a++) {
+				for (int b = 0; b < 6; b++) {
+					double numMe = sr.pairScore[a][b][me - 10].num;
+					double numFriend = sr.pairScore[a][b][friend - 10].num;
+					if (numMe == 0 || numFriend == 0) continue;
+					double scoreMe = sr.pairScore[a][b][me - 10].min;
+					double scoreFriend = sr.pairScore[a][b][friend - 10].min;
+					double scoreMeAve = sr.pairScore[a][b][me - 10].sum / numMe;
+					double scoreFriendAve = sr.pairScore[a][b][friend - 10].sum / numFriend;
+					double score = (scoreMe + scoreMeAve * 1.0e-10) * (scoreFriend + scoreFriendAve * 1.0e-10);
+					if (score > max) {
+						max = score;
+						maxa = a;
+						maxb = b;
+					}
+				}
+			}
+			if (maxa != -1) {
+				actionFinal = maxa;
+				reason = "もっとも安全なアクションを選ぶ。ペア避け。";
+			} else {
+				for (int a = 0; a < 6; a++) {
+					for (int b = 0; b < 6; b++) {
+						double numMe = sr.pairScore[a][b][me - 10].num;
+						double numFriend = sr.pairScore[a][b][friend - 10].num;
+						if (numMe == 0 || numFriend == 0) continue;
+						double scoreMe = sr.pairScore[a][b][me - 10].sum / numMe;
+						double scoreFriend = sr.pairScore[a][b][friend - 10].sum / numFriend;
+						double score = scoreMe * scoreFriend;
+						if (score > max) {
+							max = score;
+							maxa = a;
+							maxb = b;
+						}
+					}
+				}
+
+				if (maxa != -1) {
+					actionFinal = maxa;
+					reason = "もっとも安全なアクションを選ぶ。ペア避け。";
+				}
+			}
+		}
 
 		if (actionFinal == -1) {
 			int actionSelected = findMostSafetyAction(safetyScoreWorst[me - 10], safetyScoreWorst[friend - 10], actionNG);

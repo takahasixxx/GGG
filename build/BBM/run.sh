@@ -4,10 +4,15 @@
 #################################
 
 
+python3 -m venv myenv
+
 source myenv/bin/activate
+
+pip install -r pommerman_v4/requirements.txt 
 
 python --version
 pip --version
+
 
 
 # kill all BBM processes.
@@ -21,7 +26,7 @@ nohup nice -n 19 java -Xmx10G -jar BBM.jar &> log.txt &
 sleep 5
 
 #start python client
-nohup nice -n 19 python -u pommerman_v4/takahasi_test.py &> log2.txt &
+nohup nice -n 19 python -u pommerman_v4/takahasi_test_mp.py &> log2.txt &
 
 
 tail -f log.txt | while IFS= read -r LINE; do printf '%s\n' "$LINE" | iconv -f UTF-8 -t SJIS | grep finish; done

@@ -11,6 +11,7 @@ import java.util.List;
 
 import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.BombTracker.ResultBT;
+import com.ibm.trl.BBM.mains.WorstScoreEvaluator.ScoreResult;
 
 import ibm.ANACONDA.Core.MatrixUtility;
 import ibm.ANACONDA.Core.MyMatrix;
@@ -39,7 +40,7 @@ public class Agent {
 	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
 
 	static public class ModelParameter {
-		int numFirstMoveStepsAsFriend = 4;
+		int numFirstMoveStepsAsFriend = 2;
 		double rateLevel = 1.25;
 		double gainOffset = 1.0;
 		double usualThreshold = 3.5;
@@ -561,7 +562,7 @@ public class Agent {
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// double[][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
-			double[][][] worstScores = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife);
+			ScoreResult sr = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -579,7 +580,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, worstScores);
+			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, sr);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

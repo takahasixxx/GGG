@@ -67,8 +67,8 @@ public class BridgeForPython {
 			if (true) {
 				double usualCell = 3.5;
 				double attackCell = 2.5;
-				for (double rateLevel : new double[] { 1.6 }) {
-					// for (double rateLevel : new double[] { 1.25 }) {
+				// for (double rateLevel : new double[] { 1.6 }) {
+				for (double rateLevel : new double[] { 1.25 }) {
 					// for (double rateLevel : new double[] { 1.2, 1.4 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
@@ -108,6 +108,13 @@ public class BridgeForPython {
 			synchronized (gameMap) {
 				game = gameMap.get(pid);
 				gameMap.remove(pid);
+			}
+
+			// TODO
+			if (true) {
+				Agent[] agents = game.agents;
+				String line = String.format("BridgeForPython, finish_game, gameID, %d, reward, %d, %d, %d, %d, lastframe, %d, %d", game.gameID, r1, r2, r3, r4, agents[1].frame, agents[3].frame);
+				System.out.println(line);
 			}
 
 			game.agents = null;
