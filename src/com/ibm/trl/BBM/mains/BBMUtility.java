@@ -629,15 +629,21 @@ public class BBMUtility {
 		return num;
 	}
 
-	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep) throws Exception {
+	static public MyMatrix ComputeOptimalDistance(MyMatrix board, int sx, int sy, int maxStep, boolean ignoreBombAndFlames) throws Exception {
 		int numField = board.numd;
 
 		boolean[][] blocked = new boolean[numField][numField];
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
 				int type = (int) board.data[x][y];
-				if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Flames || type == Constant.Bomb || Constant.isAgent(type)) {
-					blocked[x][y] = true;
+				if (ignoreBombAndFlames == false) {
+					if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Flames || type == Constant.Bomb || Constant.isAgent(type)) {
+						blocked[x][y] = true;
+					}
+				} else {
+					if (type == Constant.Rigid || type == Constant.Wood || Constant.isAgent(type)) {
+						blocked[x][y] = true;
+					}
 				}
 			}
 		}

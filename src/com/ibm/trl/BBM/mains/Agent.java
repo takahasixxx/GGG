@@ -38,6 +38,7 @@ public class Agent {
 	int maxPower = 2;
 	int numItemGet = 0;
 	MyMatrix lastLook = new MyMatrix(numField, numField, 0);
+	LastAgentPosition[] laps = new LastAgentPosition[4];
 
 	static public class ModelParameter {
 		int numFirstMoveStepsAsFriend = 2;
@@ -97,6 +98,18 @@ public class Agent {
 		}
 	}
 
+	static public class LastAgentPosition {
+		int x;
+		int y;
+		int frame;
+
+		public LastAgentPosition(int x, int y, int frame) {
+			this.x = x;
+			this.y = y;
+			this.frame = frame;
+		}
+	}
+
 	Agent(int me, ModelParameter param) throws Exception {
 		this.param = param;
 		worstScoreEvaluator = new WorstScoreEvaluator(param);
@@ -127,6 +140,14 @@ public class Agent {
 				board_memo.data[1][x] = Constant.Wood;
 				board_memo.data[numField - 2][x] = Constant.Wood;
 			}
+		}
+
+		// lastAgentPositionを初期化する。
+		if (true) {
+			laps[0] = new LastAgentPosition(1, 1, 0);
+			laps[1] = new LastAgentPosition(9, 1, 0);
+			laps[2] = new LastAgentPosition(9, 9, 0);
+			laps[3] = new LastAgentPosition(1, 9, 0);
 		}
 
 	}
@@ -306,6 +327,18 @@ public class Agent {
 				int power = (int) bomb_blast_strength.data[x][y];
 				if (power == 0) continue;
 				if (power > maxPower) maxPower = power;
+			}
+		}
+
+		// エージェントが観測されている場合、最後に見たエージェントの位置を記憶する。
+		for (int x = 0; x < numField; x++) {
+			for (int y = 0; y < numField; y++) {
+				int type = map.getType(x, y);
+				if (Constant.isAgent(type)) {
+					laps[type - 10].x = x;
+					laps[type - 10].y = y;
+					laps[type - 10].frame = frame;
+				}
 			}
 		}
 
@@ -543,10 +576,10 @@ public class Agent {
 				System.out.println(a3);
 			}
 			System.out.println("=========================================================================================");
-			System.out.println("=========================================================================================");
 			System.out.println("flame life");
 			MatrixUtility.OutputMatrix(flameLife);
 			System.out.println("=========================================================================================");
+			// System.out.println("=========================================================================================");
 			System.out.println("board_ex & bomb_ex & flame_ex picture");
 			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
 		}
@@ -562,7 +595,7 @@ public class Agent {
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// double[][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
-			ScoreResult sr = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife);
+			ScoreResult sr = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -580,7 +613,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
-			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, sr);
+			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, laps, sr);
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

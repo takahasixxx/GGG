@@ -65,14 +65,16 @@ public class BridgeForPython {
 
 			List<ModelParameter> params = new ArrayList<ModelParameter>();
 			if (true) {
-				double usualCell = 3.5;
-				double attackCell = 2.5;
-				// for (double rateLevel : new double[] { 1.6 }) {
-				for (double rateLevel : new double[] { 1.25 }) {
+				double usualCell = 1.5;
+				double attackCell = 1.5;
+				for (double rateLevel : new double[] { 1.4, 1.5, 1.6, 1.7, 1.8, 2.0, 2.2, 2.4, 2.6 }) {
+					// for (double rateLevel : new double[] { 2 }) {
+					// for (double rateLevel : new double[] { 1.3 }) {
+					// for (double rateLevel : new double[] { 1.25 }) {
 					// for (double rateLevel : new double[] { 1.2, 1.4 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
 					// for (double rateLevel : new double[] { 1.8, 1.9 }) {
-					// for (double gainOffset : new double[] { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8 }) {
+					// for (double gainOffset : new double[] { 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8 ,2.0, 2.2, 2.4, 2.6}) {
 					for (double gainOffset : new double[] { 1.0 }) {
 
 						ModelParameter param = new ModelParameter();
@@ -80,6 +82,7 @@ public class BridgeForPython {
 						param.gainOffset = gainOffset;
 						param.usualThreshold = usualCell;
 						param.attackThreshold = attackCell;
+						param.numFirstMoveStepsAsFriend = 4;
 						params.add(param);
 					}
 				}

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import com.ibm.trl.BBM.mains.Agent.Ability;
+import com.ibm.trl.BBM.mains.Agent.LastAgentPosition;
 import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
@@ -81,7 +82,9 @@ public class WorstScoreEvaluator {
 		}
 	}
 
-	public ScoreResult Do(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife) throws Exception {
+	public ScoreResult Do(boolean collapse, int frame, int me, int friend, int maxPower, Ability[] abs, MapInformation map, BombTracker.Node[][] bombMap, MyMatrix flameLife, LastAgentPosition[] laps)
+			throws Exception {
+
 		List<BombTracker.Node> nodes = new ArrayList<BombTracker.Node>();
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
@@ -97,11 +100,15 @@ public class WorstScoreEvaluator {
 		collectPackInitStates_ALLSTOP(0, me, maxPower, abs, map, nodes, flameLife, bbbs, packList);
 		System.out.println("packList.size()=" + packList.size());
 
+		boolean[] isVisible = new boolean[4];
 		int numVisibleAgent = 0;
 		for (int x = 0; x < numField; x++) {
 			for (int y = 0; y < numField; y++) {
 				int type = map.getType(x, y);
-				if (Constant.isAgent(type)) numVisibleAgent++;
+				if (Constant.isAgent(type)) {
+					isVisible[type - 10] = true;
+					numVisibleAgent++;
+				}
 			}
 		}
 
@@ -203,15 +210,6 @@ public class WorstScoreEvaluator {
 		}
 
 		// リストアップした初期条件でシミュレーションを実施する。
-		// action * ai * (ave, min, max, num)
-		// double[][][] scores = new double[6][4][4];
-		// for (int a = 0; a < 6; a++) {
-		// for (int ai = 0; ai < 4; ai++) {
-		// scores[a][ai][1] = Double.POSITIVE_INFINITY;
-		// scores[a][ai][2] = Double.NEGATIVE_INFINITY;
-		// }
-		// }
-
 		ScoreResult sr = new ScoreResult();
 
 		// シングルスレッドバージョン
@@ -227,25 +225,36 @@ public class WorstScoreEvaluator {
 
 				Pack[] packs = new Pack[numt];
 				int[][] instructions = new int[numt][4];
-				if (true) {
-					for (int t = 0; t < numt; t++) {
-						for (int ai = 0; ai < 4; ai++) {
-							instructions[t][ai] = WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE;
-						}
+				for (int t = 0; t < numt; t++) {
+					for (int ai = 0; ai < 4; ai++) {
+						instructions[t][ai] = WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE;
 					}
+				}
 
-					for (int i = 0; i < opset.length; i++) {
-						packs[i] = opset[i].packNow;
-						instructions[i] = opset[i].instructions;
+				for (int i = 0; i < opset.length; i++) {
+					packs[i] = opset[i].packNow;
+					instructions[i] = opset[i].instructions;
+				}
+
+				packs[opset.length] = opset[opset.length - 1].packNext;
+
+				// TODO 生きているのに観測されていないエージェントは、最後に見た位置を埋め込む。
+				if (false) {
+					// TODO 最後に見た位置が視界に入っているのに架空のエージェントを追加しているバグあり。
+					packs[0] = new Pack(packs[0]);
+					for (int ai = 0; ai < 4; ai++) {
+						if (abs[ai].isAlive == false) continue;
+						if (isVisible[ai] == true) continue;
+						packs[0].sh.setAgent(laps[ai].x, laps[ai].y, ai + 10);
+						packs[0].board.data[laps[ai].x][laps[ai].y] = ai + 10;
+						instructions[0][ai] = WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE;
 					}
-
-					packs[opset.length] = opset[opset.length - 1].packNext;
 				}
 
 				double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, instructions);
 
 				// TODO 通常版とハイスピード版の突合デバッグ用。
-				if (true) {
+				if (false) {
 					double[][] temp1 = wses.Do3(collapse, frame, me, friend, packs, instructions);
 					double[][] temp2 = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, instructions);
 					for (int ai = 0; ai < 4; ai++) {
@@ -267,9 +276,12 @@ public class WorstScoreEvaluator {
 					int actionMe = actions[me - 10];
 					int actionFriend = actions[friend - 10];
 					for (int ai = 0; ai < 4; ai++) {
+						if (isVisible[ai] == false) continue;
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
-						if (num == 0) continue;
+						if (num == 0) {
+							System.exit(0);
+						}
 
 						// スコア平均値
 						sr.singleScore[actionMe][ai].sum += sss;
@@ -289,9 +301,12 @@ public class WorstScoreEvaluator {
 					}
 
 					for (int ai = 0; ai < 4; ai++) {
+						if (isVisible[ai] == false) continue;
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
-						if (num == 0) continue;
+						if (num == 0) {
+							System.exit(0);
+						}
 
 						// スコア平均値
 						sr.pairScore[actionMe][actionFriend][ai].sum += sss;

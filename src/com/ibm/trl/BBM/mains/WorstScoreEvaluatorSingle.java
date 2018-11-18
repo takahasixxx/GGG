@@ -25,6 +25,9 @@ public class WorstScoreEvaluatorSingle {
 	ForwardModel fm = new ForwardModel();
 	ModelParameter param;
 
+	// TODO
+	double timeDecayRate = 3;
+
 	public WorstScoreEvaluatorSingle(ModelParameter param) {
 		this.param = param;
 	}
@@ -462,6 +465,44 @@ public class WorstScoreEvaluatorSingle {
 				}
 
 				scores[ai][0] += total;
+				scores[ai][1] += 1;
+			}
+
+			// èkè¨ífñ êœÅAëSéûä‘çló∂
+			if (false) {
+				double rate = timeDecayRate;
+
+				double totaltotal = 0;
+				double weighttotal = 0;
+				// for (int t = 1; t < numt; t++) {
+				// for (int t : new int[] { 1, numt - 1 }) {
+				for (int t : new int[] { numt - 1 }) {
+					MyMatrix mat = hitNearestStep[t];
+					double[] gain = new double[numt + 1];
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							if (mat.data[x][y] < 0) continue;
+							int step = (int) mat.data[x][y];
+							gain[step]++;
+						}
+					}
+
+					for (int s = 0; s < numt; s++) {
+						gain[s] = gain[s] - gainOffset;
+						if (gain[s] < 0) gain[s] = 0;
+					}
+
+					double total = 0;
+					for (int s = 0; s < numt + 1; s++) {
+						total += Math.pow(rateLevel, s - numt) * gain[s];
+					}
+
+					double weight = Math.pow(rate, t);
+					totaltotal += total * weight;
+					weighttotal += weight;
+				}
+
+				scores[ai][0] += totaltotal / weighttotal;
 				scores[ai][1] += 1;
 			}
 		}
@@ -907,34 +948,82 @@ public class WorstScoreEvaluatorSingle {
 		}
 
 		// èkè¨ífñ êœ
-		for (int ai = 0; ai < 4; ai++) {
-			Pack packNow = packsNA[0];
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) continue;
+		if (true) {
+			for (int ai = 0; ai < 4; ai++) {
+				Pack packNow = packsNA[0];
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) continue;
 
-			int t = numt - 1;
-			double[] gain = new double[numt + 1];
-			for (int x = 0; x < numField; x++) {
-				for (int y = 0; y < numField; y++) {
-					int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-					int step = (int) hitNearestStep[index];
-					if (step < 0) continue;
-					gain[step]++;
+				int t = numt - 1;
+				double[] gain = new double[numt + 1];
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+						int step = (int) hitNearestStep[index];
+						if (step < 0) continue;
+						gain[step]++;
+					}
 				}
-			}
 
-			for (int s = 0; s < numt; s++) {
-				gain[s] = gain[s] - gainOffset;
-				if (gain[s] < 0) gain[s] = 0;
-			}
+				for (int s = 0; s < numt; s++) {
+					gain[s] = gain[s] - gainOffset;
+					if (gain[s] < 0) gain[s] = 0;
+				}
 
-			double total = 0;
-			for (int s = 0; s < numt + 1; s++) {
-				total += Math.pow(rateLevel, s - numt) * gain[s];
-			}
+				double total = 0;
+				for (int s = 0; s < numt + 1; s++) {
+					total += Math.pow(rateLevel, s - numt) * gain[s];
+				}
 
-			scores[ai][0] += total;
-			scores[ai][1] += 1;
+				scores[ai][0] += total;
+				scores[ai][1] += 1;
+			}
+		}
+
+		// èkè¨ífñ êœÅAëSéûä‘çló∂
+		if (false) {
+			double rate = timeDecayRate;
+			// double rate = 4;
+
+			for (int ai = 0; ai < 4; ai++) {
+				Pack packNow = packsNA[0];
+				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+				if (agentNow == null) continue;
+
+				double totaltotal = 0;
+				double weighttotal = 0;
+				for (int t : new int[] { numt - 1 }) {
+					// for (int t : new int[] { 1, 6, numt - 1 }) {
+					// for (int t = 1; t < numt; t++) {
+
+					double[] gain = new double[numt + 1];
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+							int step = (int) hitNearestStep[index];
+							if (step < 0) continue;
+							gain[step]++;
+						}
+					}
+
+					for (int s = 0; s < numt; s++) {
+						gain[s] = gain[s] - gainOffset;
+						if (gain[s] < 0) gain[s] = 0;
+					}
+
+					double total = 0;
+					for (int s = 0; s < numt + 1; s++) {
+						total += Math.pow(rateLevel, s - numt) * gain[s];
+					}
+
+					double weight = Math.pow(rate, t);
+					totaltotal += total * weight;
+					weighttotal += weight;
+				}
+
+				scores[ai][0] += totaltotal / weighttotal;
+				scores[ai][1] += 1;
+			}
 		}
 
 		return scores;
