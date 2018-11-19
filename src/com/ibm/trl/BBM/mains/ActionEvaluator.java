@@ -133,7 +133,8 @@ public class ActionEvaluator {
 
 		// アクションが無限ループに入っているか検知する。
 		int actionNG = -1;
-		if (true) {
+		// TODO とりあえずオフっておく。
+		if (false) {
 			int numTry = 30;
 			for (int delay = 1; delay <= 4; delay++) {
 				int num = 0;
@@ -376,9 +377,12 @@ public class ActionEvaluator {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
 				LastAgentPosition lap = laps[ai];
+
 				// 目的地（最後に敵を見た場所）が、既に観測範囲にある場合は、意味なし。
-				int isInsideVisibleArea = Math.abs(lap.x - agentMe.x) + Math.abs(lap.y - agentMe.y);
-				if (isInsideVisibleArea <= 4) continue;
+				// int isInsideVisibleArea = Math.abs(lap.x - agentMe.x) + Math.abs(lap.y - agentMe.y);
+				int disL0 = Math.max(Math.abs(agentMe.x - lap.x), Math.abs(agentMe.y - lap.y));
+				if (disL0 <= 4) continue;
+
 				double ddd = dis.data[lap.x][lap.y];
 				if (ddd > 100) continue;
 				int action = BBMUtility.ComputeFirstDirection(dis, lap.x, lap.y);

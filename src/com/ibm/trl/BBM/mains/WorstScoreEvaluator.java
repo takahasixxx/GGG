@@ -240,15 +240,24 @@ public class WorstScoreEvaluator {
 
 				// TODO 生きているのに観測されていないエージェントは、最後に見た位置を埋め込む。
 				if (false) {
-					// TODO 最後に見た位置が視界に入っているのに架空のエージェントを追加しているバグあり。
-					packs[0] = new Pack(packs[0]);
+					Pack packInit = packs[0];
+					AgentEEE agentMe = packInit.sh.getAgent(me);
+
+					Pack packTemp = new Pack(packInit);
 					for (int ai = 0; ai < 4; ai++) {
 						if (abs[ai].isAlive == false) continue;
 						if (isVisible[ai] == true) continue;
-						packs[0].sh.setAgent(laps[ai].x, laps[ai].y, ai + 10);
-						packs[0].board.data[laps[ai].x][laps[ai].y] = ai + 10;
+
+						// 最後に見た位置が視界に入っていたら飛ばす。
+						int disL0 = Math.max(Math.abs(agentMe.x - laps[ai].x), Math.abs(agentMe.y - laps[ai].y));
+						if (disL0 <= 4) continue;
+
+						packTemp.sh.setAgent(laps[ai].x, laps[ai].y, ai + 10);
+						packTemp.board.data[laps[ai].x][laps[ai].y] = ai + 10;
 						instructions[0][ai] = WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE;
 					}
+
+					packs[0] = packTemp;
 				}
 
 				double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, instructions);
@@ -279,6 +288,8 @@ public class WorstScoreEvaluator {
 						if (isVisible[ai] == false) continue;
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
+
+						// TODO
 						if (num == 0) {
 							System.exit(0);
 						}
@@ -304,6 +315,8 @@ public class WorstScoreEvaluator {
 						if (isVisible[ai] == false) continue;
 						double sss = score_temp[ai][0];
 						double num = score_temp[ai][1];
+
+						// TODO
 						if (num == 0) {
 							System.exit(0);
 						}
