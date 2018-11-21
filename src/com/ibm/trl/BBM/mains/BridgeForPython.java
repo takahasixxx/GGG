@@ -227,7 +227,7 @@ public class BridgeForPython {
 	public int act(int pid, int caller_id, int me, int x, int y, int ammo, int blast_strength, boolean can_kick, byte[] board_buffer, byte[] bomb_blast_strength_buffer, byte[] bomb_life_buffer,
 			byte[] alive_buffer, byte[] enemies_list_buffer, int friend, boolean isCollapse) {
 		try {
-			System.out.println("BridgeForPython, act start, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
+			System.out.println("BridgeForPython,, act start, pid=" + pid + ", caller_id=" + caller_id + ", agent_id=" + me);
 
 			long timeStart = System.currentTimeMillis();
 

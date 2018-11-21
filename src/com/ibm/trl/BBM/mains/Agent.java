@@ -11,6 +11,7 @@ import java.util.List;
 
 import com.ibm.trl.BBM.mains.BombTracker.Node;
 import com.ibm.trl.BBM.mains.BombTracker.ResultBT;
+import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.WorstScoreEvaluator.ScoreResult;
 
 import ibm.ANACONDA.Core.MatrixUtility;
@@ -25,6 +26,8 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	ModelParameter param;
 	WorstScoreEvaluator worstScoreEvaluator;
+	// WorstScoreEvaluator_mt worstScoreEvaluator_mt;
+	// WorstScoreEvaluator_2step_mt worstScoreEvaluator_2step_mt;
 	ActionEvaluator actionEvaluator;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,6 +116,7 @@ public class Agent {
 	Agent(int me, ModelParameter param) throws Exception {
 		this.param = param;
 		worstScoreEvaluator = new WorstScoreEvaluator(param);
+		// worstScoreEvaluator_mt = new WorstScoreEvaluator_mt(param);
 		actionEvaluator = new ActionEvaluator(param);
 
 		this.me = me;
@@ -194,6 +198,8 @@ public class Agent {
 
 	public int act(int xMe, int yMe, int ammo, int blast_strength, boolean can_kick, MyMatrix board, MyMatrix bomb_blast_strength, MyMatrix bomb_life, MyMatrix alive, MyMatrix enemies, int friend,
 			boolean isCollapse) throws Exception {
+
+		long timeStartFunction = System.currentTimeMillis();
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -576,6 +582,7 @@ public class Agent {
 				System.out.println(a3);
 			}
 			System.out.println("=========================================================================================");
+			System.out.println("=========================================================================================");
 			System.out.println("flame life");
 			MatrixUtility.OutputMatrix(flameLife);
 			System.out.println("=========================================================================================");
@@ -594,8 +601,74 @@ public class Agent {
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// worstScoreを計算する。
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			// double[][][] worstScores = worstScoreEvaluator.Do(me, friend, maxPower, abs, exmap, bombMap, flameLife);
-			ScoreResult sr = worstScoreEvaluator.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
+
+			AgentEEE[] agentsNow = new AgentEEE[4];
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = map.getType(x, y);
+					if (Constant.isAgent(type)) {
+						AgentEEE aaa = new AgentEEE(x, y, type);
+						agentsNow[aaa.agentID - 10] = aaa;
+					}
+				}
+			}
+
+			int numVisibleTeam = 0;
+			int numVisibleEnemy = 0;
+			for (int ai = 0; ai < 4; ai++) {
+				AgentEEE aaa = agentsNow[ai];
+				if (aaa == null) continue;
+				if (ai == me - 10) {
+					numVisibleTeam++;
+				} else if (ai == friend - 10) {
+					numVisibleTeam++;
+				} else {
+					numVisibleEnemy++;
+				}
+			}
+
+			int numAliveTeam = 0;
+			int numAliveEnemy = 0;
+			for (int ai = 0; ai < 4; ai++) {
+				if (abs[ai].isAlive == false) continue;
+				if (ai == me - 10) {
+					numAliveTeam++;
+				} else if (ai == friend - 10) {
+					numAliveTeam++;
+				} else {
+					numAliveEnemy++;
+				}
+			}
+
+			ScoreResult sr;
+			// if (true) {
+			if (numVisibleTeam + numVisibleEnemy >= 3) {
+				WorstScoreEvaluator_mt worstScoreEvaluator_mt = new WorstScoreEvaluator_mt(param);
+				worstScoreEvaluator_mt.Start(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
+				while (true) {
+					long timeNow = System.currentTimeMillis();
+					long timeDel = timeNow - timeStartFunction;
+					if (timeDel > 390) {
+						break;
+					}
+					Thread.sleep(3);
+				}
+				worstScoreEvaluator_mt.Stop();
+				sr = worstScoreEvaluator_mt.Get(me, friend);
+			} else {
+				WorstScoreEvaluator_2step_mt worstScoreEvaluator_2step_mt = new WorstScoreEvaluator_2step_mt(param);
+				worstScoreEvaluator_2step_mt.Start(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
+				while (true) {
+					long timeNow = System.currentTimeMillis();
+					long timeDel = timeNow - timeStartFunction;
+					if (timeDel > 390) {
+						break;
+					}
+					Thread.sleep(3);
+				}
+				worstScoreEvaluator_2step_mt.Stop();
+				sr = worstScoreEvaluator_2step_mt.Get(me, friend);
+			}
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			// スコアに基づいてアクションを求める。
@@ -613,6 +686,7 @@ public class Agent {
 					abs2[ai].strength = abs2[ai].strength_fix;
 				}
 			}
+
 			action = actionEvaluator.ComputeOptimalAction(isCollapse, frame, me, friend, maxPower, abs2, exmap, bombMap, flameLife, lastLook, laps, sr);
 		}
 

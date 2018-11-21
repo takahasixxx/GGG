@@ -18,6 +18,7 @@ public class WorstScoreEvaluatorSingle {
 	static final int INSTRUCTION_BOARD = 0;
 	static final int INSTRUCTION_STAY = 1;
 	static final int INSTRUCTION_ALLMOVE = 2;
+	static final int INSTRUCTION_EXMAP = 3;
 
 	static final Random rand = new Random();
 	static final int numField = GlobalParameter.numField;
@@ -32,7 +33,151 @@ public class WorstScoreEvaluatorSingle {
 		this.param = param;
 	}
 
-	public double[][] Do3(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, int[][] instructions) throws Exception {
+	private MyMatrix[][] computeAgentSteps(Pack[] packsNA, int[][] instructions, MyMatrix[][] exmaps, int numFirstMoveStepsAsFriend) throws Exception {
+
+		int numt = packsNA.length;
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// 仲間エージェントの動き。最初の位置から動かない。
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		MyMatrix[][] stepMaps = new MyMatrix[numt][4];
+		for (int ai = 0; ai < 4; ai++) {
+			for (int t = 0; t < numt; t++) {
+				stepMaps[t][ai] = new MyMatrix(numField, numField, numt);
+			}
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			Pack packNow = packsNA[0];
+			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+			if (agentNow == null) continue;
+			stepMaps[0][ai].data[agentNow.x][agentNow.y] = 0;
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			for (int t = 0; t < numt - 1; t++) {
+				int instruction = instructions[t][ai];
+				Pack packNow = packsNA[t];
+				Pack packNext = packsNA[t + 1];
+
+				if (t >= numFirstMoveStepsAsFriend) {
+					instruction = INSTRUCTION_STAY;
+				}
+
+				if (instruction == INSTRUCTION_BOARD) {
+					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
+					if (agentNow == null || agentNext == null) continue;
+					int x = agentNow.x;
+					int y = agentNow.y;
+					double stepNow = stepMaps[t][ai].data[x][y];
+					int x2 = agentNext.x;
+					int y2 = agentNext.y;
+
+					if (true) {
+						double stepNext;
+						if (x == x2 && y == y2) {
+							stepNext = stepNow;
+						} else {
+							// TODO どっちがいいのだろうか？
+							// stepNext = stepNow + 1;
+							stepNext = t + 1;
+						}
+						stepMaps[t + 1][ai].data[x2][y2] = stepNext;
+					}
+				} else if (instruction == INSTRUCTION_EXMAP) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double flag = exmaps[t + 1][ai].data[x][y];
+							if (flag > 0) {
+								double stepNow = stepMaps[t][ai].data[x][y];
+								double stepNext = stepNow;
+								if (stepNext == numt) {
+									// TODO どっちがいいのだろうか？
+									// stepNext = stepNow + 1;
+									stepNext = t + 1;
+								}
+								stepMaps[t + 1][ai].data[x][y] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_STAY) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double stepNow = stepMaps[t][ai].data[x][y];
+							if (stepNow == numt) continue;
+
+							if (true) {
+								double stepNext = stepNow;
+								stepMaps[t + 1][ai].data[x][y] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_ALLMOVE) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double stepNow = stepMaps[t][ai].data[x][y];
+							if (stepNow == numt) continue;
+
+							// 遷移先の数を数える。
+							boolean[] able = new boolean[5];
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+								int type = (int) packNext.board.data[x2][y2];
+								if (Constant.isWall(type)) continue;
+								if (dir != 0 && type == Constant.Bomb) continue;
+								if (type == Constant.Flames) continue;
+								able[dir] = true;
+							}
+
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (able[dir] == false) continue;
+
+								if (true) {
+									double stepNext;
+									if (dir == 0) {
+										stepNext = stepNow;
+									} else {
+										// TODO どっちがいいのだろうか？
+										// stepNext = stepNow + 1;
+										stepNext = t + 1;
+									}
+									if (stepNext < stepMaps[t + 1][ai].data[x2][y2]) {
+										stepMaps[t + 1][ai].data[x2][y2] = stepNext;
+									}
+								}
+							}
+						}
+					}
+
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								stepMaps[t + 1][ai].data[x][y] = numt;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return stepMaps;
+	}
+
+	public double[][] Do3(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
+
+		// System.out.println("aaa");
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -67,7 +212,7 @@ public class WorstScoreEvaluatorSingle {
 					// 元系列が存在するときは、そのままコピーする。
 					packsNA[t] = packs[t];
 				} else {
-					// 元系列が存在しないときは、ステップ計算する。
+					// 元系列が存在しないときは、ステップ計算する。ステップ計算では、エージェントはすべて消す。
 					Pack packPreNA;
 					if (packs[t - 1] == null) {
 						packPreNA = packsNA[t - 1];
@@ -91,263 +236,38 @@ public class WorstScoreEvaluatorSingle {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// 仲間エージェントの動き。最初の位置から動かない。
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix[][] stepMaps_stay = new MyMatrix[numt][4];
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt; t++) {
-				stepMaps_stay[t][ai] = new MyMatrix(numField, numField, numt);
-			}
-		}
+		// 仲間エージェントの動き。最初の位置から数ステップだけ動く。
+		MyMatrix[][] stepMaps_stay = computeAgentSteps(packsNA, instructions, exmaps, numFirstMoveStepsAsFriend);
 
-		for (int ai = 0; ai < 4; ai++) {
-			Pack packNow = packsNA[0];
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) continue;
-			stepMaps_stay[0][ai].data[agentNow.x][agentNow.y] = 0;
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt - 1; t++) {
-				int instruction = instructions[t][ai];
-				Pack packNow = packsNA[t];
-				Pack packNext = packsNA[t + 1];
-
-				if (t >= numFirstMoveStepsAsFriend) {
-					instruction = INSTRUCTION_STAY;
-				}
-
-				if (instruction == INSTRUCTION_BOARD) {
-					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
-					if (agentNow == null || agentNext == null) continue;
-					int x = agentNow.x;
-					int y = agentNow.y;
-					double stepNow = stepMaps_stay[t][ai].data[x][y];
-					int x2 = agentNext.x;
-					int y2 = agentNext.y;
-
-					if (true) {
-						double stepNext;
-						if (x == x2 && y == y2) {
-							stepNext = stepNow;
-						} else {
-							// TODO どっちがいいのだろうか？
-							// stepNext = stepNow + 1;
-							stepNext = t + 1;
-						}
-						stepMaps_stay[t + 1][ai].data[x2][y2] = stepNext;
-					}
-				} else if (instruction == INSTRUCTION_STAY) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							double stepNow = stepMaps_stay[t][ai].data[x][y];
-							if (stepNow == numt) continue;
-
-							if (true) {
-								double stepNext = stepNow;
-								stepMaps_stay[t + 1][ai].data[x][y] = stepNext;
-							}
-						}
-					}
-				} else if (instruction == INSTRUCTION_ALLMOVE) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							double stepNow = stepMaps_stay[t][ai].data[x][y];
-							if (stepNow == numt) continue;
-
-							// 遷移先の数を数える。
-							boolean[] able = new boolean[5];
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-								int type = (int) packNext.board.data[x2][y2];
-								if (Constant.isWall(type)) continue;
-								if (dir != 0 && type == Constant.Bomb) continue;
-								if (type == Constant.Flames) continue;
-								able[dir] = true;
-							}
-
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (able[dir] == false) continue;
-
-								if (true) {
-									double stepNext;
-									if (dir == 0) {
-										stepNext = stepNow;
-									} else {
-										// TODO どっちがいいのだろうか？
-										// stepNext = stepNow + 1;
-										stepNext = t + 1;
-									}
-									if (stepNext < stepMaps_stay[t + 1][ai].data[x2][y2]) {
-										stepMaps_stay[t + 1][ai].data[x2][y2] = stepNext;
-									}
-								}
-							}
-						}
-					}
-
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = (int) packNext.board.data[x][y];
-							if (type == Constant.Flames) {
-								stepMaps_stay[t + 1][ai].data[x][y] = numt;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// 敵エージェントの動き
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		MyMatrix[][] stepMaps_move = new MyMatrix[numt][4];
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt; t++) {
-				stepMaps_move[t][ai] = new MyMatrix(numField, numField, numt);
-			}
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			Pack packNow = packsNA[0];
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) continue;
-			stepMaps_move[0][ai].data[agentNow.x][agentNow.y] = 0;
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt - 1; t++) {
-				int instruction = instructions[t][ai];
-				Pack packNow = packsNA[t];
-				Pack packNext = packsNA[t + 1];
-
-				if (instruction == INSTRUCTION_BOARD) {
-					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
-					if (agentNow == null || agentNext == null) continue;
-					int x = agentNow.x;
-					int y = agentNow.y;
-					double stepNow = stepMaps_move[t][ai].data[x][y];
-					int x2 = agentNext.x;
-					int y2 = agentNext.y;
-
-					if (true) {
-						double stepNext;
-						if (x == x2 && y == y2) {
-							stepNext = stepNow;
-						} else {
-							// TODO どっちがいいのだろうか？
-							// stepNext = stepNow + 1;
-							stepNext = t + 1;
-						}
-						stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
-					}
-				} else if (instruction == INSTRUCTION_STAY) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							double stepNow = stepMaps_move[t][ai].data[x][y];
-							if (stepNow == numt) continue;
-
-							if (true) {
-								double stepNext = stepNow;
-								stepMaps_move[t + 1][ai].data[x][y] = stepNext;
-							}
-						}
-					}
-				} else if (instruction == INSTRUCTION_ALLMOVE) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							double stepNow = stepMaps_move[t][ai].data[x][y];
-							if (stepNow == numt) continue;
-
-							// 遷移先の数を数える。
-							boolean[] able = new boolean[5];
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-								int type = (int) packNext.board.data[x2][y2];
-								if (Constant.isWall(type)) continue;
-								if (dir != 0 && type == Constant.Bomb) continue;
-								if (type == Constant.Flames) continue;
-								able[dir] = true;
-							}
-
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (able[dir] == false) continue;
-
-								if (true) {
-									double stepNext;
-									if (dir == 0) {
-										stepNext = stepNow;
-									} else {
-										// TODO どっちがいいのだろうか？
-										// stepNext = stepNow + 1;
-										stepNext = t + 1;
-									}
-									if (stepNext < stepMaps_move[t + 1][ai].data[x2][y2]) {
-										stepMaps_move[t + 1][ai].data[x2][y2] = stepNext;
-									}
-								}
-							}
-						}
-					}
-
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = (int) packNext.board.data[x][y];
-							if (type == Constant.Flames) {
-								stepMaps_move[t + 1][ai].data[x][y] = numt;
-							}
-						}
-					}
-				}
-			}
-		}
+		MyMatrix[][] stepMaps_move = computeAgentSteps(packsNA, instructions, exmaps, Integer.MAX_VALUE);
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// 全行動の経路のスコアを計算してみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double[][] scores = new double[4][2];
+		MyMatrix[][] hitNearestStep = new MyMatrix[numt][4];
+		for (int ai = 0; ai < 4; ai++) {
+			for (int t = 0; t < numt; t++) {
+				hitNearestStep[t][ai] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
+			}
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			Pack packNow = packsNA[0];
+			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+			if (agentNow == null) continue;
+			hitNearestStep[0][ai].data[agentNow.x][agentNow.y] = numt;
+		}
 
 		for (int ai = 0; ai < 4; ai++) {
 
-			MyMatrix[] hitNearestStep = new MyMatrix[numt];
-			for (int t = 0; t < numt; t++) {
-				hitNearestStep[t] = new MyMatrix(numField, numField, Double.NEGATIVE_INFINITY);
-			}
-
-			{
-				Pack packNow = packsNA[0];
-				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-				if (agentNow == null) continue;
-				hitNearestStep[0].data[agentNow.x][agentNow.y] = numt;
-			}
+			Pack packInit = packsNA[0];
+			AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+			if (agentInit == null) continue;
 
 			for (int t = 0; t < numt - 1; t++) {
-
 				int instruction = instructions[t][ai];
 				Pack packNow = packsNA[t];
 				Pack packNext = packsNA[t + 1];
@@ -355,7 +275,7 @@ public class WorstScoreEvaluatorSingle {
 				for (int x = 0; x < numField; x++) {
 					for (int y = 0; y < numField; y++) {
 
-						double nearestStepNow = hitNearestStep[t].data[x][y];
+						double nearestStepNow = hitNearestStep[t][ai].data[x][y];
 						if (nearestStepNow == Double.NEGATIVE_INFINITY) continue;
 
 						boolean[] able = new boolean[5];
@@ -370,6 +290,9 @@ public class WorstScoreEvaluatorSingle {
 								AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
 								if (agentNext == null) continue;
 								if (x2 != agentNext.x || y2 != agentNext.y) continue;
+							} else if (instruction == INSTRUCTION_EXMAP) {
+								double flag = exmaps[t + 1][ai].data[x2][y2];
+								if (flag == 0) continue;
 							} else if (instruction == INSTRUCTION_STAY) {
 								if (dx != 0 || dy != 0) continue;
 							} else if (instruction == INSTRUCTION_ALLMOVE) {
@@ -433,18 +356,32 @@ public class WorstScoreEvaluatorSingle {
 									}
 								}
 							}
-							if (nearestStepNext > hitNearestStep[t + 1].data[x2][y2]) {
-								hitNearestStep[t + 1].data[x2][y2] = nearestStepNext;
+							if (nearestStepNext > hitNearestStep[t + 1][ai].data[x2][y2]) {
+								hitNearestStep[t + 1][ai].data[x2][y2] = nearestStepNext;
 							}
 						}
 					}
 				}
 			}
+		}
 
-			// 縮小断面積
-			if (true) {
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 盤面系列からスコアを計算する。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		double[][] scores = new double[4][2];
+
+		// 縮小断面積
+		if (true) {
+			for (int ai = 0; ai < 4; ai++) {
+
+				Pack packInit = packsNA[0];
+				AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+				if (agentInit == null) continue;
+
 				int t = numt - 1;
-				MyMatrix mat = hitNearestStep[t];
+				MyMatrix mat = hitNearestStep[t][ai];
 				double[] gain = new double[numt + 1];
 				for (int x = 0; x < numField; x++) {
 					for (int y = 0; y < numField; y++) {
@@ -467,17 +404,23 @@ public class WorstScoreEvaluatorSingle {
 				scores[ai][0] += total;
 				scores[ai][1] += 1;
 			}
+		}
 
-			// 縮小断面積、全時間考慮
-			if (false) {
-				double rate = timeDecayRate;
+		// 縮小断面積、全時間考慮
+		if (false) {
+			double rate = timeDecayRate;
+
+			for (int ai = 0; ai < 4; ai++) {
+				Pack packInit = packsNA[0];
+				AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+				if (agentInit == null) continue;
 
 				double totaltotal = 0;
 				double weighttotal = 0;
 				// for (int t = 1; t < numt; t++) {
 				// for (int t : new int[] { 1, numt - 1 }) {
 				for (int t : new int[] { numt - 1 }) {
-					MyMatrix mat = hitNearestStep[t];
+					MyMatrix mat = hitNearestStep[t][ai];
 					double[] gain = new double[numt + 1];
 					for (int x = 0; x < numField; x++) {
 						for (int y = 0; y < numField; y++) {
@@ -510,7 +453,161 @@ public class WorstScoreEvaluatorSingle {
 		return scores;
 	}
 
-	public double[][] Do3_HighSpeed(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, int[][] instructions) throws Exception {
+	/**********************************************************************************************
+	 * 
+	 * 
+	 * HighSpeedバージョン
+	 * 
+	 * 
+	 **********************************************************************************************/
+	private double[] computeAgentSteps_HighSpeed(Pack[] packsNA, int[][] instructions, MyMatrix[][] exmaps, int numFirstMoveStepsAsFriend) throws Exception {
+		int numt = packsNA.length;
+
+		double[] stepMaps = new double[4 * numt * numField * numField];
+		Arrays.fill(stepMaps, numt);
+
+		for (int ai = 0; ai < 4; ai++) {
+			Pack packNow = packsNA[0];
+			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+			if (agentNow == null) continue;
+			int x = agentNow.x;
+			int y = agentNow.y;
+			int t = 0;
+			int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+			stepMaps[index] = 0;
+		}
+
+		for (int ai = 0; ai < 4; ai++) {
+			for (int t = 0; t < numt - 1; t++) {
+				int instruction = instructions[t][ai];
+				Pack packNow = packsNA[t];
+				Pack packNext = packsNA[t + 1];
+
+				if (t >= numFirstMoveStepsAsFriend) {
+					instruction = INSTRUCTION_STAY;
+				}
+
+				if (instruction == INSTRUCTION_BOARD) {
+					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
+					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
+					if (agentNow == null || agentNext == null) continue;
+					int x = agentNow.x;
+					int y = agentNow.y;
+					int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+					double stepNow = stepMaps[index];
+					int x2 = agentNext.x;
+					int y2 = agentNext.y;
+
+					if (true) {
+						double stepNext;
+						if (x == x2 && y == y2) {
+							stepNext = stepNow;
+						} else {
+							// TODO どっちがいいのだろうか？
+							// stepNext = stepNow + 1;
+							stepNext = t + 1;
+						}
+						int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
+						stepMaps[index2] = stepNext;
+					}
+				} else if (instruction == INSTRUCTION_EXMAP) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							double flag = exmaps[t + 1][ai].data[x][y];
+							if (flag > 0) {
+								int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+								double stepNow = stepMaps[index];
+								double stepNext = stepNow;
+								if (stepNext == numt) {
+									// TODO どっちがいいのだろうか？
+									// stepNext = stepNow + 1;
+									stepNext = t + 1;
+								}
+								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
+								stepMaps[index2] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_STAY) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+							double stepNow = stepMaps[index];
+							if (stepNow == numt) continue;
+
+							if (true) {
+								double stepNext = stepNow;
+								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
+								stepMaps[index2] = stepNext;
+							}
+						}
+					}
+				} else if (instruction == INSTRUCTION_ALLMOVE) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
+							double stepNow = stepMaps[index];
+							if (stepNow == numt) continue;
+
+							// 遷移先の数を数える。
+							boolean[] able = new boolean[5];
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+								int type = (int) packNext.board.data[x2][y2];
+								if (Constant.isWall(type)) continue;
+								if (dir != 0 && type == Constant.Bomb) continue;
+								if (type == Constant.Flames) continue;
+								able[dir] = true;
+							}
+
+							for (int[] vec : GlobalParameter.onehopList) {
+								int dir = vec[0];
+								int dx = vec[1];
+								int dy = vec[2];
+								int x2 = x + dx;
+								int y2 = y + dy;
+								if (able[dir] == false) continue;
+
+								if (true) {
+									double stepNext;
+									if (dir == 0) {
+										stepNext = stepNow;
+									} else {
+										// TODO どっちがいいのだろうか？
+										// stepNext = stepNow + 1;
+										stepNext = t + 1;
+									}
+									int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
+
+									if (stepNext < stepMaps[index2]) {
+										stepMaps[index2] = stepNext;
+									}
+								}
+							}
+						}
+					}
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							int type = (int) packNext.board.data[x][y];
+							if (type == Constant.Flames) {
+								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
+								stepMaps[index2] = numt;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return stepMaps;
+	}
+
+	public double[][] Do3_HighSpeed(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -545,7 +642,7 @@ public class WorstScoreEvaluatorSingle {
 					// 元系列が存在するときは、そのままコピーする。
 					packsNA[t] = packs[t];
 				} else {
-					// 元系列が存在しないときは、ステップ計算する。
+					// 元系列が存在しないときは、ステップ計算する。ステップ計算では、エージェントはすべて消す。
 					Pack packPreNA;
 					if (packs[t - 1] == null) {
 						packPreNA = packsNA[t - 1];
@@ -569,275 +666,29 @@ public class WorstScoreEvaluatorSingle {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// 仲間エージェントの動き。最初の位置から動かない。
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double[] stepMaps_stay = new double[4 * numt * numField * numField];
-		Arrays.fill(stepMaps_stay, numt);
+		double[] stepMaps_stay = computeAgentSteps_HighSpeed(packsNA, instructions, exmaps, numFirstMoveStepsAsFriend);
 
-		for (int ai = 0; ai < 4; ai++) {
-			Pack packNow = packsNA[0];
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) continue;
-			int x = agentNow.x;
-			int y = agentNow.y;
-			int t = 0;
-			int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-			stepMaps_stay[index] = 0;
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt - 1; t++) {
-				int instruction = instructions[t][ai];
-				Pack packNow = packsNA[t];
-				Pack packNext = packsNA[t + 1];
-
-				if (t >= numFirstMoveStepsAsFriend) {
-					instruction = INSTRUCTION_STAY;
-				}
-
-				if (instruction == INSTRUCTION_BOARD) {
-					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
-					if (agentNow == null || agentNext == null) continue;
-					int x = agentNow.x;
-					int y = agentNow.y;
-					int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-					double stepNow = stepMaps_stay[index];
-					int x2 = agentNext.x;
-					int y2 = agentNext.y;
-
-					if (true) {
-						double stepNext;
-						if (x == x2 && y == y2) {
-							stepNext = stepNow;
-						} else {
-							// TODO どっちがいいのだろうか？
-							// stepNext = stepNow + 1;
-							stepNext = t + 1;
-						}
-						int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
-						stepMaps_stay[index2] = stepNext;
-					}
-				} else if (instruction == INSTRUCTION_STAY) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-							double stepNow = stepMaps_stay[index];
-							if (stepNow == numt) continue;
-
-							if (true) {
-								double stepNext = stepNow;
-								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
-								stepMaps_stay[index2] = stepNext;
-							}
-						}
-					}
-				} else if (instruction == INSTRUCTION_ALLMOVE) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-							double stepNow = stepMaps_stay[index];
-							if (stepNow == numt) continue;
-
-							// 遷移先の数を数える。
-							boolean[] able = new boolean[5];
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-								int type = (int) packNext.board.data[x2][y2];
-								if (Constant.isWall(type)) continue;
-								if (dir != 0 && type == Constant.Bomb) continue;
-								if (type == Constant.Flames) continue;
-								able[dir] = true;
-							}
-
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (able[dir] == false) continue;
-
-								if (true) {
-									double stepNext;
-									if (dir == 0) {
-										stepNext = stepNow;
-									} else {
-										// TODO どっちがいいのだろうか？
-										// stepNext = stepNow + 1;
-										stepNext = t + 1;
-									}
-									int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
-
-									if (stepNext < stepMaps_stay[index2]) {
-										stepMaps_stay[index2] = stepNext;
-									}
-								}
-							}
-						}
-					}
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = (int) packNext.board.data[x][y];
-							if (type == Constant.Flames) {
-								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
-								stepMaps_stay[index2] = numt;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// 敵エージェントの動き
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double[] stepMaps_move = new double[4 * numt * numField * numField];
-		Arrays.fill(stepMaps_move, numt);
-
-		for (int ai = 0; ai < 4; ai++) {
-			Pack packNow = packsNA[0];
-			AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-			if (agentNow == null) continue;
-			int x = agentNow.x;
-			int y = agentNow.y;
-			int t = 0;
-			int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-			stepMaps_move[index] = 0;
-		}
-
-		for (int ai = 0; ai < 4; ai++) {
-			for (int t = 0; t < numt - 1; t++) {
-				int instruction = instructions[t][ai];
-				Pack packNow = packsNA[t];
-				Pack packNext = packsNA[t + 1];
-
-				if (instruction == INSTRUCTION_BOARD) {
-					AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-					AgentEEE agentNext = packNext.sh.getAgent(ai + 10);
-					if (agentNow == null || agentNext == null) continue;
-					int x = agentNow.x;
-					int y = agentNow.y;
-					int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-					double stepNow = stepMaps_move[index];
-					int x2 = agentNext.x;
-					int y2 = agentNext.y;
-
-					if (true) {
-						double stepNext;
-						if (x == x2 && y == y2) {
-							stepNext = stepNow;
-						} else {
-							// TODO どっちがいいのだろうか？
-							// stepNext = stepNow + 1;
-							stepNext = t + 1;
-						}
-						int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
-						stepMaps_move[index2] = stepNext;
-					}
-				} else if (instruction == INSTRUCTION_STAY) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-							double stepNow = stepMaps_move[index];
-							if (stepNow == numt) continue;
-
-							if (true) {
-								double stepNext = stepNow;
-								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
-								stepMaps_move[index2] = stepNext;
-							}
-						}
-					}
-				} else if (instruction == INSTRUCTION_ALLMOVE) {
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
-							double stepNow = stepMaps_move[index];
-							if (stepNow == numt) continue;
-
-							// 遷移先の数を数える。
-							boolean[] able = new boolean[5];
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-								int type = (int) packNext.board.data[x2][y2];
-								if (Constant.isWall(type)) continue;
-								if (dir != 0 && type == Constant.Bomb) continue;
-								if (type == Constant.Flames) continue;
-								able[dir] = true;
-							}
-
-							for (int[] vec : GlobalParameter.onehopList) {
-								int dir = vec[0];
-								int dx = vec[1];
-								int dy = vec[2];
-								int x2 = x + dx;
-								int y2 = y + dy;
-								if (able[dir] == false) continue;
-
-								if (true) {
-									double stepNext;
-									if (dir == 0) {
-										stepNext = stepNow;
-									} else {
-										// TODO どっちがいいのだろうか？
-										// stepNext = stepNow + 1;
-										stepNext = t + 1;
-									}
-									int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y2 * numField + x2;
-
-									if (stepNext < stepMaps_move[index2]) {
-										stepMaps_move[index2] = stepNext;
-									}
-								}
-							}
-						}
-					}
-
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = (int) packNext.board.data[x][y];
-							if (type == Constant.Flames) {
-								int index2 = ai * numt * numField * numField + (t + 1) * numField * numField + y * numField + x;
-								stepMaps_move[index2] = numt;
-							}
-						}
-					}
-				}
-			}
-		}
+		double[] stepMaps_move = computeAgentSteps_HighSpeed(packsNA, instructions, exmaps, Integer.MAX_VALUE);
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
 		// 全行動の経路のスコアを計算してみる。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		double[][] scores = new double[4][2];
-
 		double[] hitNearestStep = new double[4 * numt * numField * numField];
 		Arrays.fill(hitNearestStep, Double.NEGATIVE_INFINITY);
 
 		for (int ai = 0; ai < 4; ai++) {
-
 			{
-				Pack packNow = packsNA[0];
-				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-				if (agentNow == null) continue;
+				Pack packInit = packsNA[0];
+				AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+				if (agentInit == null) continue;
 
 				int t = 0;
-				int x = agentNow.x;
-				int y = agentNow.y;
+				int x = agentInit.x;
+				int y = agentInit.y;
 				int index = ai * numt * numField * numField + t * numField * numField + y * numField + x;
 				hitNearestStep[index] = numt;
 			}
@@ -947,12 +798,19 @@ public class WorstScoreEvaluatorSingle {
 			}
 		}
 
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// 盤面系列からスコアを計算する。
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		double[][] scores = new double[4][2];
+
 		// 縮小断面積
 		if (true) {
 			for (int ai = 0; ai < 4; ai++) {
-				Pack packNow = packsNA[0];
-				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-				if (agentNow == null) continue;
+				Pack packInit = packsNA[0];
+				AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+				if (agentInit == null) continue;
 
 				int t = numt - 1;
 				double[] gain = new double[numt + 1];
@@ -986,9 +844,9 @@ public class WorstScoreEvaluatorSingle {
 			// double rate = 4;
 
 			for (int ai = 0; ai < 4; ai++) {
-				Pack packNow = packsNA[0];
-				AgentEEE agentNow = packNow.sh.getAgent(ai + 10);
-				if (agentNow == null) continue;
+				Pack packInit = packsNA[0];
+				AgentEEE agentInit = packInit.sh.getAgent(ai + 10);
+				if (agentInit == null) continue;
 
 				double totaltotal = 0;
 				double weighttotal = 0;

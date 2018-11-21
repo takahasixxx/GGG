@@ -293,12 +293,13 @@ public class ActionEvaluator {
 					if (type == Constant.Wood) {
 						if (type2 == Constant.Passage || type2 == Constant.Flames || type2 == Constant.Bomb) {
 							// (x2, y2-1)に向かう。
-							double ddd = dis2.data[x2][y2 - 1];
+							double ddd = dis.data[x2][y2 - 1];
 							if (ddd < 100) {
-								int dir = BBMUtility.ComputeFirstDirection(dis2, x2, y2 - 1);
+								int dir = BBMUtility.ComputeFirstDirection(dis, x2, y2 - 1);
 								double score = safetyScoreWorst[me - 10][dir];
 								if (score > hasamiThreshold) {
 									actionFinal = dir;
+									reason = "挟み撃ちムーブ";
 									break;
 								} else {
 									double scoreStop = safetyScoreWorst[me - 10][0];
@@ -333,12 +334,13 @@ public class ActionEvaluator {
 					if (type == Constant.Wood) {
 						if (type2 == Constant.Passage || type2 == Constant.Flames || type2 == Constant.Bomb) {
 							// (x2, y2-1)に向かう。
-							double ddd = dis2.data[x2 - 1][y2];
+							double ddd = dis.data[x2 - 1][y2];
 							if (ddd < 100) {
-								int dir = BBMUtility.ComputeFirstDirection(dis2, x2 - 1, y2);
+								int dir = BBMUtility.ComputeFirstDirection(dis, x2 - 1, y2);
 								double score = safetyScoreWorst[me - 10][dir];
 								if (score > hasamiThreshold) {
 									actionFinal = dir;
+									reason = "挟み撃ちムーブ";
 									break;
 								} else {
 									double scoreStop = safetyScoreWorst[me - 10][0];
@@ -370,7 +372,7 @@ public class ActionEvaluator {
 		// 敵がいる方へ向かう。
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		if (actionFinal == -1 && numVisibleEnemy == 0 && numAliveEnemy == 2) {
+		if (actionFinal == -1 && numVisibleEnemy == 0 && numAliveEnemy == 2 && numAliveTeam == 2) {
 			double dddmin = Double.POSITIVE_INFINITY;
 			int dirmin = -1;
 			for (int ai = 0; ai < 4; ai++) {
@@ -818,7 +820,7 @@ public class ActionEvaluator {
 			}
 		}
 
-		double averageWeight = 0.001;
+		double averageWeight = 1.0e-10;
 
 		// ペア避け。相手との差分。
 		if (actionFinal == -1 && numVisibleTeam == 2 && numVisibleEnemy > 0) {
@@ -991,6 +993,7 @@ public class ActionEvaluator {
 
 			if (mina != -1) {
 				actionFinal = mina;
+				reason = "助かる道がない。敵を道連れにできるアクションがあれば、実行する。";
 			}
 		}
 
@@ -1001,6 +1004,7 @@ public class ActionEvaluator {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (actionFinal == -1) {
 			actionFinal = rand.nextInt(6);
+			reason = "最後の手段。乱択。(^ ^;)/";
 		}
 
 		System.out.println("ComputeOptimalAction: agentID=" + me);

@@ -87,9 +87,9 @@ public class MyMatrix implements Serializable {
 					ret += ", ";
 				}
 				if (data[t][d] < 0) {
-					ret += String.format("%8.3f", data[t][d]);
+					ret += String.format("%4.1f", data[t][d]);
 				} else {
-					ret += String.format("%8.3f", data[t][d]);
+					ret += String.format("%4.1f", data[t][d]);
 				}
 			}
 			ret += "\n";
