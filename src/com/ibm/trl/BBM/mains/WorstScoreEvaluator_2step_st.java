@@ -200,7 +200,7 @@ public class WorstScoreEvaluator_2step_st {
 									}
 								}
 
-								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, null, instructions);
+								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, abs, packs, null, instructions);
 
 								node.scores = score_temp;
 							}
@@ -248,7 +248,7 @@ public class WorstScoreEvaluator_2step_st {
 										}
 									}
 
-									double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, null, instructions);
+									double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, abs, packs, null, instructions);
 
 									leaf.scores = score_temp;
 								}

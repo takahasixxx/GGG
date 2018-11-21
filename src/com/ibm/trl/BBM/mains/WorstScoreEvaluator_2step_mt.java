@@ -122,12 +122,12 @@ public class WorstScoreEvaluator_2step_mt {
 		leafMap.clear();
 
 		if (false) {
-			ScoreComputingTask task = new ScoreComputingTask(collapse, frame, me, friend, wses, packInit, nodeMap, leafMap);
+			ScoreComputingTask task = new ScoreComputingTask(collapse, frame, me, friend, abs, wses, packInit, nodeMap, leafMap);
 			task.run();
 		}
 
 		for (int fff = 0; fff < GlobalParameter.numCPUCore; fff++) {
-			ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, wses, packInit, nodeMap, leafMap);
+			ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, abs, wses, packInit, nodeMap, leafMap);
 			Future future = GlobalParameter.executor.submit(ggg);
 			futures.add(future);
 			tasks.add(ggg);
@@ -146,6 +146,7 @@ public class WorstScoreEvaluator_2step_mt {
 		int frame;
 		int me;
 		int friend;
+		Ability[] abs;
 		WorstScoreEvaluatorSingle wses;
 		Pack packInit;
 		TreeMap<Long, NodeWSE> nodeMap;
@@ -154,11 +155,13 @@ public class WorstScoreEvaluator_2step_mt {
 		TreeMap<Long, NodeWSE> nodeMapLocal = new TreeMap<Long, NodeWSE>();
 		TreeMap<Long, LeafWSE> leafMapLocal = new TreeMap<Long, LeafWSE>();
 
-		public ScoreComputingTask(boolean collapse, int frame, int me, int friend, WorstScoreEvaluatorSingle wses, Pack packInit, TreeMap<Long, NodeWSE> nodeMap, TreeMap<Long, LeafWSE> leafMap) {
+		public ScoreComputingTask(boolean collapse, int frame, int me, int friend, Ability[] abs, WorstScoreEvaluatorSingle wses, Pack packInit, TreeMap<Long, NodeWSE> nodeMap,
+				TreeMap<Long, LeafWSE> leafMap) {
 			this.collapse = collapse;
 			this.frame = frame;
 			this.me = me;
 			this.friend = friend;
+			this.abs = abs;
 			this.wses = wses;
 			this.packInit = packInit;
 			this.nodeMap = nodeMap;
@@ -284,7 +287,7 @@ public class WorstScoreEvaluator_2step_mt {
 										instructions[t][ai] = WorstScoreEvaluatorSingle.INSTRUCTION_ALLMOVE;
 									}
 								}
-								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame + 1, me, friend, packs, null, instructions);
+								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame + 1, me, friend, abs, packs, null, instructions);
 								leaf.scores = score_temp;
 							}
 						}

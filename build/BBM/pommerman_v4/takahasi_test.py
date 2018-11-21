@@ -149,9 +149,13 @@ def battle(process_number):
     # List of four agents
     agent_list = [
         #agents.SimpleAgent(),
-        MyAgentO(),
+        #MyAgentO(),
+        #MyAgentT(),
+        #MyAgentO(),
+        #MyAgentT(),
         MyAgentT(),
-        MyAgentO(),
+        MyAgentT(),
+        MyAgentT(),
         MyAgentT(),
     ]
 

@@ -641,7 +641,7 @@ public class BBMUtility {
 						blocked[x][y] = true;
 					}
 				} else {
-					if (type == Constant.Rigid || type == Constant.Wood || Constant.isAgent(type)) {
+					if (type == Constant.Rigid || type == Constant.Wood || type == Constant.Bomb || Constant.isAgent(type)) {
 						blocked[x][y] = true;
 					}
 				}

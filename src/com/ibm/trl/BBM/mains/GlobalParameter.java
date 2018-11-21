@@ -12,8 +12,8 @@ import java.util.concurrent.Executors;
 
 public class GlobalParameter {
 	static final Random rand = new Random();
-	static final public boolean verbose = true;
-	// static final public boolean verbose = false;
+	// static final public boolean verbose = true;
+	static final public boolean verbose = false;
 
 	static public String PID;
 	static public int numThread = 1;

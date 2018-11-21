@@ -35,7 +35,7 @@ public class WorstScoreEvaluator_mt {
 	static final Random rand = GlobalParameter.rand;
 
 	static ForwardModel fm = new ForwardModel();
-	static int numt = 12;
+	static int numt = 11;
 	ModelParameter param;
 	WorstScoreEvaluatorSingle wses;
 
@@ -77,19 +77,18 @@ public class WorstScoreEvaluator_mt {
 		// リストアップした初期条件でシミュレーションを実施する。
 		//
 		///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		Pack packInit = initialPackList.get(0);
-
 		isRun = true;
 		tasks.clear();
 		futures.clear();
 		leafMap.clear();
 
 		for (int fff = 0; fff < GlobalParameter.numCPUCore; fff++) {
-			ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, wses, packInit, leafMap);
-			Future future = GlobalParameter.executor.submit(ggg);
-			futures.add(future);
-			tasks.add(ggg);
+			for (Pack packInit : initialPackList) {
+				ScoreComputingTask ggg = new ScoreComputingTask(collapse, frame, me, friend, abs, wses, packInit, leafMap);
+				Future future = GlobalParameter.executor.submit(ggg);
+				futures.add(future);
+				tasks.add(ggg);
+			}
 		}
 	}
 
@@ -105,17 +104,19 @@ public class WorstScoreEvaluator_mt {
 		int frame;
 		int me;
 		int friend;
+		Ability[] abs;
 		WorstScoreEvaluatorSingle wses;
 		Pack packInit;
 		TreeMap<Long, LeafWSE> leafMap;
 
 		TreeMap<Long, LeafWSE> leafMapLocal = new TreeMap<Long, LeafWSE>();
 
-		public ScoreComputingTask(boolean collapse, int frame, int me, int friend, WorstScoreEvaluatorSingle wses, Pack packInit, TreeMap<Long, LeafWSE> leafMap) {
+		public ScoreComputingTask(boolean collapse, int frame, int me, int friend, Ability abs[], WorstScoreEvaluatorSingle wses, Pack packInit, TreeMap<Long, LeafWSE> leafMap) {
 			this.collapse = collapse;
 			this.frame = frame;
 			this.me = me;
 			this.friend = friend;
+			this.abs = abs;
 			this.wses = wses;
 			this.packInit = packInit;
 			this.leafMap = leafMap;
@@ -230,7 +231,7 @@ public class WorstScoreEvaluator_mt {
 									}
 								}
 
-								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame, me, friend, packs, null, instructions);
+								double[][] score_temp = wses.Do3_HighSpeed(collapse, frame + 1, me, friend, abs, packs, null, instructions);
 								for (int ai = 0; ai < 4; ai++) {
 									if (isVisible[ai]) {
 										score_temp[ai][1] = 1;
@@ -300,11 +301,8 @@ public class WorstScoreEvaluator_mt {
 			}
 		}
 
-		// TODO
-		if (true) {
-			int numLeaf = leafMap.size();
-			System.out.println("SSSSSSSSSSSSSSSS, " + numLeaf);
-		}
+		int numLeaf = leafMap.size();
+		System.out.println("WorstScoreEvaluator_mt: numLeaf = " + numLeaf);
 
 		for (Entry<Long, LeafWSE> entry : leafMap.entrySet()) {
 			LeafWSE leaf = entry.getValue();

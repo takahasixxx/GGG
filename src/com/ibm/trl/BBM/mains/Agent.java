@@ -44,16 +44,17 @@ public class Agent {
 	LastAgentPosition[] laps = new LastAgentPosition[4];
 
 	static public class ModelParameter {
-		int numFirstMoveStepsAsFriend = 2;
-		double rateLevel = 1.25;
-		double gainOffset = 1.0;
-		double usualThreshold = 3.5;
-		double attackThreshold = 2.5;
+		int numFirstMoveStepsAsFriend = 4;
+		double rateLevelDouble = 6.0;
+		double rateLevelSingle = 4.0;
+		double gainOffset = 0.0;
+		double usualThreshold = 1.5;
+		double attackThreshold = 1.5;
 
 		@Override
 		public String toString() {
-			String line = String.format("numFirstMoveStepsAsFriend=%d, rateLevel=%f, gainOffsetr=%f, usualThreshold=%f, attackThreshold=%f", numFirstMoveStepsAsFriend, rateLevel, gainOffset,
-					usualThreshold, attackThreshold);
+			String line = String.format("numFirstMoveStepsAsFriend=%d, rateLevelDouble=%f, rateLevelSingle=%f, gainOffsetr=%f, usualThreshold=%f, attackThreshold=%f", numFirstMoveStepsAsFriend,
+					rateLevelDouble, rateLevelSingle, gainOffset, usualThreshold, attackThreshold);
 			return line;
 		}
 	}
@@ -223,7 +224,6 @@ public class Agent {
 		// TODO 崩壊前後で止める。
 		if (false) {
 			int delta = 10;
-
 			for (int ttt : new int[] { 500, 575, 650, 725 }) {
 				int def = frame - ttt;
 				if (def >= -2 && def <= delta) {
@@ -337,13 +337,22 @@ public class Agent {
 		}
 
 		// エージェントが観測されている場合、最後に見たエージェントの位置を記憶する。
-		for (int x = 0; x < numField; x++) {
-			for (int y = 0; y < numField; y++) {
-				int type = map.getType(x, y);
-				if (Constant.isAgent(type)) {
-					laps[type - 10].x = x;
-					laps[type - 10].y = y;
-					laps[type - 10].frame = frame;
+		if (true) {
+			// エージェントの最後に見た位置が視界に入っていたら、削除する。
+			for (int ai = 0; ai < 4; ai++) {
+				LastAgentPosition lap = laps[ai];
+				if (lap == null) continue;
+				int type = map.getType(lap.x, lap.y);
+				if (type != Constant.Fog) {
+					laps[ai] = null;
+				}
+			}
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = map.getType(x, y);
+					if (Constant.isAgent(type)) {
+						laps[type - 10] = new LastAgentPosition(x, y, frame);
+					}
 				}
 			}
 		}
@@ -640,34 +649,71 @@ public class Agent {
 				}
 			}
 
+			// TODO
+			long timeWait = 90;
+			// long timeWait = 400;
+
 			ScoreResult sr;
-			// if (true) {
-			if (numVisibleTeam + numVisibleEnemy >= 3) {
+			if (true) {
 				WorstScoreEvaluator_mt worstScoreEvaluator_mt = new WorstScoreEvaluator_mt(param);
 				worstScoreEvaluator_mt.Start(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
 				while (true) {
 					long timeNow = System.currentTimeMillis();
 					long timeDel = timeNow - timeStartFunction;
-					if (timeDel > 390) {
+					if (timeDel > timeWait) {
 						break;
 					}
 					Thread.sleep(3);
 				}
 				worstScoreEvaluator_mt.Stop();
 				sr = worstScoreEvaluator_mt.Get(me, friend);
-			} else {
+			}
+			if (false) {
 				WorstScoreEvaluator_2step_mt worstScoreEvaluator_2step_mt = new WorstScoreEvaluator_2step_mt(param);
 				worstScoreEvaluator_2step_mt.Start(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
 				while (true) {
 					long timeNow = System.currentTimeMillis();
 					long timeDel = timeNow - timeStartFunction;
-					if (timeDel > 390) {
+					if (timeDel > timeWait) {
 						break;
 					}
 					Thread.sleep(3);
 				}
 				worstScoreEvaluator_2step_mt.Stop();
 				sr = worstScoreEvaluator_2step_mt.Get(me, friend);
+			}
+
+			// TODO シングススレッド版と値が同じかチェックしてみる。
+			if (false) {
+				WorstScoreEvaluator wse = new WorstScoreEvaluator(param);
+				ScoreResult sr2 = wse.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);
+				sr = sr2;
+
+				if (false) {
+					for (int a = 0; a < 6; a++) {
+						for (int ai = 0; ai < 4; ai++) {
+							double temp1 = sr.singleScore[a][ai].min;
+							double temp2 = sr2.singleScore[a][ai].min;
+							double def = (temp1 - temp2) / (temp1 + temp2) * 2;
+							if (Double.isNaN(def)) continue;
+							if (def != 0) {
+								System.out.println(temp1 + ", " + temp2 + ", " + def);
+							}
+						}
+					}
+
+					for (int a = 0; a < 6; a++) {
+						for (int ai = 0; ai < 4; ai++) {
+							double temp1 = sr.singleScore[a][ai].sum / sr.singleScore[a][ai].num;
+							double temp2 = sr2.singleScore[a][ai].sum / sr2.singleScore[a][ai].num;
+							double def = (temp1 - temp2) / (temp1 + temp2) * 2;
+							if (Double.isNaN(def)) continue;
+							if (Math.abs(def) > 1.0e-10) {
+								System.out.println(temp1 + ", " + temp2 + ", " + def);
+							}
+						}
+					}
+				}
 			}
 
 			/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -702,26 +748,6 @@ public class Agent {
 		exmapsOld.removeLast();
 
 		frame++;
-
-		if (false) {
-			System.out.println("board_ex & bomb_ex & flame_ex picture");
-			// BBMUtility.printBoard2(exmap.board, map.board, bomb_life, exmap.power);
-			BBMUtility.printBoard2(exmap.board, exmap.board, exmap.life, exmap.power);
-			System.out.println("=========================================================================================");
-			System.out.println("=========================================================================================");
-			MatrixUtility.OutputMatrix(flameLife);
-		}
-
-		// if (GlobalParameter.randomness) {
-		// if (GlobalParameter.rand.nextInt(5) == 0) {
-		// action = GlobalParameter.rand.nextInt(6);
-		// }
-		// }
-
-		if (me == 13) {
-			int temp = 0;
-			// Thread.sleep(1000);
-		}
 
 		return action;
 	}

@@ -55,6 +55,7 @@ public class BombTracker {
 	}
 
 	static ResultBT computeBombMap(int maxPower, List<MapInformation> mapsOrg, List<MapInformation> exmapsOrg) throws Exception {
+
 		List<MapInformation> maps = new ArrayList<MapInformation>();
 		maps.addAll(mapsOrg);
 		Collections.reverse(maps);
@@ -79,7 +80,7 @@ public class BombTracker {
 		}
 
 		int numt = maps.size();
-		for (int t = 10; t < numt; t++) {
+		for (int t = 1; t < numt; t++) {
 
 			MapInformation mapNow = maps.get(t);
 			MapInformation mapPre = maps.get(t - 1);
@@ -157,8 +158,12 @@ public class BombTracker {
 						int life = mapNow.getLife(bbb.x, bbb.y);
 						int power = mapNow.getPower(bbb.x, bbb.y);
 						if (type == Constant.Fog) continue;
+						if (type == Constant.Flames) continue;
 						if (life != bbb.life || power != bbb.power) {
 							bbb.life = -1000;
+							if (t > 15) {
+								System.out.println("???");
+							}
 						}
 					} else if (bbb.life == 0) {
 						MyMatrix flames_test = new MyMatrix(flames);
@@ -179,6 +184,9 @@ public class BombTracker {
 						}
 						if (mujun) {
 							bbb.life = -1000;
+							if (t > 15) {
+								System.out.println("???");
+							}
 						} else {
 							flames = flames_test;
 						}
@@ -203,62 +211,79 @@ public class BombTracker {
 					}
 				}
 
-				if (changed == false) {
-					// 矛盾チェックしてみる。
-					boolean[][] add = new boolean[numField][numField];
-					boolean mujunRemove = false;
-					boolean mujunAdd = false;
-					for (int x = 0; x < numField; x++) {
-						for (int y = 0; y < numField; y++) {
-							int type = mapNow.getType(x, y);
-							if (type == Constant.Fog) continue;
+				if (changed == false) break;
+			}
 
-							// 独自ロジックではFlamesなのに、MapではFlamesじゃない場合。
-							if (flames.data[x][y] > 0) {
-								if (type != Constant.Flames) {
-									flames.data[x][y] = 0;
-									mujunRemove = true;
-								}
+			{
+				// 矛盾チェックしてみる。
+				boolean[][] add = new boolean[numField][numField];
+				boolean mujunRemove = false;
+				boolean mujunAdd = false;
+				for (int x = 0; x < numField; x++) {
+					for (int y = 0; y < numField; y++) {
+						int type = mapNow.getType(x, y);
+						if (type == Constant.Fog) continue;
+
+						// 独自ロジックではFlamesなのに、MapではFlamesじゃない場合。
+						if (flames.data[x][y] > 0) {
+							if (type != Constant.Flames) {
+								flames.data[x][y] = 0;
+								mujunRemove = true;
 							}
+						}
 
-							// MapではFlamesなのに、独自ロジックではFlamesじゃない場合。
-							if (type == Constant.Flames) {
-								if (flames.data[x][y] == 0) {
-									flames.data[x][y] = 3;
-									mujunAdd = true;
-									add[x][y] = true;
-								}
+						// MapではFlamesなのに、独自ロジックではFlamesじゃない場合。
+						if (type == Constant.Flames) {
+							if (flames.data[x][y] == 0) {
+								flames.data[x][y] = 3;
+								mujunAdd = true;
+								add[x][y] = true;
 							}
 						}
 					}
-					// System.out.println("t=" + t + ", 矛盾＝" + mujun);
+				}
+				// System.out.println("t=" + t + ", 矛盾＝" + mujun);
 
-					// MapではFlameなのに、独自ロジックではFlamesじゃない場合、追加したFlamesと接続しているFlamesは、Lifeが３になっているかもしれない。
-					if (mujunAdd) {
-						for (int x = 0; x < numField; x++) {
-							for (int y = 0; y < numField; y++) {
-								if (add[x][y]) {
-									for (int[] vec : GlobalParameter.onehopList) {
-										int dir = vec[0];
-										int dx = vec[1];
-										int dy = vec[2];
-										if (dir == 0) continue;
-										for (int w = 0; w <= maxPower; w++) {
-											int x2 = x + dx * w;
-											int y2 = y + dy * w;
-											if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+				// MapではFlameなのに、独自ロジックではFlamesじゃない場合、追加したFlamesと接続しているFlamesは、Lifeが３になっているかもしれない。
+				if (mujunAdd) {
+					for (int x = 0; x < numField; x++) {
+						for (int y = 0; y < numField; y++) {
+							if (add[x][y]) {
+								for (int[] vec : GlobalParameter.onehopList) {
+									int dir = vec[0];
+									int dx = vec[1];
+									int dy = vec[2];
+									if (dir == 0) continue;
+									for (int w = 0; w <= maxPower; w++) {
+										int x2 = x + dx * w;
+										int y2 = y + dy * w;
+										if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
 
-											int type = mapNow.getType(x2, y2);
-											if (type != Constant.Fog) break;
+										int type = mapNow.getType(x2, y2);
+										if (type != Constant.Fog) break;
 
-											flames.data[x2][y2] = 3;
-										}
+										flames.data[x2][y2] = 3;
 									}
 								}
 							}
 						}
 					}
-					break;
+				}
+			}
+
+			// Fogの中じゃないのに、観測と食い違っている爆弾は、無効にする。
+			for (BombEEE bbb : bbbs) {
+				if (bbb.life > 0) {
+					int type = mapNow.getType(bbb.x, bbb.y);
+					int life = mapNow.getLife(bbb.x, bbb.y);
+					int power = mapNow.getPower(bbb.x, bbb.y);
+					if (type == Constant.Fog) continue;
+					if (life != bbb.life || power != bbb.power) {
+						bbb.life = -1000;
+						if (t > 15) {
+							System.out.println("???");
+						}
+					}
 				}
 			}
 

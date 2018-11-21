@@ -6,6 +6,7 @@ package com.ibm.trl.BBM.mains;
 import java.util.Arrays;
 import java.util.Random;
 
+import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.Agent.ModelParameter;
 import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
@@ -175,7 +176,7 @@ public class WorstScoreEvaluatorSingle {
 		return stepMaps;
 	}
 
-	public double[][] Do3(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
+	public double[][] Do3(boolean collapse, int frame, int me, int friend, Ability[] abs, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
 
 		// System.out.println("aaa");
 
@@ -187,12 +188,33 @@ public class WorstScoreEvaluatorSingle {
 
 		int numt = instructions.length;
 		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
-		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
 
 		int[] teamNumber = new int[4];
 		teamNumber[me - 10] = 1;
 		teamNumber[friend - 10] = 1;
+
+		double rateLevel = param.rateLevelDouble;
+		if (true) {
+			int numAliveTeam = 0;
+			int numAliveEnemy = 0;
+			for (int ai = 0; ai < 4; ai++) {
+				if (abs[ai].isAlive == false) continue;
+				if (ai == me - 10) {
+					numAliveTeam++;
+				} else if (ai == friend - 10) {
+					numAliveTeam++;
+				} else {
+					numAliveEnemy++;
+				}
+			}
+
+			if (numAliveEnemy == 2) {
+				rateLevel = param.rateLevelDouble;
+			} else {
+				rateLevel = param.rateLevelSingle;
+			}
+		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -373,7 +395,7 @@ public class WorstScoreEvaluatorSingle {
 		double[][] scores = new double[4][2];
 
 		// k¬’f–ÊÏ
-		if (true) {
+		if (false) {
 			for (int ai = 0; ai < 4; ai++) {
 
 				Pack packInit = packsNA[0];
@@ -407,7 +429,7 @@ public class WorstScoreEvaluatorSingle {
 		}
 
 		// k¬’f–ÊÏA‘SŽžŠÔl—¶
-		if (false) {
+		if (true) {
 			double rate = timeDecayRate;
 
 			for (int ai = 0; ai < 4; ai++) {
@@ -418,8 +440,8 @@ public class WorstScoreEvaluatorSingle {
 				double totaltotal = 0;
 				double weighttotal = 0;
 				// for (int t = 1; t < numt; t++) {
-				// for (int t : new int[] { 1, numt - 1 }) {
-				for (int t : new int[] { numt - 1 }) {
+				for (int t : new int[] { 1, 5, numt - 1 }) {
+					// for (int t : new int[] { numt - 1 }) {
 					MyMatrix mat = hitNearestStep[t][ai];
 					double[] gain = new double[numt + 1];
 					for (int x = 0; x < numField; x++) {
@@ -607,7 +629,7 @@ public class WorstScoreEvaluatorSingle {
 		return stepMaps;
 	}
 
-	public double[][] Do3_HighSpeed(boolean collapse, int frame, int me, int friend, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
+	public double[][] Do3_HighSpeed(boolean collapse, int frame, int me, int friend, Ability[] abs, Pack[] packsOrg, MyMatrix[][] exmaps, int[][] instructions) throws Exception {
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -617,12 +639,33 @@ public class WorstScoreEvaluatorSingle {
 
 		int numt = instructions.length;
 		int numFirstMoveStepsAsFriend = param.numFirstMoveStepsAsFriend;
-		double rateLevel = param.rateLevel;
 		double gainOffset = param.gainOffset;
 
 		int[] teamNumber = new int[4];
 		teamNumber[me - 10] = 1;
 		teamNumber[friend - 10] = 1;
+
+		double rateLevel = param.rateLevelDouble;
+		if (true) {
+			int numAliveTeam = 0;
+			int numAliveEnemy = 0;
+			for (int ai = 0; ai < 4; ai++) {
+				if (abs[ai].isAlive == false) continue;
+				if (ai == me - 10) {
+					numAliveTeam++;
+				} else if (ai == friend - 10) {
+					numAliveTeam++;
+				} else {
+					numAliveEnemy++;
+				}
+			}
+
+			if (numAliveEnemy == 2) {
+				rateLevel = param.rateLevelDouble;
+			} else {
+				rateLevel = param.rateLevelSingle;
+			}
+		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -658,6 +701,88 @@ public class WorstScoreEvaluatorSingle {
 					packsNA[t] = packNextNA;
 				}
 			}
+		}
+
+		if (collapse && frame >= 490 && frame <= 500) {
+			Pack[] packsNA2 = new Pack[numt + 5];
+			for (int t = 0; t < numt; t++) {
+				packsNA2[t] = packsNA[t];
+			}
+
+			Pack packLast = packsNA[numt - 1];
+			for (int i = 0; i < 5; i++) {
+				packLast = fm.Step(collapse, 570 + i, packLast, new int[4]);
+				packsNA2[numt + i] = packLast;
+			}
+
+			int[][] instructions2 = new int[numt + 5][4];
+			for (int ai = 0; ai < 4; ai++) {
+				for (int t = 0; t < numt; t++) {
+					instructions2[t][ai] = instructions[t][ai];
+				}
+				for (int t = numt; t < numt + 5; t++) {
+					instructions2[t][ai] = instructions[numt - 1][ai];
+				}
+			}
+
+			packsNA = packsNA2;
+			instructions = instructions2;
+
+			numt = numt + 5;
+		}
+		if (collapse && frame >= 565 && frame <= 575) {
+			Pack[] packsNA2 = new Pack[numt + 5];
+			for (int t = 0; t < numt; t++) {
+				packsNA2[t] = packsNA[t];
+			}
+
+			Pack packLast = packsNA[numt - 1];
+			for (int i = 0; i < 5; i++) {
+				packLast = fm.Step(collapse, 645 + i, packLast, new int[4]);
+				packsNA2[numt + i] = packLast;
+			}
+
+			int[][] instructions2 = new int[numt + 5][4];
+			for (int ai = 0; ai < 4; ai++) {
+				for (int t = 0; t < numt; t++) {
+					instructions2[t][ai] = instructions[t][ai];
+				}
+				for (int t = numt; t < numt + 5; t++) {
+					instructions2[t][ai] = instructions[numt - 1][ai];
+				}
+			}
+
+			packsNA = packsNA2;
+			instructions = instructions2;
+
+			numt = numt + 5;
+		}
+		if (collapse && frame >= 640 && frame <= 650) {
+			Pack[] packsNA2 = new Pack[numt + 5];
+			for (int t = 0; t < numt; t++) {
+				packsNA2[t] = packsNA[t];
+			}
+
+			Pack packLast = packsNA[numt - 1];
+			for (int i = 0; i < 5; i++) {
+				packLast = fm.Step(collapse, 720 + i, packLast, new int[4]);
+				packsNA2[numt + i] = packLast;
+			}
+
+			int[][] instructions2 = new int[numt + 5][4];
+			for (int ai = 0; ai < 4; ai++) {
+				for (int t = 0; t < numt; t++) {
+					instructions2[t][ai] = instructions[t][ai];
+				}
+				for (int t = numt; t < numt + 5; t++) {
+					instructions2[t][ai] = instructions[numt - 1][ai];
+				}
+			}
+
+			packsNA = packsNA2;
+			instructions = instructions2;
+
+			numt = numt + 5;
 		}
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -840,8 +965,8 @@ public class WorstScoreEvaluatorSingle {
 
 		// k¬’f–ÊÏA‘SŽžŠÔl—¶
 		if (false) {
-			double rate = timeDecayRate;
-			// double rate = 4;
+			// double rate = timeDecayRate;
+			double rate = 1;
 
 			for (int ai = 0; ai < 4; ai++) {
 				Pack packInit = packsNA[0];
@@ -850,7 +975,8 @@ public class WorstScoreEvaluatorSingle {
 
 				double totaltotal = 0;
 				double weighttotal = 0;
-				for (int t : new int[] { numt - 1 }) {
+				for (int t : new int[] { 5, numt - 1 }) {
+					// for (int t : new int[] { numt - 1 }) {
 					// for (int t : new int[] { 1, 6, numt - 1 }) {
 					// for (int t = 1; t < numt; t++) {
 

@@ -12,8 +12,6 @@ import org.apache.commons.math3.distribution.NormalDistribution;
 import com.ibm.trl.BBM.mains.Agent.Ability;
 import com.ibm.trl.BBM.mains.Agent.LastAgentPosition;
 import com.ibm.trl.BBM.mains.Agent.ModelParameter;
-import com.ibm.trl.BBM.mains.BombTracker.Node;
-import com.ibm.trl.BBM.mains.ForwardModel.Pack;
 import com.ibm.trl.BBM.mains.StatusHolder.AgentEEE;
 import com.ibm.trl.BBM.mains.WorstScoreEvaluator.ScoreResult;
 
@@ -48,8 +46,6 @@ public class ActionEvaluator {
 
 		double usualMoveThreshold = param.usualThreshold;
 		double attackThreshold = param.attackThreshold;
-
-		// int ooo = 0;
 
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		//
@@ -105,27 +101,29 @@ public class ActionEvaluator {
 			}
 		}
 
-		int numBrakableWood = 0;
-		for (int x = 0; x < numField; x++) {
-			for (int y = 0; y < numField; y++) {
-				int type = (int) board.data[x][y];
-				if (type == Constant.Wood) {
-					boolean find = false;
-					for (int[] vec : GlobalParameter.onehopList) {
-						if (vec[0] == 0) continue;
-						int dx = vec[1];
-						int dy = vec[2];
-						int x2 = x + dx;
-						int y2 = y + dy;
-						if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
-						double ddd = dis.data[x2][y2];
-						if (ddd > 1000) continue;
-						find = true;
-						break;
-					}
+		if (false) {
+			int numBrakableWood = 0;
+			for (int x = 0; x < numField; x++) {
+				for (int y = 0; y < numField; y++) {
+					int type = (int) board.data[x][y];
+					if (type == Constant.Wood) {
+						boolean find = false;
+						for (int[] vec : GlobalParameter.onehopList) {
+							if (vec[0] == 0) continue;
+							int dx = vec[1];
+							int dy = vec[2];
+							int x2 = x + dx;
+							int y2 = y + dy;
+							if (x2 < 0 || x2 >= numField || y2 < 0 || y2 >= numField) continue;
+							double ddd = dis.data[x2][y2];
+							if (ddd > 1000) continue;
+							find = true;
+							break;
+						}
 
-					if (find) {
-						numBrakableWood++;
+						if (find) {
+							numBrakableWood++;
+						}
 					}
 				}
 			}
@@ -188,8 +186,6 @@ public class ActionEvaluator {
 				if (num == 0) {
 					safetyScoreWorst[ai][a] = Double.NaN;
 				} else {
-					// TODO
-					// safetyScoreWorst[ai][a] = sss + safetyScoreAverage[ai][a] * 1.0e-10;
 					safetyScoreWorst[ai][a] = sss;
 				}
 			}
@@ -262,104 +258,64 @@ public class ActionEvaluator {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (actionFinal == -1) {
-			if (false) {
-				StatusHolder sh = new StatusHolder();
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						if (bombMap[x][y] == null) continue;
-						Node node = bombMap[x][y];
-						for (int dir = 0; dir < 5; dir++) {
-							if (node.dirs[dir]) {
-								sh.setBomb(x, y, -1, node.life, dir, node.power);
-								break;
-							}
-						}
-					}
-				}
-				Pack pack = new Pack(board, flameLife, abs, sh);
-			}
-
 			double hasamiThreshold = 1;
 
-			// int x = -1, y = -1;
-			if (me == 11) {
-				// 右を狙う
-				int x2 = 9;
-				for (int y2 : new int[] { 4, 5, 6 }) {
-					int type = map.getType(x2, y2);
-					int type2 = map.getType(x2, y2 - 1);
-					int power2 = map.getPower(x2, y2 - 1);
+			for (int pos : new int[] { 4, 5, 6 }) {
+				int x2 = -1, y2 = -1, x3 = -1, y3 = -1;
+				if (me == 10) {
+					x2 = 1;
+					y2 = pos;
+					x3 = 1;
+					y3 = pos - 1;
+				} else if (me == 11) {
+					x2 = 9;
+					y2 = pos;
+					x3 = 9;
+					y3 = pos - 1;
+				} else if (me == 12) {
+					x2 = pos;
+					y2 = 9;
+					x3 = pos + 1;
+					y3 = 9;
+				} else if (me == 13) {
+					x2 = pos;
+					y2 = 9;
+					x3 = pos - 1;
+					y3 = 9;
+				}
 
-					if (type == Constant.Wood) {
-						if (type2 == Constant.Passage || type2 == Constant.Flames || type2 == Constant.Bomb) {
-							// (x2, y2-1)に向かう。
-							double ddd = dis.data[x2][y2 - 1];
-							if (ddd < 100) {
-								int dir = BBMUtility.ComputeFirstDirection(dis, x2, y2 - 1);
-								double score = safetyScoreWorst[me - 10][dir];
-								if (score > hasamiThreshold) {
-									actionFinal = dir;
-									reason = "挟み撃ちムーブ";
-									break;
-								} else {
-									double scoreStop = safetyScoreWorst[me - 10][0];
-									if (scoreStop > hasamiThreshold) {
-										actionFinal = 0;
-										reason = "挟み撃ちムーブ";
-									}
-								}
-							}
-						} else if (type2 == me) {
-							// 既に目的の場所にいたら。
-							if (power2 == 0 && abs[me - 10].numBombHold > 0) {
-								// 爆弾が設置されてなかったら、爆弾を設置する。
-								double score = safetyScoreWorst[me - 10][5];
-								if (score > hasamiThreshold) {
-									actionFinal = 5;
-									reason = "挟み撃ちムーブ";
-									break;
+				int type = map.getType(x2, y2);
+				int type2 = map.getType(x3, y3);
+				int power2 = map.getPower(x3, y3);
+
+				if (type == Constant.Wood) {
+					if (type2 == Constant.Passage || type2 == Constant.Flames || type2 == Constant.Bomb) {
+						// (x2, y2-1)に向かう。
+						double ddd = dis2.data[x3][y3];
+						if (ddd < 100) {
+							int dir = BBMUtility.ComputeFirstDirection(dis2, x3, y3);
+							double score = safetyScoreWorst[me - 10][dir];
+							if (score > hasamiThreshold) {
+								actionFinal = dir;
+								reason = "挟み撃ち。移動。";
+								break;
+							} else {
+								double scoreStop = safetyScoreWorst[me - 10][0];
+								if (scoreStop > hasamiThreshold) {
+									actionFinal = 0;
+									reason = "挟み撃ち。停止。";
 								}
 							}
 						}
-					}
-				}
-			} else if (me == 13) {
-				// 下を狙う。
-				int y2 = 9;
-				for (int x2 : new int[] { 4, 5, 6 }) {
-					int type = map.getType(x2, y2);
-					int type2 = map.getType(x2 - 1, y2);
-					int power2 = map.getPower(x2 - 1, y2);
-
-					if (type == Constant.Wood) {
-						if (type2 == Constant.Passage || type2 == Constant.Flames || type2 == Constant.Bomb) {
-							// (x2, y2-1)に向かう。
-							double ddd = dis.data[x2 - 1][y2];
-							if (ddd < 100) {
-								int dir = BBMUtility.ComputeFirstDirection(dis, x2 - 1, y2);
-								double score = safetyScoreWorst[me - 10][dir];
-								if (score > hasamiThreshold) {
-									actionFinal = dir;
-									reason = "挟み撃ちムーブ";
-									break;
-								} else {
-									double scoreStop = safetyScoreWorst[me - 10][0];
-									if (scoreStop > hasamiThreshold) {
-										actionFinal = 0;
-										reason = "挟み撃ちムーブ";
-									}
-								}
-							}
-						} else if (type2 == me) {
-							// 既に目的の場所にいたら。
-							if (power2 == 0 && abs[me - 10].numBombHold > 0) {
-								// 爆弾が設置されてなかったら、爆弾を設置する。
-								double score = safetyScoreWorst[me - 10][5];
-								if (score > hasamiThreshold) {
-									actionFinal = 5;
-									reason = "挟み撃ちムーブ";
-									break;
-								}
+					} else if (type2 == me) {
+						// 既に目的の場所にいたら。
+						if (power2 == 0 && abs[me - 10].numBombHold > 0) {
+							// 爆弾が設置されてなかったら、爆弾を設置する。
+							double score = safetyScoreWorst[me - 10][5];
+							if (score > hasamiThreshold) {
+								actionFinal = 5;
+								reason = "挟み撃ち。爆弾設置";
+								break;
 							}
 						}
 					}
@@ -379,6 +335,7 @@ public class ActionEvaluator {
 				if (ai == me - 10) continue;
 				if (ai == friend - 10) continue;
 				LastAgentPosition lap = laps[ai];
+				if (lap == null) continue;
 
 				// 目的地（最後に敵を見た場所）が、既に観測範囲にある場合は、意味なし。
 				// int isInsideVisibleArea = Math.abs(lap.x - agentMe.x) + Math.abs(lap.y - agentMe.y);
@@ -410,6 +367,8 @@ public class ActionEvaluator {
 			for (int ai = 0; ai < 4; ai++) {
 				if (ai != friend - 10) continue;
 				LastAgentPosition lap = laps[ai];
+				if (lap == null) continue;
+
 				// 目的地（最後に敵を見た場所）が、既に観測範囲にある場合は、意味なし。
 				int isInsideVisibleArea = Math.abs(lap.x - agentMe.x) + Math.abs(lap.y - agentMe.y);
 				if (isInsideVisibleArea <= 4) continue;
@@ -427,209 +386,6 @@ public class ActionEvaluator {
 			if (dirmin != -1) {
 				actionFinal = dirmin;
 				reason = "味方がいる方へ向かうムーブ";
-			}
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//
-		// 詰められる状態であれば、詰める。
-		// TODO 詰める要員が誰なのかを返すようにしたい。
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		if (false) {
-			// if (actionFinal == -1) {
-			Pack packNow;
-			if (true) {
-				Ability[] abs2 = new Ability[4];
-				for (int ai = 0; ai < 4; ai++) {
-					abs2[ai] = new Ability(abs[ai]);
-					if (ai + 10 == me) continue;
-					abs2[ai].kick = true;
-					abs2[ai].numMaxBomb = 3;
-					abs2[ai].numBombHold = 3;
-					if (abs2[ai].strength_fix == -1) {
-						abs2[ai].strength = maxPower;
-					} else {
-						abs2[ai].strength = abs2[ai].strength_fix;
-					}
-				}
-
-				StatusHolder sh = new StatusHolder();
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						int type = map.getType(x, y);
-						if (Constant.isAgent(type)) {
-							sh.setAgent(x, y, type);
-						}
-					}
-				}
-
-				for (int x = 0; x < numField; x++) {
-					for (int y = 0; y < numField; y++) {
-						Node node = bombMap[x][y];
-						if (node == null) continue;
-						// TODO とりあえず停止してる爆弾だけ考慮する。
-						if (node.dirs[0] == false) continue;
-						sh.setBomb(x, y, -1, node.life, 0, node.power);
-					}
-				}
-
-				packNow = new Pack(map.board, flameLife, abs2, sh);
-			}
-
-			int killScoreMin = Integer.MAX_VALUE;
-			int aiTarget = -1;
-			for (int ai = 0; ai < 4; ai++) {
-				if (ai == me - 10) continue;
-				if (ai == friend - 10) continue;
-
-				int killScore = KillScoreEvaluator.computeKillScore(packNow, ai);
-				if (killScore < Integer.MAX_VALUE) {
-					killScoreMin = killScore;
-					aiTarget = ai;
-					break;
-				}
-			}
-
-			if (aiTarget != -1) {
-				ForwardModel fm = new ForwardModel();
-				int amin = -1;
-				for (int a = 0; a < 6; a++) {
-					double scoreMe = safetyScoreWorst[me - 10][a];
-					if (scoreMe < attackThreshold) continue;
-					int[] actions = new int[4];
-					actions[me - 10] = a;
-					Pack packNext = fm.Step(collapse, frame, packNow.board, packNow.flameLife, packNow.abs, packNow.sh, actions);
-					int temp = KillScoreEvaluator.computeKillScore(packNext, aiTarget);
-					if (temp < killScoreMin) {
-						killScoreMin = temp;
-						amin = a;
-					}
-				}
-				if (amin != -1) {
-					actionFinal = amin;
-					reason = "より詰める。";
-					System.out.println("より詰める。！！！" + actionFinal);
-				}
-			}
-		}
-
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//
-		// 自分の安全を確保した状態で、相手を危険にできるケースを探す。
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		// ペア一手先
-		if (false) {
-			// if (actionFinal == -1 && numVisibleTeam == 2 && numVisibleEnemy > 0) {
-			for (int ai = 0; ai < 4; ai++) {
-				if (ai == me - 10) continue;
-				if (ai == friend - 10) continue;
-				double min = Double.POSITIVE_INFINITY;
-				double max = 0;
-				for (int a = 0; a < 6; a++) {
-					for (int b = 0; b < 6; b++) {
-						double num1 = sr.pairScore[a][b][me - 10].num;
-						double num2 = sr.pairScore[a][b][friend - 10].num;
-						double num3 = sr.pairScore[a][b][ai].num;
-						if (num1 == 0 || num2 == 0 || num3 == 0) continue;
-
-						double s1 = sr.pairScore[a][b][me - 10].min;
-						double s2 = sr.pairScore[a][b][friend - 10].min;
-						double s3 = sr.pairScore[a][b][ai].sum / num3;
-
-						if (s1 < attackThreshold || s2 < attackThreshold) continue;
-
-						if (s3 < min) min = s3;
-						if (s3 > max) max = s3;
-					}
-				}
-
-				// 自分のアクションが何ら影響を与えなければ飛ばす。
-				if (min == max) continue;
-
-				if (min != Double.POSITIVE_INFINITY) {
-
-					int besta = -1;
-					int bestb = -1;
-
-					ArrayList<Integer> set = new ArrayList<Integer>();
-					for (int a = 0; a < 6; a++) {
-						for (int b = 0; b < 6; b++) {
-							double num1 = sr.pairScore[a][b][me - 10].num;
-							double num2 = sr.pairScore[a][b][friend - 10].num;
-							double num3 = sr.pairScore[a][b][ai].num;
-							if (num1 == 0 || num2 == 0 || num3 == 0) continue;
-
-							double s1 = sr.pairScore[a][b][me - 10].min;
-							double s2 = sr.pairScore[a][b][friend - 10].min;
-							double s3 = sr.pairScore[a][b][ai].sum / num3;
-
-							if (s1 < attackThreshold || s2 < attackThreshold) continue;
-
-							if (s3 == min) {
-								set.add(a);
-								besta = a;
-								bestb = b;
-							}
-						}
-					}
-					int index = rand.nextInt(set.size());
-					actionFinal = set.get(index);
-					reason = "攻撃する。1手先。ペア。";
-
-					if (min < 0.1) {
-						System.out.println("chance?");
-					}
-
-					break;
-				}
-			}
-		}
-
-		// 単独一手先
-		if (false) {
-			// if (actionFinal == -1 && numVisibleEnemy > 0) {
-			for (int ai = 0; ai < 4; ai++) {
-				if (ai == me - 10) continue;
-				if (ai == friend - 10) continue;
-				double min = Double.POSITIVE_INFINITY;
-				double max = 0;
-				for (int a = 0; a < 6; a++) {
-					double scoreMe = safetyScoreWorst[me - 10][a];
-					double scoreEnemy = safetyScoreAverage[ai][a];
-					if (Double.isNaN(scoreEnemy)) continue;
-					if (scoreMe < attackThreshold) continue;
-					if (scoreMe < scoreEnemy) continue;
-					if (scoreEnemy < min) {
-						min = scoreEnemy;
-					}
-					if (scoreEnemy > max) {
-						max = scoreEnemy;
-					}
-				}
-
-				// 自分のアクションが何ら影響を与えなければ飛ばす。
-				if (min == max) continue;
-
-				if (min != Double.POSITIVE_INFINITY) {
-					ArrayList<Integer> set = new ArrayList<Integer>();
-					for (int a = 0; a < 6; a++) {
-						double scoreMe = safetyScoreWorst[me - 10][a];
-						double scoreEnemy = safetyScoreAverage[ai][a];
-						if (Double.isNaN(scoreEnemy)) continue;
-						if (scoreMe < attackThreshold) continue;
-						if (scoreMe < scoreEnemy) continue;
-						if (scoreEnemy == min) {
-							set.add(a);
-						}
-					}
-					int index = rand.nextInt(set.size());
-					actionFinal = set.get(index);
-					reason = "攻撃する。1手先。";
-				}
 			}
 		}
 
@@ -770,57 +526,12 @@ public class ActionEvaluator {
 		//
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		// ペア避け
-		if (false) {
-			// if (actionFinal == -1 && numVisibleTeam == 2) {
-			double max = 0;
-			int maxa = -1;
-			int maxb = -1;
-			for (int a = 0; a < 6; a++) {
-				for (int b = 0; b < 6; b++) {
-					double numMe = sr.pairScore[a][b][me - 10].num;
-					double numFriend = sr.pairScore[a][b][friend - 10].num;
-					if (numMe == 0 || numFriend == 0) continue;
-					double scoreMe = sr.pairScore[a][b][me - 10].min;
-					double scoreFriend = sr.pairScore[a][b][friend - 10].min;
-					double scoreMeAve = sr.pairScore[a][b][me - 10].sum / numMe;
-					double scoreFriendAve = sr.pairScore[a][b][friend - 10].sum / numFriend;
-					double score = (scoreMe + scoreMeAve * 1.0e-10) * (scoreFriend + scoreFriendAve * 1.0e-10);
-					if (score > max) {
-						max = score;
-						maxa = a;
-						maxb = b;
-					}
-				}
-			}
-			if (maxa != -1) {
-				actionFinal = maxa;
-				reason = "もっとも安全なアクションを選ぶ。ペア避け。";
-			} else {
-				for (int a = 0; a < 6; a++) {
-					for (int b = 0; b < 6; b++) {
-						double numMe = sr.pairScore[a][b][me - 10].num;
-						double numFriend = sr.pairScore[a][b][friend - 10].num;
-						if (numMe == 0 || numFriend == 0) continue;
-						double scoreMe = sr.pairScore[a][b][me - 10].sum / numMe;
-						double scoreFriend = sr.pairScore[a][b][friend - 10].sum / numFriend;
-						double score = scoreMe * scoreFriend;
-						if (score > max) {
-							max = score;
-							maxa = a;
-							maxb = b;
-						}
-					}
-				}
-
-				if (maxa != -1) {
-					actionFinal = maxa;
-					reason = "もっとも安全なアクションを選ぶ。ペア避け。";
-				}
-			}
-		}
-
-		double averageWeight = 1.0e-10;
+		double averageWeight = 1.0e-15;
+		// double averageWeight = 0.001;
+		// double enemyAverageScoreWeaker = 1.2;
+		// double enemyAverageScoreWeaker = 0.7;
+		// double enemyAverageScoreWeaker = 1.0;
+		double enemyAverageScoreWeaker = 1.0;
 
 		// ペア避け。相手との差分。
 		if (actionFinal == -1 && numVisibleTeam == 2 && numVisibleEnemy > 0) {
@@ -828,51 +539,102 @@ public class ActionEvaluator {
 			int mina = -1;
 			int minb = -1;
 
-			for (int a = 0; a < 6; a++) {
-				for (int b = 0; b < 6; b++) {
+			{
+				for (int a = 0; a < 6; a++) {
+					for (int b = 0; b < 6; b++) {
+						double totalEnemy = 1;
+						double counterEnemy = 0;
+						for (int ai = 0; ai < 4; ai++) {
+							if (ai == me - 10) continue;
+							if (ai == friend - 10) continue;
+							double snum = sr.pairScore[a][b][ai].num;
+							double ssum = sr.pairScore[a][b][ai].sum;
+							if (snum == 0) continue;
+							double sss = ssum / snum;
+							totalEnemy *= sss;
+							counterEnemy++;
+						}
+						if (counterEnemy == 0) continue;
+						double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy / enemyAverageScoreWeaker);
 
-					double totalEnemy = 1;
-					double counterEnemy = 0;
-					for (int ai = 0; ai < 4; ai++) {
-						if (ai == me - 10) continue;
-						if (ai == friend - 10) continue;
-						double num = sr.pairScore[a][b][ai].num;
-						double sum = sr.pairScore[a][b][ai].sum;
-						if (num == 0) continue;
-						double sss = sum / num;
-						totalEnemy *= sss;
-						counterEnemy++;
-					}
-					if (counterEnemy == 0) continue;
-					double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy);
-					scoreEnemy += 1.0e-20;
+						double totalTeam = 1;
+						double counterTeam = 0;
+						for (int ai : new int[] { me - 10, friend - 10 }) {
+							double smin = sr.pairScore[a][b][ai].min;
+							double ssum = sr.pairScore[a][b][ai].sum;
+							double snum = sr.pairScore[a][b][ai].num;
+							if (snum == 0) continue;
+							double save = ssum / snum;
+							double sss = smin + averageWeight * save;
+							if (smin == 0) sss = 0;
+							totalTeam *= sss;
+							counterTeam++;
+						}
 
-					double totalTeam = 1;
-					double counterTeam = 0;
-					for (int ai : new int[] { me - 10, friend - 10 }) {
-						double snum = sr.pairScore[a][b][ai].num;
-						double ssum = sr.pairScore[a][b][ai].sum;
-						double smin = sr.pairScore[a][b][ai].min;
-						double save = ssum / snum;
-						double sss = smin + averageWeight * save;
-						totalTeam *= sss;
-						counterTeam++;
-					}
+						double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
+						if (scoreTeam == 0) continue;
 
-					double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
-					if (scoreTeam == 0) continue;
-
-					double scoreRate = scoreEnemy / scoreTeam;
-					if (scoreRate < min) {
-						min = scoreRate;
-						mina = a;
-						minb = b;
+						double scoreRate = scoreEnemy / scoreTeam;
+						if (scoreRate < min) {
+							min = scoreRate;
+							mina = a;
+							minb = b;
+						}
 					}
 				}
 			}
 			if (mina != -1) {
 				actionFinal = mina;
-				reason = "もっとも安全なアクションを選ぶ。ペア避け。差分";
+				reason = "もっとも安全なアクションを選ぶ。ペア避け。差分。";
+			} else {
+				{
+					for (int a = 0; a < 6; a++) {
+						for (int b = 0; b < 6; b++) {
+							double totalEnemy = 1;
+							double counterEnemy = 0;
+							for (int ai = 0; ai < 4; ai++) {
+								if (ai == me - 10) continue;
+								if (ai == friend - 10) continue;
+								double snum = sr.pairScore[a][b][ai].num;
+								double ssum = sr.pairScore[a][b][ai].sum;
+								if (snum == 0) continue;
+								double sss = ssum / snum;
+								totalEnemy *= sss;
+								counterEnemy++;
+							}
+							if (counterEnemy == 0) continue;
+							double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy);
+
+							double totalTeam = 1;
+							double counterTeam = 0;
+							for (int ai : new int[] { me - 10, friend - 10 }) {
+								double smin = sr.pairScore[a][b][ai].min;
+								double ssum = sr.pairScore[a][b][ai].sum;
+								double snum = sr.pairScore[a][b][ai].num;
+								if (snum == 0) continue;
+								double save = ssum / snum;
+								double sss = smin + averageWeight * save;
+								// if (smin == 0) sss = 0;
+								totalTeam *= sss;
+								counterTeam++;
+							}
+
+							double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
+							if (scoreTeam == 0) continue;
+
+							double scoreRate = scoreEnemy / scoreTeam;
+							if (scoreRate < min) {
+								min = scoreRate;
+								mina = a;
+								minb = b;
+							}
+						}
+					}
+				}
+				if (mina != -1) {
+					actionFinal = mina;
+					reason = "もっとも安全なアクションを選ぶ。ペア避け。差分。その２。";
+				}
 			}
 		}
 
@@ -880,46 +642,86 @@ public class ActionEvaluator {
 		if (actionFinal == -1 && numVisibleTeam == 1 && numVisibleEnemy > 0) {
 			double min = Double.POSITIVE_INFINITY;
 			int mina = -1;
-			mina = -1;
+			{
+				for (int a = 0; a < 6; a++) {
+					double totalEnemy = 1;
+					double counterEnemy = 0;
+					for (int ai = 0; ai < 4; ai++) {
+						if (ai == me - 10) continue;
+						if (ai == friend - 10) continue;
+						double sss = safetyScoreAverage[ai][a];
+						if (Double.isNaN(sss)) continue;
+						totalEnemy *= sss;
+						counterEnemy++;
+					}
+					if (counterEnemy == 0) continue;
+					double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy / enemyAverageScoreWeaker);
 
-			for (int a = 0; a < 6; a++) {
-				double totalEnemy = 1;
-				double counterEnemy = 0;
-				for (int ai = 0; ai < 4; ai++) {
-					if (ai == me - 10) continue;
-					if (ai == friend - 10) continue;
-					double sss = safetyScoreAverage[ai][a];
-					if (Double.isNaN(sss)) continue;
-					totalEnemy *= sss;
-					counterEnemy++;
-				}
-				if (counterEnemy == 0) continue;
-				double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy);
-				scoreEnemy += 1.0e-20;
+					double totalTeam = 1;
+					double counterTeam = 0;
+					for (int ai : new int[] { me - 10, friend - 10 }) {
+						double smin = safetyScoreWorst[ai][a];
+						double save = safetyScoreAverage[ai][a];
+						if (Double.isNaN(smin) || Double.isNaN(save)) continue;
+						double sss = smin + averageWeight * save;
+						if (smin == 0) sss = 0;
+						totalTeam *= sss;
+						counterTeam++;
+					}
+					double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
+					if (scoreTeam == 0) continue;
 
-				double totalTeam = 1;
-				double counterTeam = 0;
-				for (int ai : new int[] { me - 10, friend - 10 }) {
-					double save = safetyScoreAverage[ai][a];
-					double smin = safetyScoreWorst[ai][a];
-					if (Double.isNaN(save) || Double.isNaN(smin)) continue;
-					double sss = smin + averageWeight * save;
-					totalTeam *= sss;
-					counterTeam++;
-				}
-				double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
-				if (scoreTeam == 0) continue;
-
-				double scoreRate = scoreEnemy / scoreTeam;
-				if (scoreRate < min) {
-					min = scoreRate;
-					mina = a;
+					double scoreRate = scoreEnemy / scoreTeam;
+					if (scoreRate < min) {
+						min = scoreRate;
+						mina = a;
+					}
 				}
 			}
-
 			if (mina != -1) {
 				actionFinal = mina;
-				reason = "もっとも安全なアクションを選ぶ。単独。差分";
+				reason = "もっとも安全なアクションを選ぶ。単独。差分。";
+			} else {
+				{
+					for (int a = 0; a < 6; a++) {
+						double totalEnemy = 1;
+						double counterEnemy = 0;
+						for (int ai = 0; ai < 4; ai++) {
+							if (ai == me - 10) continue;
+							if (ai == friend - 10) continue;
+							double sss = safetyScoreAverage[ai][a];
+							if (Double.isNaN(sss)) continue;
+							totalEnemy *= sss;
+							counterEnemy++;
+						}
+						if (counterEnemy == 0) continue;
+						double scoreEnemy = Math.pow(totalEnemy, 1 / counterEnemy);
+
+						double totalTeam = 1;
+						double counterTeam = 0;
+						for (int ai : new int[] { me - 10, friend - 10 }) {
+							double smin = safetyScoreWorst[ai][a];
+							double save = safetyScoreAverage[ai][a];
+							if (Double.isNaN(smin) || Double.isNaN(save)) continue;
+							double sss = smin + averageWeight * save;
+							// if (smin == 0) sss = 0;
+							totalTeam *= sss;
+							counterTeam++;
+						}
+						double scoreTeam = Math.pow(totalTeam, 1 / counterTeam);
+						if (scoreTeam == 0) continue;
+
+						double scoreRate = scoreEnemy / scoreTeam;
+						if (scoreRate < min) {
+							min = scoreRate;
+							mina = a;
+						}
+					}
+				}
+				if (mina != -1) {
+					actionFinal = mina;
+					reason = "もっとも安全なアクションを選ぶ。単独。差分。その２。";
+				}
 			}
 		}
 
@@ -1004,7 +806,7 @@ public class ActionEvaluator {
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		if (actionFinal == -1) {
 			actionFinal = rand.nextInt(6);
-			reason = "最後の手段。乱択。(^ ^;)/";
+			reason = "最後の手段。乱択。(^o^)/";
 		}
 
 		System.out.println("ComputeOptimalAction: agentID=" + me);
@@ -1043,10 +845,8 @@ public class ActionEvaluator {
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					// if (scoreFriend == 0) continue;
 					if (scoreFriend < usualMoveThreshold) continue;
 				}
-				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe > max) max = scoreMe;
 				if (scoreMe < min) min = scoreMe;
 
@@ -1059,10 +859,8 @@ public class ActionEvaluator {
 				double scoreMe = scoresMe[action];
 				if (friendDependency) {
 					double scoreFriend = scoresFriend[action];
-					// if (scoreFriend == 0) continue;
 					if (scoreFriend < usualMoveThreshold) continue;
 				}
-				// if (scoreMe > usualMoveThreshold) scoreMe = usualMoveThreshold;
 				if (scoreMe == max) {
 					set.add(action);
 				}

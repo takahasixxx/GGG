@@ -3,7 +3,7 @@
 #################################
 import pommerman
 from pommerman import agents
-#from tt_agent import MyAgent as AgentTT
+from tt_agent import MyAgent as AgentTT
 
 
 def main():
@@ -16,9 +16,9 @@ def main():
     # Create a set of agents (exactly four)
     agent_list = [
         agents.SimpleAgent(),
-        agents.DockerAgent("ccc", port=12345),
+        AgentTT(),
         agents.SimpleAgent(),
-        agents.DockerAgent("ccc", port=12345),
+        AgentTT(),
     ]
 
 
@@ -32,8 +32,7 @@ def main():
     for i_episode in range(1):
         state = env.reset()
         done = False
-        while not done:
-            env.render()
+        for frame in range(30):
             actions = env.act(state)
             state, reward, done, info = env.step(actions)
         print('Episode {} finished'.format(i_episode))

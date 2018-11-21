@@ -4,6 +4,12 @@
 #################################
 
 
-nohup java -Xmx10G -jar /BBMServer/BBMServer.jar &> log.txt &
+nohup java -Xmx10G -jar /BBMServer/BBMServer.jar &
 
-python3.6 /BBMServer/tt_agent_server.py 
+sleep 5
+
+python3.6 /BBMServer/test_run.py
+
+#python3.6 /BBMServer/tt_agent_server.py
+
+python3.6 /BBMServer/tt_agent_server.py
