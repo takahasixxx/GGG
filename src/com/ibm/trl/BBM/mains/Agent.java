@@ -25,9 +25,6 @@ public class Agent {
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
 	ModelParameter param;
-	WorstScoreEvaluator worstScoreEvaluator;
-	// WorstScoreEvaluator_mt worstScoreEvaluator_mt;
-	// WorstScoreEvaluator_2step_mt worstScoreEvaluator_2step_mt;
 	ActionEvaluator actionEvaluator;
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -116,8 +113,6 @@ public class Agent {
 
 	Agent(int me, ModelParameter param) throws Exception {
 		this.param = param;
-		worstScoreEvaluator = new WorstScoreEvaluator(param);
-		// worstScoreEvaluator_mt = new WorstScoreEvaluator_mt(param);
 		actionEvaluator = new ActionEvaluator(param);
 
 		this.me = me;
@@ -683,7 +678,7 @@ public class Agent {
 				sr = worstScoreEvaluator_2step_mt.Get(me, friend);
 			}
 
-			// TODO シングススレッド版と値が同じかチェックしてみる。
+			// TODO マルチスレッド版とシングルスレッド版の値が同じかチェックしてみる。
 			if (false) {
 				WorstScoreEvaluator wse = new WorstScoreEvaluator(param);
 				ScoreResult sr2 = wse.Do(isCollapse, frame, me, friend, maxPower, abs, exmap, bombMap, flameLife, laps);

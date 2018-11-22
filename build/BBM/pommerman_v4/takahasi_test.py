@@ -162,6 +162,8 @@ def battle(process_number):
 
     env = pommerman.make('PommeTeamCompetition-v0', agent_list)
     #env = pommerman.make('PommeTeamCompetition-v1', agent_list)
+    #env = pommerman.make('PommeTeamCompetitionFast-v0', agent_list)
+    #env = pommerman.make('PommeTeamCompetitionFast-v1', agent_list)
 
 
     numAliveLast = 4
